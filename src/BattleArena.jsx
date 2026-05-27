@@ -23,135 +23,100 @@ function FighterSilhouette() {
 const CLAIM_LIMIT = 100;
 
 const FANDOM_MAP = {
-  "persona": "megamitensei",
-  "persona 3": "megamitensei",
-  "persona 4": "megamitensei",
-  "persona 5": "megamitensei",
-  "shin megami tensei": "megamitensei",
-  "smt": "megamitensei",
-  "dragon ball": "dragonball",
-  "dragon ball z": "dragonball",
-  "dragon ball super": "dragonball",
-  "dbz": "dragonball",
-  "naruto": "naruto",
-  "boruto": "naruto",
-  "one piece": "onepiece",
-  "bleach": "bleach",
-  "jujutsu kaisen": "jujutsu-kaisen",
-  "jjk": "jujutsu-kaisen",
-  "my hero academia": "myheroacademia",
-  "mha": "myheroacademia",
-  "hunter x hunter": "hunterxhunter",
-  "hxh": "hunterxhunter",
-  "fullmetal alchemist": "fma",
-  "fma": "fma",
-  "attack on titan": "attackontitan",
-  "aot": "attackontitan",
-  "one punch man": "onepunchman",
-  "opm": "onepunchman",
-  "demon slayer": "kimetsu-no-yaiba",
-  "kimetsu no yaiba": "kimetsu-no-yaiba",
-  "tokyo ghoul": "tokyoghoul",
-  "death note": "deathnote",
-  "chainsaw man": "chainsaw-man",
-  "spy x family": "spy-x-family",
-  "fairy tail": "fairytail",
-  "black clover": "blackclover",
-  "hellsing": "hellsing",
-  "berserk": "berserk",
-  "vinland saga": "vinlandsaga",
-  "marvel": "marvel",
-  "mcu": "marvelcinematicuniverse",
-  "marvel comics": "marvel",
-  "dc": "dc",
-  "dc comics": "dc",
-  "dceu": "dcextendeduniverse",
-  "star wars": "starwars",
-  "harry potter": "harrypotter",
-  "lord of the rings": "lotr",
-  "lotr": "lotr",
-  "game of thrones": "gameofthrones",
-  "got": "gameofthrones",
-  "halo": "halo",
-  "mass effect": "masseffect",
-  "elden ring": "eldenring",
-  "dark souls": "darksouls",
-  "final fantasy": "finalfantasy",
-  "kingdom hearts": "kingdomhearts",
-  "pokemon": "pokemon",
-  "pokémon": "pokemon",
-  "zelda": "zelda",
-  "legend of zelda": "zelda",
-  "mario": "mario",
-  "super mario": "mario",
-  "sonic": "sonic",
-  "metal gear": "metalgear",
-  "resident evil": "residentevil",
-  "street fighter": "streetfighter",
-  "tekken": "tekken",
-  "mortal kombat": "mortalkombat",
-  "smash bros": "supersmashbros",
-  "super smash bros": "supersmashbros",
-  "league of legends": "leagueoflegends",
-  "lol": "leagueoflegends",
-  "overwatch": "overwatch",
-  "genshin impact": "genshin-impact",
-  "honkai": "honkai-impact-3",
-  "honkai star rail": "honkai-star-rail",
-  "warcraft": "wowwiki",
-  "world of warcraft": "wowwiki",
-  "wow": "wowwiki",
-  "minecraft": "minecraft",
-  "fortnite": "fortnite",
-  "rick and morty": "rickandmorty",
-  "south park": "southpark",
-  "the simpsons": "simpsons",
-  "family guy": "familyguy",
+  "persona": "megamitensei", "persona 3": "megamitensei", "persona 4": "megamitensei",
+  "persona 5": "megamitensei", "shin megami tensei": "megamitensei", "smt": "megamitensei",
+  "dragon ball": "dragonball", "dragon ball z": "dragonball", "dragon ball super": "dragonball", "dbz": "dragonball",
+  "naruto": "naruto", "boruto": "naruto",
+  "one piece": "onepiece", "bleach": "bleach",
+  "jujutsu kaisen": "jujutsu-kaisen", "jjk": "jujutsu-kaisen",
+  "my hero academia": "myheroacademia", "mha": "myheroacademia",
+  "hunter x hunter": "hunterxhunter", "hxh": "hunterxhunter",
+  "fullmetal alchemist": "fma", "fma": "fma",
+  "attack on titan": "attackontitan", "aot": "attackontitan",
+  "one punch man": "onepunchman", "opm": "onepunchman",
+  "demon slayer": "kimetsu-no-yaiba", "kimetsu no yaiba": "kimetsu-no-yaiba",
+  "tokyo ghoul": "tokyoghoul", "death note": "deathnote",
+  "chainsaw man": "chainsaw-man", "spy x family": "spy-x-family",
+  "fairy tail": "fairytail", "black clover": "blackclover",
+  "hellsing": "hellsing", "berserk": "berserk", "vinland saga": "vinlandsaga",
+  "marvel": "marvel", "mcu": "marvelcinematicuniverse", "marvel comics": "marvel",
+  "dc": "dc", "dc comics": "dc", "dceu": "dcextendeduniverse",
+  "the boys": "the-boys", "invincible": "invincible-comics",
+  "star wars": "starwars", "harry potter": "harrypotter",
+  "lord of the rings": "lotr", "lotr": "lotr",
+  "game of thrones": "gameofthrones", "got": "gameofthrones",
+  "halo": "halo", "mass effect": "masseffect",
+  "elden ring": "eldenring", "dark souls": "darksouls",
+  "final fantasy": "finalfantasy", "kingdom hearts": "kingdomhearts",
+  "pokemon": "pokemon", "pokémon": "pokemon",
+  "zelda": "zelda", "legend of zelda": "zelda",
+  "mario": "mario", "super mario": "mario",
+  "sonic": "sonic", "metal gear": "metalgear",
+  "resident evil": "residentevil", "street fighter": "streetfighter",
+  "tekken": "tekken", "mortal kombat": "mortalkombat",
+  "smash bros": "supersmashbros", "super smash bros": "supersmashbros",
+  "league of legends": "leagueoflegends", "lol": "leagueoflegends",
+  "overwatch": "overwatch", "genshin impact": "genshin-impact",
+  "honkai": "honkai-impact-3", "honkai star rail": "honkai-star-rail",
+  "warcraft": "wowwiki", "world of warcraft": "wowwiki", "wow": "wowwiki",
+  "minecraft": "minecraft", "fortnite": "fortnite",
+  "rick and morty": "rickandmorty", "south park": "southpark",
+  "the simpsons": "simpsons", "family guy": "familyguy",
   "spongebob": "spongebob",
-  "avatar": "avatar",
-  "avatar the last airbender": "avatar",
-  "atla": "avatar",
-  "korra": "avatar",
-  "ben 10": "ben10",
-  "adventure time": "adventuretime",
-  "regular show": "regularshow",
-  "steven universe": "steven-universe",
+  "avatar": "avatar", "avatar the last airbender": "avatar", "atla": "avatar", "korra": "avatar",
+  "ben 10": "ben10", "adventure time": "adventuretime",
+  "regular show": "regularshow", "steven universe": "steven-universe",
 };
 
-// Search Fandom wiki, get top results (not just one)
-async function searchFandomTopResults(wikiName, query, limit = 5) {
+async function fetchFandomPageImage(wikiName, pageTitle) {
+  try {
+    const url = `https://${wikiName}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images|text&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const images = data?.parse?.images || [];
+    for (const imgName of images) {
+      const lower = imgName.toLowerCase();
+      if (lower.includes("logo") || lower.includes("icon") ||
+          lower.includes("symbol") || lower.includes("button") ||
+          lower.endsWith(".svg") || lower.includes("placeholder")) continue;
+      const imgUrl = `https://${wikiName}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(imgName)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+      try {
+        const imgRes = await fetch(imgUrl);
+        if (imgRes.ok) {
+          const imgData = await imgRes.json();
+          const pages = imgData?.query?.pages;
+          if (pages) {
+            const page = Object.values(pages)[0];
+            const u = page?.imageinfo?.[0]?.url;
+            if (u) return u;
+          }
+        }
+      } catch (e) { continue; }
+    }
+    const html = data?.parse?.text?.["*"];
+    if (html) {
+      const match = html.match(/<img[^>]+src="(https?:\/\/[^"]+\.(?:png|jpg|jpeg|webp|gif))"/i);
+      if (match?.[1]) return match[1].split("/revision/")[0];
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+async function searchFandomPages(wikiName, query, limit = 8) {
   try {
     const url = `https://${wikiName}.fandom.com/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=${limit}&format=json&origin=*`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
     return data?.[1] || [];
-  } catch (e) {
-    return [];
-  }
-}
-
-// Get image for specific page title on a wiki
-async function getFandomPageImage(wikiName, pageTitle) {
-  try {
-    const url = `https://${wikiName}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&piprop=original|thumbnail&pithumbsize=400&format=json&origin=*`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const pages = data?.query?.pages;
-    if (!pages) return null;
-    const firstPage = Object.values(pages)[0];
-    return firstPage?.thumbnail?.source || firstPage?.original?.source || null;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return []; }
 }
 
 async function fetchFromFandom(wikiName, query) {
-  // Get top 5 search results and try each until we find one with an image
-  const titles = await searchFandomTopResults(wikiName, query, 5);
+  const titles = await searchFandomPages(wikiName, query, 8);
   for (const title of titles) {
-    const img = await getFandomPageImage(wikiName, title);
+    const img = await fetchFandomPageImage(wikiName, title);
     if (img) return img;
   }
   return null;
@@ -159,35 +124,27 @@ async function fetchFromFandom(wikiName, query) {
 
 async function fetchFromWikipedia(query) {
   try {
-    const res = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
-    );
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
     if (res.ok) {
       const data = await res.json();
       if (data.thumbnail?.source) return data.thumbnail.source;
       if (data.originalimage?.source) return data.originalimage.source;
     }
-  } catch (e) { /* fall through */ }
-
+  } catch (e) {}
   try {
-    const searchRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " character")}&format=json&origin=*&srlimit=1`
-    );
+    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " character")}&format=json&origin=*&srlimit=1`);
     if (searchRes.ok) {
       const searchData = await searchRes.json();
       const firstTitle = searchData.query?.search?.[0]?.title;
       if (firstTitle) {
-        const pageRes = await fetch(
-          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstTitle)}`
-        );
+        const pageRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstTitle)}`);
         if (pageRes.ok) {
           const pageData = await pageRes.json();
           if (pageData.thumbnail?.source) return pageData.thumbnail.source;
         }
       }
     }
-  } catch (e) { /* fall through */ }
-
+  } catch (e) {}
   return null;
 }
 
@@ -196,43 +153,41 @@ async function fetchCharacterImage(name, universe) {
   const cleanName = name.trim();
   const cleanUniverse = (universe || "").trim().toLowerCase();
 
-  // CASE 1: Universe provided — Fandom ONLY (don't fall back to Wikipedia to avoid collisions like DC Joker vs P5 Joker)
   if (cleanUniverse) {
     const wiki = FANDOM_MAP[cleanUniverse];
-
     if (wiki) {
-      // 1a: Try direct character name
       const url1 = await fetchFromFandom(wiki, cleanName);
       if (url1) return url1;
-
-      // 1b: Try with universe in the search query (e.g. "Makoto Persona 3")
       const url2 = await fetchFromFandom(wiki, `${cleanName} ${universe}`);
       if (url2) return url2;
     } else {
-      // Universe not in our map — try guessing the wiki subdomain
       const guess = cleanUniverse.replace(/[^a-z0-9]/g, "");
       if (guess.length >= 3) {
         const url = await fetchFromFandom(guess, cleanName);
         if (url) return url;
       }
     }
-
-    // Universe was provided but nothing found on Fandom — stop here, don't pollute with wrong character
-    return null;
+    // Fall back to Wikipedia using universe as disambiguator
+    const wikiPedia = await fetchFromWikipedia(`${cleanName} ${universe}`);
+    if (wikiPedia) return wikiPedia;
   }
 
-  // CASE 2: No universe — try Wikipedia
   return await fetchFromWikipedia(cleanName);
 }
 
-function useCharacterImage(name, universe) {
+function useCharacterImage(name, universe, override) {
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (override) {
+      setImageUrl(override);
+      setLoading(false);
+      return;
+    }
 
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (!name || name.trim().length < 2) {
       setImageUrl(null);
       setLoading(false);
@@ -247,9 +202,92 @@ function useCharacterImage(name, universe) {
     }, 700);
 
     return () => clearTimeout(timerRef.current);
-  }, [name, universe]);
+  }, [name, universe, override]);
 
   return { imageUrl, loading };
+}
+
+// === IMAGE OVERRIDE COMPONENT ===
+function ImageOverride({ onSet, hasOverride, onClear }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState(null);
+  const [urlInput, setUrlInput] = useState("");
+  const fileInputRef = useRef(null);
+
+  function handleUrlSubmit() {
+    if (!urlInput.trim()) return;
+    onSet(urlInput.trim());
+    setUrlInput("");
+    setOpen(false);
+    setMode(null);
+  }
+
+  function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image too large. Max 5MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onSet(ev.target.result);
+      setOpen(false);
+      setMode(null);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (hasOverride) {
+    return (
+      <button className="image-override-clear" onClick={onClear} title="Remove custom image">
+        ↺ Reset image
+      </button>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button className="image-override-trigger" onClick={() => setOpen(true)}>
+        Use my own image
+      </button>
+    );
+  }
+
+  return (
+    <div className="image-override-panel">
+      {!mode && (
+        <>
+          <button className="override-option" onClick={() => setMode("url")}>Paste URL</button>
+          <button className="override-option" onClick={() => fileInputRef.current?.click()}>Upload file</button>
+          <button className="override-cancel" onClick={() => setOpen(false)}>Cancel</button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={handleFile}
+            style={{ display: "none" }}
+          />
+        </>
+      )}
+      {mode === "url" && (
+        <>
+          <input
+            className="override-url-input"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="Paste image URL..."
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && handleUrlSubmit()}
+          />
+          <div className="override-url-actions">
+            <button className="override-option small" onClick={handleUrlSubmit}>Use</button>
+            <button className="override-cancel small" onClick={() => { setMode(null); setUrlInput(""); }}>Back</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function BattleArena() {
@@ -257,6 +295,8 @@ export default function BattleArena() {
   const [f2, setF2] = useState("");
   const [u1, setU1] = useState("");
   const [u2, setU2] = useState("");
+  const [override1, setOverride1] = useState(null);
+  const [override2, setOverride2] = useState(null);
   const [claims1, setClaims1] = useState([]);
   const [claims2, setClaims2] = useState([]);
   const [draft1, setDraft1] = useState("");
@@ -269,41 +309,26 @@ export default function BattleArena() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const img1 = useCharacterImage(f1, u1);
-  const img2 = useCharacterImage(f2, u2);
+  const img1 = useCharacterImage(f1, u1, override1);
+  const img2 = useCharacterImage(f2, u2, override2);
 
   function addClaim(side) {
     const draft = side === 1 ? draft1 : draft2;
     if (!draft.trim()) return;
-    if (side === 1) {
-      setClaims1([...claims1, draft.trim()]);
-      setDraft1("");
-    } else {
-      setClaims2([...claims2, draft.trim()]);
-      setDraft2("");
-    }
+    if (side === 1) { setClaims1([...claims1, draft.trim()]); setDraft1(""); }
+    else { setClaims2([...claims2, draft.trim()]); setDraft2(""); }
   }
-
   function removeClaim(side, index) {
     if (side === 1) setClaims1(claims1.filter((_, i) => i !== index));
     else setClaims2(claims2.filter((_, i) => i !== index));
   }
-
   function handleClaimKey(e, side) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addClaim(side);
-    }
+    if (e.key === "Enter") { e.preventDefault(); addClaim(side); }
   }
 
   async function simulate() {
-    if (!f1.trim() || !f2.trim()) {
-      setError("Please enter both fighter names.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    setResult(null);
+    if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
+    setError(""); setLoading(true); setResult(null);
 
     const claimsBlock1 = claims1.length
       ? `\nUser-submitted claims about ${f1} (NOT necessarily canon, treat as user input):\n${claims1.map((c, i) => `${i + 1}. "${c}"`).join("\n")}`
@@ -347,7 +372,6 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
           }]
         })
       });
-
       const data = await res.json();
       const text = data.content?.map(i => i.text || "").join("") || "";
       const clean = text.replace(/```json|```/g, "").trim();
@@ -355,12 +379,12 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
     } catch (e) {
       setError("Something went wrong. Try again in a moment.");
     }
-
     setLoading(false);
   }
 
   function reset() {
     setF1(""); setF2(""); setU1(""); setU2("");
+    setOverride1(null); setOverride2(null);
     setClaims1([]); setClaims2([]);
     setDraft1(""); setDraft2("");
     setResult(null); setError("");
@@ -379,7 +403,7 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
     return (
       <div className={`fighter-avatar ${stateClass} ${img.loading ? "loading" : ""}`}>
         {img.imageUrl ? (
-          <img src={img.imageUrl} alt={fighter} className="fighter-photo" />
+          <img src={img.imageUrl} alt={fighter} className="fighter-photo" onError={(e) => { e.target.style.display = 'none'; }} />
         ) : (
           <FighterSilhouette />
         )}
@@ -400,6 +424,11 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
           <div className="fighter-slot">
             <div className="fighter-label">Fighter One</div>
             {renderAvatar(1)}
+            <ImageOverride
+              onSet={setOverride1}
+              hasOverride={!!override1}
+              onClear={() => setOverride1(null)}
+            />
             <input className="fighter-name-input" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
             <input className="universe-input" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
 
@@ -437,6 +466,11 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
           <div className="fighter-slot right">
             <div className="fighter-label">Fighter Two</div>
             {renderAvatar(2)}
+            <ImageOverride
+              onSet={setOverride2}
+              hasOverride={!!override2}
+              onClear={() => setOverride2(null)}
+            />
             <input className="fighter-name-input" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
             <input className="universe-input" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
 

@@ -689,3 +689,122 @@ body::before {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+/* Override Styles/*
+/* === IMAGE OVERRIDE === */
+.image-override-trigger,
+.image-override-clear {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  padding: 0.45rem 0.9rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: -0.4rem;
+}
+
+.image-override-trigger:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  border-style: solid;
+}
+
+.image-override-clear {
+  border-color: var(--gold);
+  color: var(--gold);
+  border-style: solid;
+}
+
+.image-override-clear:hover {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+.image-override-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 220px;
+  margin-top: -0.4rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.override-option {
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  padding: 0.55rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.override-option:hover { background: var(--gold); }
+
+.override-option.small {
+  flex: 1;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.68rem;
+}
+
+.override-cancel {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.override-cancel:hover {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.override-cancel.small {
+  flex: 1;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.65rem;
+}
+
+.override-url-input {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 0.55rem 0.7rem;
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.override-url-input:focus { border-color: var(--gold); }
+.override-url-input::placeholder { color: var(--muted); font-size: 0.74rem; }
+
+.override-url-actions {
+  display: flex;
+  gap: 0.4rem;
+}
