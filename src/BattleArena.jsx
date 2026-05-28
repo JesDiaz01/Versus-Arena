@@ -68,6 +68,10 @@ const FANDOM_MAP = {
   "regular show": "regularshow", "steven universe": "steven-universe",
 };
 
+const FANDOM_PAGE_SUFFIX = {
+  "leagueoflegends": "/LoL",
+};
+
 async function fetchFandomPageImage(wikiName, pageTitle) {
   try {
     const url = `https://${wikiName}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images|text&format=json&origin=*`;
@@ -114,37 +118,142 @@ async function searchFandomPages(wikiName, query, limit = 8) {
 }
 
 async function fetchFromFandom(wikiName, query) {
+  const suffix = FANDOM_PAGE_SUFFIX[wikiName];
+  if (suffix) {
+    const img = await fetchFandomPageImage(wikiName, query + suffix);
+    if (img) return img;
+  }
+  const direct = await fetchFandomPageImage(wikiName, query);
+  if (direct) return direct;
   const titles = await searchFandomPages(wikiName, query, 8);
   for (const title of titles) {
+    if (/^list of /i.test(title)) continue;
     const img = await fetchFandomPageImage(wikiName, title);
     if (img) return img;
   }
   return null;
 }
 
-async function fetchFromWikipedia(query) {
+async function getWikipediaImageDetails(title) {
   try {
-    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.thumbnail?.source) return data.thumbnail.source;
-      if (data.originalimage?.source) return data.originalimage.source;
+      const img = data.thumbnail?.source || data.originalimage?.source;
+      if (img) return {
+        url: img,
+        title: data.title || title,
+        summary: data.extract || "",
+        description: data.description || ""
+      };
     }
   } catch (e) {}
+  return null;
+}
+
+function looksLikeRealPerson(details) {
+  if (!details) return false;
+  const desc = (details.description || "").toLowerCase();
+  const summary = (details.summary || "").toLowerCase();
+
+  if (desc.includes("fictional") || desc.includes("character")) return false;
+  if (desc.includes("anime") || desc.includes("manga") || desc.includes("video game")) return false;
+
+  const realDescSignals = [
+    "politician", "president", "prime minister", "minister", "senator", "governor",
+    "singer", "musician", "rapper", "actor", "actress", "athlete", "boxer", "wrestler",
+    "businessman", "businesswoman", "entrepreneur", "ceo", "scientist", "academic",
+    "journalist", "author", "writer", "director", "producer", "footballer",
+    "basketball player", "baseball player", "tennis player", "racing driver",
+    "youtuber", "streamer", "comedian", "philosopher", "physicist", "chemist",
+  ];
+  for (const sig of realDescSignals) {
+    if (desc.includes(sig)) return true;
+  }
+
+  if (/\b\d{4}\b/.test(desc) || /born\s+\d{4}/.test(summary)) return true;
+
+  const realSummarySignals = [
+    "is a politician", "was a politician", "is a singer", "was a singer",
+    "is a former", "was a former", "served as", "is the prime minister",
+    "is the president of", "won the nobel", "is a japanese", "is an american",
+  ];
+  for (const sig of realSummarySignals) {
+    if (summary.includes(sig)) return true;
+  }
+
+  return false;
+}
+
+// Check if a Wikipedia title is essentially the same as user's query (ignoring case/punctuation)
+function isExactMatch(userQuery, wikiTitle) {
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return norm(userQuery) === norm(wikiTitle);
+}
+
+async function fetchFromWikipedia(query, biasFictional = false) {
+  // Try the direct lookup first. If Wikipedia returns a page with the EXACT
+  // same title as what the user typed, TRUST IT — even if it's a real person.
+  // (Mike Tyson → returns "Mike Tyson" page → trust it as real Mike Tyson)
+  const direct = await getWikipediaImageDetails(query);
+  if (direct && isExactMatch(query, direct.title)) {
+    return direct.url;
+  }
+
+  // If we got a direct result but the title doesn't match what we asked (e.g.
+  // "Yasuo" redirected to "Yasuo Fukuda"), only accept if not flagged as real person
+  // when biasing fictional. Otherwise accept it.
+  if (direct && !biasFictional) {
+    return direct.url;
+  }
+  if (direct && biasFictional && !looksLikeRealPerson(direct)) {
+    return direct.url;
+  }
+
+  // No good direct hit. Search with fictional bias.
+  if (biasFictional) {
+    const searchQueries = [
+      `${query} (character)`,
+      `${query} fictional character`,
+      `${query} video game character`,
+      `${query} anime character`,
+      `${query} character`,
+    ];
+
+    for (const sq of searchQueries) {
+      try {
+        const searchRes = await fetch(
+          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(sq)}&format=json&origin=*&srlimit=5`
+        );
+        if (!searchRes.ok) continue;
+        const searchData = await searchRes.json();
+        const results = searchData.query?.search || [];
+        for (const item of results) {
+          const details = await getWikipediaImageDetails(item.title);
+          if (!details) continue;
+          if (looksLikeRealPerson(details)) continue;
+          return details.url;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  // No fictional bias — accept whatever search returns
   try {
-    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " character")}&format=json&origin=*&srlimit=1`);
+    const searchRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " character")}&format=json&origin=*&srlimit=3`
+    );
     if (searchRes.ok) {
       const searchData = await searchRes.json();
       const firstTitle = searchData.query?.search?.[0]?.title;
       if (firstTitle) {
-        const pageRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstTitle)}`);
-        if (pageRes.ok) {
-          const pageData = await pageRes.json();
-          if (pageData.thumbnail?.source) return pageData.thumbnail.source;
-        }
+        const d = await getWikipediaImageDetails(firstTitle);
+        if (d) return d.url;
       }
     }
   } catch (e) {}
+
   return null;
 }
 
@@ -167,12 +276,11 @@ async function fetchCharacterImage(name, universe) {
         if (url) return url;
       }
     }
-    // Fall back to Wikipedia using universe as disambiguator
-    const wikiPedia = await fetchFromWikipedia(`${cleanName} ${universe}`);
+    const wikiPedia = await fetchFromWikipedia(`${cleanName} ${universe}`, false);
     if (wikiPedia) return wikiPedia;
   }
 
-  return await fetchFromWikipedia(cleanName);
+  return await fetchFromWikipedia(cleanName, true);
 }
 
 function useCharacterImage(name, universe, override) {
@@ -186,28 +294,24 @@ function useCharacterImage(name, universe, override) {
       setLoading(false);
       return;
     }
-
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!name || name.trim().length < 2) {
       setImageUrl(null);
       setLoading(false);
       return;
     }
-
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       const url = await fetchCharacterImage(name, universe);
       setImageUrl(url);
       setLoading(false);
     }, 700);
-
     return () => clearTimeout(timerRef.current);
   }, [name, universe, override]);
 
   return { imageUrl, loading };
 }
 
-// === IMAGE OVERRIDE COMPONENT ===
 function ImageOverride({ onSet, hasOverride, onClear }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -225,10 +329,7 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
   function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image too large. Max 5MB.");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { alert("Image too large. Max 5MB."); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       onSet(ev.target.result);
@@ -261,13 +362,7 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
           <button className="override-option" onClick={() => setMode("url")}>Paste URL</button>
           <button className="override-option" onClick={() => fileInputRef.current?.click()}>Upload file</button>
           <button className="override-cancel" onClick={() => setOpen(false)}>Cancel</button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            onChange={handleFile}
-            style={{ display: "none" }}
-          />
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleFile} style={{ display: "none" }} />
         </>
       )}
       {mode === "url" && (
@@ -287,6 +382,29 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
         </>
       )}
     </div>
+  );
+}
+
+function AutoTextarea({ value, onChange, onKeyDown, placeholder, maxLength }) {
+  const textareaRef = useRef(null);
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [value]);
+  return (
+    <textarea
+      ref={textareaRef}
+      className="claim-input"
+      value={value}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      rows={1}
+    />
   );
 }
 
@@ -323,7 +441,10 @@ export default function BattleArena() {
     else setClaims2(claims2.filter((_, i) => i !== index));
   }
   function handleClaimKey(e, side) {
-    if (e.key === "Enter") { e.preventDefault(); addClaim(side); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addClaim(side);
+    }
   }
 
   async function simulate() {
@@ -424,11 +545,7 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
           <div className="fighter-slot">
             <div className="fighter-label">Fighter One</div>
             {renderAvatar(1)}
-            <ImageOverride
-              onSet={setOverride1}
-              hasOverride={!!override1}
-              onClear={() => setOverride1(null)}
-            />
+            <ImageOverride onSet={setOverride1} hasOverride={!!override1} onClear={() => setOverride1(null)} />
             <input className="fighter-name-input" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
             <input className="universe-input" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
 
@@ -443,8 +560,7 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
                 ))}
               </div>
               <div className="claim-input-wrap">
-                <input
-                  className="claim-input"
+                <AutoTextarea
                   value={draft1}
                   onChange={e => setDraft1(e.target.value.slice(0, CLAIM_LIMIT))}
                   onKeyDown={e => handleClaimKey(e, 1)}
@@ -466,11 +582,7 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
           <div className="fighter-slot right">
             <div className="fighter-label">Fighter Two</div>
             {renderAvatar(2)}
-            <ImageOverride
-              onSet={setOverride2}
-              hasOverride={!!override2}
-              onClear={() => setOverride2(null)}
-            />
+            <ImageOverride onSet={setOverride2} hasOverride={!!override2} onClear={() => setOverride2(null)} />
             <input className="fighter-name-input" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
             <input className="universe-input" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
 
@@ -485,8 +597,7 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
                 ))}
               </div>
               <div className="claim-input-wrap">
-                <input
-                  className="claim-input"
+                <AutoTextarea
                   value={draft2}
                   onChange={e => setDraft2(e.target.value.slice(0, CLAIM_LIMIT))}
                   onKeyDown={e => handleClaimKey(e, 2)}

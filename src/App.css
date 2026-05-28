@@ -808,3 +808,260 @@ body::before {
   display: flex;
   gap: 0.4rem;
 }
+
+
+/* === AUTO-EXPANDING CLAIM TEXTAREA === */
+textarea.claim-input {
+  resize: none;
+  min-height: 38px;
+  max-height: 160px;
+  overflow-y: auto;
+  line-height: 1.45;
+  font-family: 'Inter', sans-serif;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+
+/* === ABOUT PAGE === */
+.about-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  position: relative;
+}
+
+.about-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 5rem 2rem 6rem;
+  position: relative;
+  z-index: 1;
+}
+
+.about-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-top: 0.5px solid var(--gold);
+  border-bottom: 0.5px solid var(--gold);
+  padding: 0.4rem 1.2rem;
+  margin-bottom: 2rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+}
+
+.about-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: clamp(2.8rem, 7vw, 4.5rem);
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  margin-bottom: 3rem;
+  color: var(--ink);
+}
+
+.about-section {
+  margin-bottom: 2.5rem;
+}
+
+.about-subtitle {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+.about-lead {
+  font-size: 1.15rem;
+  line-height: 1.75;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+  font-weight: 400;
+}
+
+.about-section p {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  margin-bottom: 1.2rem;
+  font-weight: 300;
+}
+
+.about-section p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.about-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line-strong), transparent);
+  margin: 3rem 0;
+}
+
+.about-footer-cta {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.about-quiet {
+  color: var(--muted) !important;
+  font-style: italic;
+  margin-bottom: 1.75rem !important;
+}
+
+.about-cta-btn {
+  display: inline-block;
+}
+
+
+/* === FOOTER DISCORD BUTTON (matches link styling) === */
+.footer-social-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(245,242,236,0.65);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+  text-align: left;
+}
+
+.footer-social-btn:hover { color: var(--bg); }
+
+/* === FOOTER (complete) === */
+.site-footer {
+  background: var(--ink);
+  color: var(--bg);
+  margin-top: 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3.5rem 2rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  max-width: 280px;
+}
+
+.footer-logo {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1.3rem;
+  letter-spacing: 0.2em;
+  color: var(--bg);
+  margin-bottom: 0.75rem;
+}
+.footer-logo span { color: var(--gold-bright); }
+
+.footer-tagline {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(245,242,236,0.5);
+  font-weight: 300;
+}
+
+.footer-links {
+  display: flex;
+  gap: 3.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.footer-col-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: 0.3rem;
+}
+
+.footer-col a {
+  color: rgba(245,242,236,0.65);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-col a:hover { color: var(--bg); }
+
+.footer-social svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* Discord button styled like a link */
+.footer-social-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(245,242,236,0.65);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+  text-align: left;
+}
+
+.footer-social-btn:hover { color: var(--bg); }
+
+.footer-bottom {
+  border-top: 1px solid rgba(245,242,236,0.1);
+  padding: 1.5rem 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.footer-bottom span {
+  font-size: 0.75rem;
+  color: rgba(245,242,236,0.4);
+  letter-spacing: 0.05em;
+}
+
+.footer-fineprint {
+  font-style: italic;
+}
+
+/* === FOOTER EMAIL DISPLAY === */
+.footer-email-display {
+  font-size: 0.78rem;
+  color: rgba(245,242,236,0.4);
+  letter-spacing: 0.03em;
+  user-select: all;
+  margin-top: 0.1rem;
+}

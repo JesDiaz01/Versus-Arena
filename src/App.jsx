@@ -1,13 +1,25 @@
 import { useState } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena from "./BattleArena";
+import About from "./About";
+import Footer from "./Footer";
 import "./App.css";
 
 export default function App() {
   const [entered, setEntered] = useState(false);
+  const [page, setPage] = useState("home");
 
   if (!entered) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
+  }
+
+  if (page === "about") {
+    return (
+      <>
+        <About onBack={() => setPage("home")} />
+        <Footer onAbout={() => setPage("about")} />
+      </>
+    );
   }
 
   return (
@@ -18,7 +30,7 @@ export default function App() {
           <li><a href="#">Battles</a></li>
           <li><a href="#">Leaderboard</a></li>
           <li><a href="#">Categories</a></li>
-          <li><a href="#">About</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
           <li><a href="#" className="nav-cta">Sign Up Free</a></li>
         </ul>
       </nav>
@@ -35,9 +47,11 @@ export default function App() {
       <BattleArena />
 
       <div className="stats-strip">
-        <div className="stat-item"><span className="stat-num">99.1%</span><span className="stat-label">Sourced Verdicts</span></div>
+        <div className="stat-item"><span className="stat-num">99.9%</span><span className="stat-label">Sourced Verdicts</span></div>
         <div className="stat-item"><span className="stat-num">100%</span><span className="stat-label">Unbiased</span></div>
       </div>
+
+      <Footer onAbout={() => setPage("about")} />
     </div>
   );
 }
