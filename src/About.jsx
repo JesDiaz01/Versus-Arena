@@ -70,7 +70,7 @@ export default function About({ onBack }) {
         <div className="about-section about-footer-cta">
           <p className="about-quiet">
             Found a bug? Have a character that won't load? Have ideas for new features?
-            I'm listening.
+            We're listening.
           </p>
           <button className="fight-btn about-cta-btn" onClick={onBack}>
             Enter the Arena

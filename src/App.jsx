@@ -2,6 +2,8 @@ import { useState } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena from "./BattleArena";
 import About from "./About";
+import Tools from "./Tools";
+import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
 import "./App.css";
 
@@ -22,13 +24,32 @@ export default function App() {
     );
   }
 
+  if (page === "tools") {
+    return (
+      <>
+        <Tools onBack={() => setPage("home")} />
+        <Footer onAbout={() => setPage("about")} />
+      </>
+    );
+  }
+
+  if (page === "leaderboard") {
+    return (
+      <>
+        <Leaderboard onBack={() => setPage("home")} />
+        <Footer onAbout={() => setPage("about")} />
+      </>
+    );
+  }
+
   return (
     <div className="page">
       <nav className="navbar">
         <a className="logo" href="#">VERSUS<span> ARENA</span></a>
         <ul className="nav-links">
           <li><a href="#">Battles</a></li>
-          <li><a href="#">Leaderboard</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("leaderboard"); }}>Leaderboard</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
           <li><a href="#">Categories</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
           <li><a href="#" className="nav-cta">Sign Up Free</a></li>

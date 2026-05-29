@@ -3,7 +3,7 @@ import { useState } from "react";
 export default function Footer({ onAbout }) {
   // ⬇️ Your real links/handles
   const INSTAGRAM_URL = "https://www.instagram.com/jes_diaz01/";
-  const DISCORD_URL = "https://discord.gg/NeRpGSBne";
+  const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
   const CONTACT_EMAIL = "versusarenahq@gmail.com";
 
   const [copiedEmail, setCopiedEmail] = useState(false);
