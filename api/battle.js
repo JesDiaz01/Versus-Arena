@@ -10,8 +10,85 @@
 
 const MODEL = "claude-haiku-4-5-20251001";
 
+// ---- Limits (cost + abuse protection) ----
+const RL_PER_MIN = 5;        // max battles per minute per visitor
+const RL_PER_HOUR = 30;      // max battles per hour per visitor
+const MAX_NAME_LEN = 80;     // fighter name / universe cap
+const MAX_CLAIM_LEN = 200;   // per custom-feat cap
+const MAX_CLAIMS = 20;       // max custom feats per side
+const MAX_BODY_BYTES = 20000; // reject payloads bigger than ~20KB
+
+// Allowlists for the dropdown settings — anything else falls back to the default (first item).
+const ALLOWED = {
+  battleType: ["Standard Fight", "In-Character", "Out of Character", "Battle of Wits", "Speed Blitz"],
+  location: ["Neutral Terrain", "Urban City", "Space", "Their Home Universe", "Random"],
+  power: ["Canon Only", "Composite", "Post-Series Peak", "Current"],
+  depth: ["Quick Verdict", "Detailed Analysis", "Deep Dive"],
+};
+
+// ---- Best-effort in-memory rate limiter ----
+// NOTE: Vercel serverless instances are ephemeral and not shared, so this catches
+// rapid-fire abuse hitting a warm instance but is not bulletproof across all instances.
+// The real backstop is the prepaid spending cap on the Anthropic account.
+// For bulletproof limits, upgrade to Upstash Redis later.
+const hits = new Map(); // ip -> number[] (timestamps, ms)
+
+function getClientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.length) return xff.split(",")[0].trim();
+  if (Array.isArray(xff) && xff.length) return String(xff[0]).trim();
+  return req.headers["x-real-ip"] || "unknown";
+}
+
+function rateLimited(ip) {
+  const now = Date.now();
+  const minAgo = now - 60 * 1000;
+  const hourAgo = now - 60 * 60 * 1000;
+
+  let arr = hits.get(ip) || [];
+  arr = arr.filter(t => t > hourAgo); // prune anything older than an hour
+
+  const inLastMin = arr.filter(t => t > minAgo).length;
+  if (inLastMin >= RL_PER_MIN) { hits.set(ip, arr); return { limited: true, scope: "minute" }; }
+  if (arr.length >= RL_PER_HOUR) { hits.set(ip, arr); return { limited: true, scope: "hour" }; }
+
+  arr.push(now);
+  hits.set(ip, arr);
+
+  // Light memory cleanup so the Map can't grow forever on a long-lived instance.
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) {
+      const fresh = v.filter(t => t > hourAgo);
+      if (fresh.length === 0) hits.delete(k);
+      else hits.set(k, fresh);
+    }
+  }
+  return { limited: false };
+}
+
+// ---- Input sanitizing ----
+function cleanStr(v, maxLen) {
+  if (typeof v !== "string") {
+    if (v == null) return "";
+    v = String(v);
+  }
+  // strip control chars, collapse, trim, cap length
+  return v.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, maxLen);
+}
+
+function cleanClaims(v) {
+  if (!Array.isArray(v)) return [];
+  return v
+    .slice(0, MAX_CLAIMS)
+    .map(c => cleanStr(c, MAX_CLAIM_LEN))
+    .filter(c => c.length > 0);
+}
+
+function pickAllowed(v, list) {
+  return list.includes(v) ? v : list[0];
+}
+
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -21,12 +98,38 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Server not configured. Missing API key." });
   }
 
+  // --- Rate limit ---
+  const ip = getClientIp(req);
+  const rl = rateLimited(ip);
+  if (rl.limited) {
+    res.setHeader("Retry-After", rl.scope === "minute" ? "60" : "3600");
+    return res.status(429).json({
+      error: rl.scope === "minute"
+        ? "You're running battles too fast. Wait a few seconds and try again."
+        : "You've hit the hourly battle limit. Take a break and come back soon.",
+    });
+  }
+
   try {
-    const {
-      f1, f2, u1, u2,
-      battleType, location, power, depth,
-      claims1 = [], claims2 = [],
-    } = req.body || {};
+    // --- Reject oversized payloads ---
+    const raw = JSON.stringify(req.body || {});
+    if (raw.length > MAX_BODY_BYTES) {
+      return res.status(413).json({ error: "Request too large." });
+    }
+
+    const body = req.body || {};
+
+    // --- Sanitize every field ---
+    const f1 = cleanStr(body.f1, MAX_NAME_LEN);
+    const f2 = cleanStr(body.f2, MAX_NAME_LEN);
+    const u1 = cleanStr(body.u1, MAX_NAME_LEN);
+    const u2 = cleanStr(body.u2, MAX_NAME_LEN);
+    const battleType = pickAllowed(body.battleType, ALLOWED.battleType);
+    const location = pickAllowed(body.location, ALLOWED.location);
+    const power = pickAllowed(body.power, ALLOWED.power);
+    const depth = pickAllowed(body.depth, ALLOWED.depth);
+    const claims1 = cleanClaims(body.claims1);
+    const claims2 = cleanClaims(body.claims2);
 
     if (!f1 || !f2) {
       return res.status(400).json({ error: "Both fighter names are required." });
@@ -47,10 +150,10 @@ Analyze this 1v1 fight:
 
 Fighter 1: ${f1} (${u1 || "unknown universe"})
 Fighter 2: ${f2} (${u2 || "unknown universe"})
-Battle Type: ${battleType || "Standard Fight"}
-Location: ${location || "Neutral Terrain"}
-Power Level: ${power || "Canon Only"}
-Depth: ${depth || "Quick Verdict"}
+Battle Type: ${battleType}
+Location: ${location}
+Power Level: ${power}
+Depth: ${depth}
 ${claimsBlock1}
 ${claimsBlock2}
 
