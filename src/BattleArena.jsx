@@ -562,18 +562,43 @@ export default function BattleArena() {
     if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
     setError(""); setLoading(true); setResult(null);
 
-    // ===== DEMO / MOCK VERDICT (no API, no cost) =====
-    // Generates a plausible-looking verdict locally so the full battle flow works
-    // end to end. The winner is illustrative only — NOT real analysis.
-    // When the real AI backend is ready, replace this block with a fetch to /api/battle.
-    await new Promise(r => setTimeout(r, 1400)); // simulate "analyzing" time
+    // ===== REAL VERDICT (calls your Vercel backend at /api/battle) =====
+    // The backend holds the API key securely and calls Anthropic for you.
+    try {
+      const res = await fetch("/api/battle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          f1: f1.trim(), f2: f2.trim(), u1, u2,
+          battleType, location, power, depth, claims1, claims2,
+        }),
+      });
 
-    const mock = generateMockVerdict({
-      f1: f1.trim(), f2: f2.trim(), u1, u2,
-      battleType, location, power, depth, claims1, claims2,
-    });
-    setResult(mock);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Something went wrong. Try again in a moment.");
+        setLoading(false);
+        return;
+      }
+
+      const verdict = await res.json();
+      setResult(verdict);
+    } catch (e) {
+      setError("Couldn't reach the analyst. Check your connection and try again.");
+    }
     setLoading(false);
+
+    // ===== DEMO / MOCK FALLBACK (no API, no cost) =====
+    // To go back to free local testing, comment out the try/catch above and
+    // uncomment this block instead:
+    //
+    // await new Promise(r => setTimeout(r, 1400));
+    // const mock = generateMockVerdict({
+    //   f1: f1.trim(), f2: f2.trim(), u1, u2,
+    //   battleType, location, power, depth, claims1, claims2,
+    // });
+    // setResult(mock);
+    // setLoading(false);
   }
 
   function reset() {
