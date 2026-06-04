@@ -1840,3 +1840,625 @@ textarea.claim-input {
   font-weight: 300;
 }
 .scaler-warning strong { color: #c0392b; font-weight: 700; }
+
+/* === IMAGE FEAT SCALER === */
+.scaler-card {
+  margin-top: 1.5rem;
+}
+
+.scaler-steps {
+  margin: 0 0 1.5rem;
+  padding-left: 1.2rem;
+  counter-reset: step;
+  list-style: none;
+}
+.scaler-steps li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+  padding-left: 1.8rem;
+  font-weight: 300;
+}
+.scaler-steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  background: var(--gold);
+  color: #fff;
+  border-radius: 50%;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scaler-steps li strong { color: var(--ink); }
+
+/* Dropzone */
+.scaler-dropzone {
+  border: 2px dashed var(--line-strong);
+  border-radius: 6px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--surface-2);
+}
+.scaler-dropzone:hover {
+  border-color: var(--gold);
+  background: rgba(184,134,11,0.04);
+}
+.dropzone-icon {
+  font-size: 2rem;
+  color: var(--gold);
+  margin-bottom: 0.6rem;
+}
+.dropzone-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.dropzone-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Toolbar */
+.scaler-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.scaler-mode-group { display: flex; gap: 0; }
+.scaler-mode-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  padding: 0.6rem 1.1rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scaler-mode-btn:first-child { border-radius: 3px 0 0 3px; }
+.scaler-mode-btn:last-child { border-radius: 0 3px 3px 0; border-left: none; }
+.scaler-mode-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.scaler-actions { display: flex; gap: 0.5rem; }
+.scaler-btn {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  padding: 0.6rem 1rem;
+  border-radius: 3px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scaler-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+.scaler-hint-bar {
+  font-size: 0.8rem;
+  color: var(--gold);
+  background: rgba(184,134,11,0.06);
+  border-left: 3px solid var(--gold);
+  padding: 0.6rem 0.9rem;
+  border-radius: 2px;
+  margin-bottom: 0.9rem;
+  font-style: italic;
+}
+
+/* Canvas */
+.scaler-canvas-wrap {
+  width: 100%;
+  overflow: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+.scaler-canvas {
+  max-width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 3px;
+  display: block;
+}
+
+/* Reference row */
+.scaler-ref-row {
+  margin-bottom: 1rem;
+}
+.scaler-scale-status {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 0.5rem;
+  font-weight: 300;
+}
+
+/* Measurement chips */
+.measure-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.measure-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
+}
+.chip-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #39d353;
+  font-size: 0.8rem;
+  min-width: 2rem;
+}
+.chip-value {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.9rem;
+  flex: 1;
+}
+.chip-assign { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.chip-assign button {
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 2px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.chip-assign button:hover { background: var(--gold); }
+
+/* Energy section */
+.scaler-energy {
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+.scaler-energy-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 1.2rem;
+}
+.scaler-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.calc-unit-full { width: 100%; min-width: 0; }
+
+/* Delete (×) button on each measurement chip */
+.chip-delete {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.chip-delete:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+/* Same-distance perspective warning */
+.scaler-warning {
+  background: rgba(192,57,43,0.06);
+  border-left: 3px solid #c0392b;
+  padding: 0.85rem 1rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  font-weight: 300;
+}
+.scaler-warning strong { color: #c0392b; font-weight: 700; }
+
+/* Note under "Scale to Energy" explaining measure-or-type */
+.scaler-energy-note {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: -0.5rem 0 1.3rem;
+  font-weight: 300;
+}
+.scaler-energy-note strong { color: var(--ink-soft); font-weight: 600; }
+
+/* === IMAGE FEAT SCALER === */
+.scaler-card {
+  margin-top: 1.5rem;
+}
+
+.scaler-steps {
+  margin: 0 0 1.5rem;
+  padding-left: 1.2rem;
+  counter-reset: step;
+  list-style: none;
+}
+.scaler-steps li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+  padding-left: 1.8rem;
+  font-weight: 300;
+}
+.scaler-steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  background: var(--gold);
+  color: #fff;
+  border-radius: 50%;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scaler-steps li strong { color: var(--ink); }
+
+/* Dropzone */
+.scaler-dropzone {
+  border: 2px dashed var(--line-strong);
+  border-radius: 6px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--surface-2);
+}
+.scaler-dropzone:hover {
+  border-color: var(--gold);
+  background: rgba(184,134,11,0.04);
+}
+.dropzone-icon {
+  font-size: 2rem;
+  color: var(--gold);
+  margin-bottom: 0.6rem;
+}
+.dropzone-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.dropzone-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Toolbar */
+.scaler-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.scaler-mode-group { display: flex; gap: 0; }
+.scaler-mode-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  padding: 0.6rem 1.1rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scaler-mode-btn:first-child { border-radius: 3px 0 0 3px; }
+.scaler-mode-btn:last-child { border-radius: 0 3px 3px 0; border-left: none; }
+.scaler-mode-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.scaler-actions { display: flex; gap: 0.5rem; }
+.scaler-btn {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  padding: 0.6rem 1rem;
+  border-radius: 3px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scaler-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+.scaler-hint-bar {
+  font-size: 0.8rem;
+  color: var(--gold);
+  background: rgba(184,134,11,0.06);
+  border-left: 3px solid var(--gold);
+  padding: 0.6rem 0.9rem;
+  border-radius: 2px;
+  margin-bottom: 0.9rem;
+  font-style: italic;
+}
+
+/* Canvas */
+.scaler-canvas-wrap {
+  width: 100%;
+  overflow: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+.scaler-canvas {
+  max-width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 3px;
+  display: block;
+}
+
+/* Reference row */
+.scaler-ref-row {
+  margin-bottom: 1rem;
+}
+.scaler-scale-status {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 0.5rem;
+  font-weight: 300;
+}
+
+/* Measurement chips */
+.measure-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.measure-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
+}
+.chip-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #39d353;
+  font-size: 0.8rem;
+  min-width: 2rem;
+}
+.chip-value {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.9rem;
+  flex: 1;
+}
+.chip-assign { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.chip-assign button {
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 2px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.chip-assign button:hover { background: var(--gold); }
+
+/* Energy section */
+.scaler-energy {
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+.scaler-energy-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 1.2rem;
+}
+.scaler-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.calc-unit-full { width: 100%; min-width: 0; }
+
+/* Delete (×) button on each measurement chip */
+.chip-delete {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.chip-delete:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+/* Same-distance perspective warning */
+.scaler-warning {
+  background: rgba(192,57,43,0.06);
+  border-left: 3px solid #c0392b;
+  padding: 0.85rem 1rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  font-weight: 300;
+}
+.scaler-warning strong { color: #c0392b; font-weight: 700; }
+
+/* Note under "Scale to Energy" explaining measure-or-type */
+.scaler-energy-note {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: -0.5rem 0 1.3rem;
+  font-weight: 300;
+}
+.scaler-energy-note strong { color: var(--ink-soft); font-weight: 600; }
+
+/* Measurement chip — two-row layout with manual override */
+.measure-chip { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+.chip-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.chip-manual-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: #fff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.chip-override {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+}
+.chip-override-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.chip-override-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 0.4rem 0.6rem;
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  min-width: 0;
+}
+.chip-override-input:focus { border-color: var(--gold); }
+.chip-override-clear {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.chip-override-clear:hover { border-color: var(--gold); color: var(--gold); }
+
+/* === DEMO VERDICT BANNER (remove when real AI is connected) === */
+.demo-banner {
+  background: rgba(184,134,11,0.1);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.demo-banner strong { color: var(--gold); }

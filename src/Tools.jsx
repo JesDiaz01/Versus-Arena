@@ -460,7 +460,98 @@ function ReactionTime() {
 }
 
 /* ============================================================
-   6. IMAGE FEAT SCALER  (the big interactive one)
+   6. DURABILITY (TANKING)
+   ============================================================ */
+function Durability() {
+  const [val, setVal] = useState("");
+  const [unit, setUnit] = useState("J");
+  const [copied, setCopied] = useState(false);
+
+  function toJoules(v, u) {
+    const n = parseFloat(v);
+    if (isNaN(n)) return null;
+    switch (u) {
+      case "J": return n;
+      case "kJ": return n * 1e3;
+      case "MJ": return n * 1e6;
+      case "GJ": return n * 1e9;
+      case "tons_tnt": return n * 4.184e9;
+      case "kt_tnt": return n * 4.184e12;
+      case "mt_tnt": return n * 4.184e15;
+      default: return n;
+    }
+  }
+
+  const joules = toJoules(val, unit);
+  function tierOf(j) {
+    if (j == null) return "";
+    if (j < 1e3) return "Below Wall level";
+    if (j < 1e6) return "Wall level";
+    if (j < 1e9) return "Building level";
+    if (j < 1e12) return "City Block level";
+    if (j < 1e16) return "City level";
+    if (j < 1e20) return "Island level";
+    if (j < 1e24) return "Country level";
+    if (j < 1e28) return "Continent level";
+    if (j < 1e32) return "Moon level";
+    if (j < 1e44) return "Planet level";
+    if (j < 1e48) return "Star level";
+    return "Solar System level or beyond";
+  }
+  function fmtJ(j) {
+    if (j == null) return "—";
+    if (j < 1000) return `${j.toFixed(1)} J`;
+    if (j < 1e6) return `${(j / 1000).toFixed(2)} kJ`;
+    if (j < 1e9) return `${(j / 1e6).toFixed(2)} MJ`;
+    if (j < 1e12) return `${(j / 1e9).toFixed(2)} GJ`;
+    return `${j.toExponential(2)} J`;
+  }
+
+  const tier = joules != null ? tierOf(joules) : "";
+  const featText = joules != null
+    ? `Survived/tanked an attack of ${fmtJ(joules)} — a durability feat at ${tier}. (Assumes the character took the hit and kept fighting; survival of the full energy is what's being scaled.)`
+    : "";
+  function copyFeat() {
+    if (!featText) return;
+    navigator.clipboard.writeText(featText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  }
+
+  return (
+    <div className="calc-card">
+      <h3 className="calc-title">Durability</h3>
+      <p className="calc-desc">"Tanked an X-level attack and kept going." Turn an attack a character survived into a durability tier.</p>
+      <div className="calc-row">
+        <label className="calc-label">Energy Survived</label>
+        <div className="calc-input-group">
+          <input className="calc-input" type="number" value={val} onChange={e => setVal(e.target.value)} placeholder="0" />
+          <select className="calc-unit" value={unit} onChange={e => setUnit(e.target.value)}>
+            <option value="J">J</option>
+            <option value="kJ">kJ</option>
+            <option value="MJ">MJ</option>
+            <option value="GJ">GJ</option>
+            <option value="tons_tnt">tons TNT</option>
+            <option value="kt_tnt">kilotons TNT</option>
+            <option value="mt_tnt">megatons TNT</option>
+          </select>
+        </div>
+      </div>
+      {joules != null && (
+        <div className="calc-result">
+          <div className="calc-result-main">{tier}</div>
+          <div className="calc-result-sub">Withstood ≈ {fmtJ(joules)}</div>
+          <div className="calc-disclaimer">
+            Durability scaling assumes the character took the full hit and survived. It doesn't
+            account for dodging, blocking, intangibility, or regeneration — those are separate from raw toughness.
+          </div>
+          <button className="calc-copy-btn" onClick={copyFeat}>{copied ? "Copied!" : "Copy as feat"}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   7. IMAGE FEAT SCALER  (the big interactive one)
    ============================================================ */
 const DESTRUCTION = [
   { label: "Fragmentation", jcc: 8, jm3: 8e6, hint: "cracked / broken apart" },
@@ -529,6 +620,7 @@ function ImageFeatScaler() {
   const [referenceLength, setReferenceLength] = useState("");
   const [refUnit, setRefUnit] = useState("m");
   const [measureLines, setMeasureLines] = useState([]);
+  const [overrides, setOverrides] = useState({}); // { [index]: "meters string" } — manual distance override
 
   // live drawing state
   const [drawing, setDrawing] = useState(false);
@@ -629,6 +721,7 @@ function ImageFeatScaler() {
       // reset everything for the new image
       setReferenceLine(null);
       setMeasureLines([]);
+      setOverrides({});
       setReferenceLength("");
       setMode("reference");
       setDimD(""); setDimH(""); setDimP("");
@@ -642,6 +735,7 @@ function ImageFeatScaler() {
     imgRef.current = null;
     setReferenceLine(null);
     setMeasureLines([]);
+    setOverrides({});
     setReferenceLength("");
     setMode("reference");
     setDimD(""); setDimH(""); setDimP("");
@@ -650,7 +744,9 @@ function ImageFeatScaler() {
   function undoLast() {
     // Undo the most recent thing: a measurement first (if any), otherwise the reference line.
     if (measureLines.length > 0) {
+      const lastIdx = measureLines.length - 1;
       setMeasureLines(prev => prev.slice(0, -1));
+      setOverrides(prev => { const n = { ...prev }; delete n[lastIdx]; return n; });
     } else if (referenceLine) {
       setReferenceLine(null);
     }
@@ -658,6 +754,26 @@ function ImageFeatScaler() {
 
   function deleteMeasurement(index) {
     setMeasureLines(prev => prev.filter((_, i) => i !== index));
+    // Reindex overrides so they stay attached to the right lines after removal.
+    setOverrides(prev => {
+      const next = {};
+      Object.keys(prev).forEach(k => {
+        const ki = Number(k);
+        if (ki < index) next[ki] = prev[k];
+        else if (ki > index) next[ki - 1] = prev[k];
+        // ki === index is dropped
+      });
+      return next;
+    });
+  }
+
+  function setOverride(index, value) {
+    setOverrides(prev => {
+      const next = { ...prev };
+      if (value === "" || value == null) delete next[index];
+      else next[index] = value;
+      return next;
+    });
   }
 
   // Ctrl+Z / Cmd+Z to undo the last drawn line (only while an image is loaded)
@@ -670,7 +786,9 @@ function ImageFeatScaler() {
         if (tag === "input" || tag === "textarea" || e.target.isContentEditable) return;
         e.preventDefault();
         if (measureLines.length > 0) {
+          const lastIdx = measureLines.length - 1;
           setMeasureLines(prev => prev.slice(0, -1));
+          setOverrides(prev => { const n = { ...prev }; delete n[lastIdx]; return n; });
         } else if (referenceLine) {
           setReferenceLine(null);
         }
@@ -687,7 +805,10 @@ function ImageFeatScaler() {
     : null;
   const metersPerPixel = (refLenM && refPx) ? refLenM / refPx : null;
 
-  const measurements = measureLines.map((ln) => {
+  const measurements = measureLines.map((ln, i) => {
+    // A manual override (in meters) always wins over the pixel-derived value.
+    const ov = parseFloat(overrides[i]);
+    if (!isNaN(ov)) return ov;
     const px = Math.hypot(ln.x2 - ln.x1, ln.y2 - ln.y1);
     return metersPerPixel ? px * metersPerPixel : null;
   });
@@ -832,34 +953,61 @@ function ImageFeatScaler() {
 
           {measureLines.length > 0 && (
             <div className="measure-chips">
-              {measureLines.map((ln, i) => (
-                <div key={i} className="measure-chip">
-                  <span className="chip-name">M{i + 1}</span>
-                  <span className="chip-value">{measurements[i] != null ? fmtLen(measurements[i]) : "set reference first"}</span>
-                  {metersPerPixel && (
-                    <span className="chip-assign">
-                      {shape.needs.includes("D") &&
-                        <button onClick={() => setDimD(String(Math.round(measurements[i] * 100) / 100))}>→ Diameter</button>}
-                      {shape.needs.includes("H") &&
-                        <button onClick={() => setDimH(String(Math.round(measurements[i] * 100) / 100))}>→ Height</button>}
-                      {shape.needs.includes("P") &&
-                        <button onClick={() => setDimP(String(Math.round(measurements[i] * 100) / 100))}>→ Depth</button>}
-                    </span>
-                  )}
-                  <button
-                    className="chip-delete"
-                    onClick={() => deleteMeasurement(i)}
-                    aria-label={`Delete measurement ${i + 1}`}
-                    title="Delete this measurement"
-                  >×</button>
-                </div>
-              ))}
+              {measureLines.map((ln, i) => {
+                const hasValue = measurements[i] != null;
+                const isOverridden = !isNaN(parseFloat(overrides[i]));
+                return (
+                  <div key={i} className="measure-chip">
+                    <div className="chip-top">
+                      <span className="chip-name">M{i + 1}</span>
+                      <span className="chip-value">
+                        {hasValue ? fmtLen(measurements[i]) : "set reference or type a value"}
+                        {isOverridden && <span className="chip-manual-tag">manual</span>}
+                      </span>
+                      {hasValue && (
+                        <span className="chip-assign">
+                          {shape.needs.includes("D") &&
+                            <button onClick={() => setDimD(String(Math.round(measurements[i] * 100) / 100))}>→ Diameter</button>}
+                          {shape.needs.includes("H") &&
+                            <button onClick={() => setDimH(String(Math.round(measurements[i] * 100) / 100))}>→ Height</button>}
+                          {shape.needs.includes("P") &&
+                            <button onClick={() => setDimP(String(Math.round(measurements[i] * 100) / 100))}>→ Depth</button>}
+                        </span>
+                      )}
+                      <button
+                        className="chip-delete"
+                        onClick={() => deleteMeasurement(i)}
+                        aria-label={`Delete measurement ${i + 1}`}
+                        title="Delete this measurement"
+                      >×</button>
+                    </div>
+                    <div className="chip-override">
+                      <span className="chip-override-label">Override (m):</span>
+                      <input
+                        className="chip-override-input"
+                        type="number"
+                        value={overrides[i] || ""}
+                        onChange={e => setOverride(i, e.target.value)}
+                        placeholder={metersPerPixel ? "use measured" : "type real meters"}
+                      />
+                      {isOverridden && (
+                        <button className="chip-override-clear" onClick={() => setOverride(i, "")} title="Clear override, use measured value">↺</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
           {/* energy section */}
           <div className="scaler-energy">
             <div className="scaler-energy-title">Scale to Energy</div>
+            <p className="scaler-energy-note">
+              Fill these in by measuring on the image above (use the <strong>→ Diameter / → Height / → Depth</strong>
+              buttons on each measurement), or just type the values directly if you already know the real
+              size from a databook, wiki, or stated figure.
+            </p>
 
             <div className="calc-row">
               <label className="calc-label">Feat shape</label>
@@ -993,19 +1141,20 @@ export default function Tools({ onBack }) {
           <FeatToSpeed />
           <LiftingStrength />
           <ReactionTime />
+          <Durability />
+        </div>
+
+        <div className="tools-note">
+          <strong>Why this matters:</strong> A character like the Flash may be physically average,
+          but kinetic energy scales with the <em>square</em> of velocity. At Mach 20, even a 70kg body
+          carries the energy of a bomb. Speed IS strength, but remember, raw energy is only part of
+          the picture. Whether a character can <em>survive</em> their own output, deliver it, and
+          actually damage a target is what separates a number on paper from a real feat.
         </div>
 
         <ImageFeatScaler />
 
         <EnergyTierChart />
-
-        <div className="tools-note">
-          <strong>Why this matters:</strong> A character like the Flash may be physically average,
-          but kinetic energy scales with the <em>square</em> of velocity. At Mach 20, even a 70kg body
-          carries the energy of a bomb. Speed IS strength — but remember, raw energy is only part of
-          the picture. Whether a character can <em>survive</em> their own output, deliver it, and
-          actually damage a target is what separates a number on paper from a real feat.
-        </div>
       </div>
     </div>
   );

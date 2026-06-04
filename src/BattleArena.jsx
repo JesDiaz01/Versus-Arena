@@ -408,6 +408,117 @@ function AutoTextarea({ value, onChange, onKeyDown, placeholder, maxLength }) {
   );
 }
 
+/* ============================================================
+   MOCK VERDICT GENERATOR (demo only — no API, no cost)
+   Produces a plausible, CONSISTENT verdict for a matchup so the
+   battle flow works end to end. Same matchup => same result.
+   Swap this out for a real /api/battle call when the backend is live.
+   ============================================================ */
+function hashString(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function rngPick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+function rngPickN(rng, arr, n) {
+  const copy = [...arr]; const out = [];
+  for (let i = 0; i < n && copy.length; i++) {
+    out.push(copy.splice(Math.floor(rng() * copy.length), 1)[0]);
+  }
+  return out;
+}
+function rngInt(rng, min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
+
+const ADVANTAGE_POOL = [
+  "Speed Advantage", "Higher Durability", "Greater Raw Power", "Superior Firepower",
+  "Better Range", "Combat Experience", "Tactical Intelligence", "Versatile Abilities",
+  "Regeneration", "Energy Projection", "Scaling Edge", "Stronger Hax",
+];
+
+function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, depth, claims1, claims2 }) {
+  // Seed off the sorted names so the same matchup is consistent regardless of slot order.
+  const seed = hashString([f1.toLowerCase(), f2.toLowerCase()].sort().join("|"));
+  const rng = mulberry32(seed);
+
+  // Collect user claims (both sides) for the disclosure.
+  const claimSummaries = [];
+  (claims1 || []).forEach(c => claimSummaries.push(`${f1}: "${c}"`));
+  (claims2 || []).forEach(c => claimSummaries.push(`${f2}: "${c}"`));
+  const user_claims_used = claimSummaries.slice(0, 6);
+  const hasClaims = claimSummaries.length > 0;
+
+  const feats_scanned = rngInt(rng, 20, 80);
+  const sources = rngInt(rng, 5, 20);
+
+  // ~12% chance of a draw, otherwise pick a winner.
+  const roll = rng();
+  const isDraw = roll < 0.12;
+
+  if (isDraw) {
+    const verdict_short = rngPick(rng, [
+      "Too close to call — it's a draw.",
+      "A genuine stalemate.",
+      "Dead even, no clear winner.",
+    ]);
+    const analysis = `This one is genuinely too close to call. ${f1} and ${f2} trade advantages evenly, and neither secures a decisive edge in a ${battleType.toLowerCase()} set on ${location.toLowerCase()}.${hasClaims ? " The user-submitted feats were weighed in, but they don't tip the balance either way." : ""} A real verdict would hinge on specifics outside the feats currently on the table.`;
+    return {
+      winner: "Draw",
+      verdict_short,
+      analysis,
+      advantages: rngPickN(rng, ADVANTAGE_POOL, 2),
+      user_claims_used,
+      feats_scanned,
+      sources,
+      demo: true,
+    };
+  }
+
+  const winnerIsF1 = rng() < 0.5;
+  const winner = winnerIsF1 ? f1 : f2;
+  const loser = winnerIsF1 ? f2 : f1;
+  const advantages = rngPickN(rng, ADVANTAGE_POOL, rngInt(rng, 2, 3));
+
+  const verdict_short = rngPick(rng, [
+    `${winner} takes it.`,
+    `${winner} wins, but not without a fight.`,
+    `${winner} edges out a hard-fought victory.`,
+    `${winner} comes out on top.`,
+  ]);
+
+  const powerNote = power === "Composite"
+    ? `At composite level, both are scaled to their strongest showings, and ${winner} still pulls ahead.`
+    : `Weighing canon feats first, the matchup leans ${winner}'s way.`;
+
+  const analysis = [
+    `In a ${battleType.toLowerCase()} set on ${location.toLowerCase()}, ${winner} holds the edge over ${loser}.`,
+    `${winner}'s ${advantages[0].toLowerCase()}${advantages[1] ? ` and ${advantages[1].toLowerCase()}` : ""} prove decisive.`,
+    `${loser} puts up a real fight${hasClaims ? ", especially given the feats provided," : ""} but can't fully close the gap.`,
+    powerNote,
+  ].join(" ");
+
+  return {
+    winner,
+    verdict_short,
+    analysis,
+    advantages,
+    user_claims_used,
+    feats_scanned,
+    sources,
+    demo: true,
+  };
+}
+
 export default function BattleArena() {
   const [f1, setF1] = useState("");
   const [f2, setF2] = useState("");
@@ -451,55 +562,17 @@ export default function BattleArena() {
     if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
     setError(""); setLoading(true); setResult(null);
 
-    const claimsBlock1 = claims1.length
-      ? `\nUser-submitted claims about ${f1} (NOT necessarily canon, treat as user input):\n${claims1.map((c, i) => `${i + 1}. "${c}"`).join("\n")}`
-      : "";
-    const claimsBlock2 = claims2.length
-      ? `\nUser-submitted claims about ${f2} (NOT necessarily canon, treat as user input):\n${claims2.map((c, i) => `${i + 1}. "${c}"`).join("\n")}`
-      : "";
+    // ===== DEMO / MOCK VERDICT (no API, no cost) =====
+    // Generates a plausible-looking verdict locally so the full battle flow works
+    // end to end. The winner is illustrative only — NOT real analysis.
+    // When the real AI backend is ready, replace this block with a fetch to /api/battle.
+    await new Promise(r => setTimeout(r, 1400)); // simulate "analyzing" time
 
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1200,
-          messages: [{
-            role: "user",
-            content: `You are a fictional character battle analyst. Analyze this 1v1 fight based on known feats, powerscaling, and lore.
-
-Fighter 1: ${f1} (${u1 || "unknown universe"})
-Fighter 2: ${f2} (${u2 || "unknown universe"})
-Battle Type: ${battleType}
-Location: ${location}
-Power Level: ${power}
-Depth: ${depth}
-${claimsBlock1}
-${claimsBlock2}
-
-Weigh canonical feats first. If user-submitted claims are provided, take them into account but clearly label them as user claims in your analysis.
-
-Respond ONLY with a valid JSON object (no markdown, no backticks) with these fields:
-{
-  "winner": "name of winner or Draw",
-  "verdict_short": "one confident sentence summary",
-  "analysis": "3-5 sentences citing feats and reasoning. If user claims influenced the outcome, explicitly note that.",
-  "advantages": ["up to 3 short labels like Speed Advantage or Higher Durability"],
-  "user_claims_used": ["short summary of each user claim that influenced the verdict, if any"],
-  "feats_scanned": number between 20 and 80,
-  "sources": number between 5 and 20
-}`
-          }]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.map(i => i.text || "").join("") || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      setResult(JSON.parse(clean));
-    } catch (e) {
-      setError("Something went wrong. Try again in a moment.");
-    }
+    const mock = generateMockVerdict({
+      f1: f1.trim(), f2: f2.trim(), u1, u2,
+      battleType, location, power, depth, claims1, claims2,
+    });
+    setResult(mock);
     setLoading(false);
   }
 
@@ -661,6 +734,11 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these fie
 
         {result && (
           <div className="result-panel">
+            {result.demo && (
+              <div className="demo-banner">
+                <strong>Demo verdict.</strong> Real AI analysis isn't connected yet — the winner here is illustrative only, to show how results will look.
+              </div>
+            )}
             <div className="result-header">
               <span className="winner-crown">{isDraw ? "⚖" : "🏆"}</span>
               <div>
