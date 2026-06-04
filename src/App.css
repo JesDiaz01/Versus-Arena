@@ -2462,3 +2462,99 @@ textarea.claim-input {
   color: var(--ink-soft);
 }
 .demo-banner strong { color: var(--gold); }
+
+/* ============================================================
+   MOBILE RESPONSIVENESS
+   Single breakpoint block — fixes phone overflow / narrow column.
+   Append this at the very END of App.css.
+   ============================================================ */
+
+/* Hard stop: nothing is allowed to cause sideways scroll */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 768px) {
+  /* NAV: shrink padding, let links wrap, center them */
+  .navbar {
+    flex-direction: column;
+    padding: 1rem 1rem;
+    gap: 0.75rem;
+  }
+  .nav-links {
+    gap: 0.9rem 1.1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0;
+  }
+  .nav-links a { font-size: 0.7rem; letter-spacing: 0.1em; }
+  .logo { font-size: 1.1rem; letter-spacing: 0.18em; }
+
+  /* HERO: tighten spacing */
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .hero-sub { font-size: 0.95rem; }
+
+  /* ARENA: less side padding so the card uses the screen */
+  .arena { padding: 0 1rem 3rem; }
+  .arena-header { padding: 1rem 1.25rem; }
+
+  /* FIGHTERS: stack vertically instead of 3-column side-by-side */
+  .fighters-grid { grid-template-columns: 1fr; }
+  .fighter-slot { padding: 2rem 1.25rem; }
+  .fighter-slot.right { border-left: none; border-top: 1px solid var(--line); }
+
+  /* VS divider sits horizontally between the stacked fighters */
+  .vs-divider { padding: 0.5rem 0; flex-direction: row; gap: 1rem; }
+  .vs-divider .divider-line {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--line-strong), transparent);
+  }
+
+  /* Inputs can use full width on mobile */
+  .fighter-name-input, .universe-input, .claims-section, .image-override-panel {
+    max-width: 100%;
+  }
+
+  /* SETTINGS: stack into one column */
+  .fight-settings { flex-direction: column; padding: 1.5rem 1.25rem; gap: 1rem; }
+  .setting-group { min-width: 0; width: 100%; }
+
+  /* FIGHT BUTTON: full width, less huge */
+  .fight-btn-wrap { padding: 1.5rem 1.25rem; }
+  .fight-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+  }
+
+  /* RESULT panel: tighten */
+  .result-panel { padding: 1.5rem 1.25rem; }
+  .result-title { font-size: 1.25rem; }
+  .share-row { flex-wrap: wrap; }
+
+  /* STATS: smaller gap so they don't force width */
+  .stats-strip { gap: 2.5rem; padding: 2rem 1.25rem; }
+  .stat-num { font-size: 1.9rem; }
+
+  /* TOOLS / ABOUT / LEADERBOARD containers */
+  .tools-container, .about-container { padding: 3rem 1.25rem 4rem; }
+  .calc-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .calc-card { padding: 1.5rem; }
+
+  /* FOOTER: stack columns */
+  .footer-inner { flex-direction: column; gap: 2rem; padding: 2.5rem 1.25rem 2rem; }
+  .footer-links { gap: 2rem; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; padding: 1.25rem; }
+
+  /* Scaler: tighten + let the dim grid stack */
+  .scaler-dim-grid { grid-template-columns: 1fr; }
+  .scaler-toolbar { gap: 0.5rem; }
+}
+
+/* Extra-small phones */
+@media (max-width: 380px) {
+  .nav-links { gap: 0.7rem 0.8rem; }
+  .nav-links a { font-size: 0.65rem; }
+  .fighter-avatar { width: 110px; height: 110px; }
+  .fight-btn { font-size: 0.85rem; letter-spacing: 0.15em; }
+}
