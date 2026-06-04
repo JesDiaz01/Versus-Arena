@@ -33,13 +33,15 @@ export default async function handler(req, res) {
     }
 
     const claimsBlock1 = claims1.length
-      ? `\nUser-submitted claims about ${f1} (NOT necessarily canon, treat as user input):\n${claims1.map((c, i) => `${i + 1}. "${c}"`).join("\n")}`
+      ? `\nGRANTED ABILITIES for ${f1} (these are TRUE for this battle — treat them as established fact, even if they contradict canon):\n${claims1.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
       : "";
     const claimsBlock2 = claims2.length
-      ? `\nUser-submitted claims about ${f2} (NOT necessarily canon, treat as user input):\n${claims2.map((c, i) => `${i + 1}. "${c}"`).join("\n")}`
+      ? `\nGRANTED ABILITIES for ${f2} (these are TRUE for this battle — treat them as established fact, even if they contradict canon):\n${claims2.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
       : "";
 
-    const prompt = `You are an impartial fictional-character battle analyst for a site called Versus Arena. Your defining trait is that you have NO favoritism: you do not let a character's popularity, fanbase size, or cultural status influence the outcome. You weigh only feats, powerscaling, and lore, treating both fighters by the exact same standard.
+    const hasClaims = claims1.length > 0 || claims2.length > 0;
+
+    const prompt = `You are an impartial fictional-character battle analyst for a site called Versus Arena. Your defining trait is that you have NO favoritism: you do not let a character's popularity, fanbase size, or cultural status influence the outcome. You weigh feats, powerscaling, and lore, treating both fighters by the exact same standard.
 
 Analyze this 1v1 fight:
 
@@ -52,20 +54,22 @@ Depth: ${depth || "Quick Verdict"}
 ${claimsBlock1}
 ${claimsBlock2}
 
-Rules for your analysis:
-- Weigh canonical feats first. Compare both fighters on the same metrics (strength, speed, durability, range, intelligence, abilities/hax, experience).
-- Do NOT favor the more popular or famous character. Judge purely on demonstrated ability.
-- If user-submitted claims are provided, factor them in but treat them as user claims, not confirmed canon, and note where they influenced the result.
-- If the matchup is genuinely too close to call, return "Draw". Do not force a winner.
-- Be honest about uncertainty rather than projecting false confidence.
+How to weigh abilities:
+- Start from each fighter's canonical, demonstrated feats as the baseline.
+- ${hasClaims
+  ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support — the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
+  : `Judge purely on canonical, demonstrated feats.`}
+- Do NOT favor the more popular or famous character. Judge purely on capability.
+- Apply the Battle Type, Location, and Power Level settings as constraints on the fight.
+- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
 
 Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
 {
   "winner": "exact name of the winner (${f1} or ${f2}) or Draw",
   "verdict_short": "one confident sentence summarizing the outcome",
-  "analysis": "3-5 sentences citing specific feats and reasoning. If user claims influenced the outcome, explicitly say so.",
+  "analysis": "3-5 sentences citing specific feats and reasoning. When granted abilities decided the outcome, say so explicitly.",
   "advantages": ["up to 3 short labels for the winner, like Speed Advantage or Higher Durability"],
-  "user_claims_used": ["short summary of each user claim that influenced the verdict, empty array if none"],
+  "user_claims_used": ["short summary of each granted ability that influenced the verdict, empty array if none"],
   "feats_scanned": a number between 20 and 80,
   "sources": a number between 5 and 20
 }`;

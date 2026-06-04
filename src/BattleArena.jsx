@@ -789,7 +789,7 @@ export default function BattleArena() {
 
             {result.user_claims_used && result.user_claims_used.length > 0 && (
               <div className="claims-disclosure">
-                <div className="claims-disclosure-label">User Claims Factored In</div>
+                <div className="claims-disclosure-label">Granted Abilities Applied</div>
                 <ul className="claims-disclosure-list">
                   {result.user_claims_used.map((c, i) => (
                     <li key={i}>{c}</li>
