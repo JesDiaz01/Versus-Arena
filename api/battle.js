@@ -199,7 +199,15 @@ Respond ONLY with a valid JSON object (no markdown, no backticks, no text before
 
     const data = await response.json();
     const text = (data.content || []).map(i => i.text || "").join("");
-    const clean = text.replace(/```json|```/g, "").trim();
+
+    // Make parsing forgiving: strip any markdown code fences, then pull out just
+    // the JSON object, in case the model adds a stray sentence before or after it.
+    let clean = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const firstBrace = clean.indexOf("{");
+    const lastBrace = clean.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      clean = clean.slice(firstBrace, lastBrace + 1);
+    }
 
     let verdict;
     try {
