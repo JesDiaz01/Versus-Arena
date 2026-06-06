@@ -5,6 +5,7 @@ import About from "./About";
 import Tools from "./Tools";
 import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
+import PrivacyPolicy from "./PrivacyPolicy";
 import "./App.css";
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
     return (
       <>
         <About onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} />
+        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
       </>
     );
   }
@@ -28,7 +29,7 @@ export default function App() {
     return (
       <>
         <Tools onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} />
+        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
       </>
     );
   }
@@ -37,7 +38,16 @@ export default function App() {
     return (
       <>
         <Leaderboard onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} />
+        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+      </>
+    );
+  }
+
+  if (page === "privacy") {
+    return (
+      <>
+        <PrivacyPolicy onBack={() => setPage("home")} />
+        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
       </>
     );
   }
@@ -72,7 +82,7 @@ export default function App() {
         <div className="stat-item"><span className="stat-num">100%</span><span className="stat-label">Unbiased</span></div>
       </div>
 
-      <Footer onAbout={() => setPage("about")} />
+      <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
     </div>
   );
 }
