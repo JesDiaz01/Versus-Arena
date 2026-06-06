@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function Footer({ onAbout, onPrivacy }) {
+export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy }) {
   // ⬇️ Your real links/handles
   const INSTAGRAM_URL = "https://www.instagram.com/jes_diaz01/";
   const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
@@ -26,9 +26,10 @@ export default function Footer({ onAbout, onPrivacy }) {
         <div className="footer-links">
           <div className="footer-col">
             <div className="footer-col-title">Explore</div>
+            {/* "Battles" sends you to the main/home page (where you enter characters) */}
+            <a href="#" onClick={(e) => { e.preventDefault(); if (onHome) onHome(); }}>Battles</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); if (onLeaderboard) onLeaderboard(); }}>Leaderboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onAbout) onAbout(); }}>About</a>
-            <a href="#">Battles</a>
-            <a href="#">Leaderboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onPrivacy) onPrivacy(); }}>Privacy Policy</a>
           </div>
 

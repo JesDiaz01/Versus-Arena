@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena from "./BattleArena";
 import About from "./About";
@@ -12,6 +12,13 @@ export default function App() {
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
 
+  // When you switch pages, jump back to the top so you land at the start of the
+  // new page (e.g. the arena on home) instead of staying scrolled down where the
+  // footer was. Runs every time `page` changes.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page]);
+
   if (!entered) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
   }
@@ -20,7 +27,12 @@ export default function App() {
     return (
       <>
         <About onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+        />
       </>
     );
   }
@@ -29,7 +41,12 @@ export default function App() {
     return (
       <>
         <Tools onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+        />
       </>
     );
   }
@@ -38,7 +55,12 @@ export default function App() {
     return (
       <>
         <Leaderboard onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+        />
       </>
     );
   }
@@ -47,7 +69,12 @@ export default function App() {
     return (
       <>
         <PrivacyPolicy onBack={() => setPage("home")} />
-        <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+        />
       </>
     );
   }
@@ -82,7 +109,12 @@ export default function App() {
         <div className="stat-item"><span className="stat-num">100%</span><span className="stat-label">Unbiased</span></div>
       </div>
 
-      <Footer onAbout={() => setPage("about")} onPrivacy={() => setPage("privacy")} />
+      <Footer
+        onHome={() => setPage("home")}
+        onAbout={() => setPage("about")}
+        onLeaderboard={() => setPage("leaderboard")}
+        onPrivacy={() => setPage("privacy")}
+      />
     </div>
   );
 }
