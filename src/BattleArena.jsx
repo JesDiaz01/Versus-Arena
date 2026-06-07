@@ -467,7 +467,7 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
 
   if (isDraw) {
     const verdict_short = rngPick(rng, [
-      "Too close to call — it's a draw.",
+      "Too close to call. It's a draw.",
       "A genuine stalemate.",
       "Dead even, no clear winner.",
     ]);
@@ -761,7 +761,7 @@ export default function BattleArena() {
           <div className="result-panel">
             {result.demo && (
               <div className="demo-banner">
-                <strong>Demo verdict.</strong> Real AI analysis isn't connected yet — the winner here is illustrative only, to show how results will look.
+                <strong>Demo verdict.</strong> Real AI analysis isn't connected yet; the winner here is illustrative only, to show how results will look.
               </div>
             )}
             <div className="result-header">

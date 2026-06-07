@@ -68,7 +68,7 @@ function KineticEnergyCalc() {
     else if (joules < 1000) return "a solid punch";
     else if (joules < 50000) return "a highway-speed car crash";
     else if (joules < 1e6) return "a stick of dynamite";
-    else if (tntTons < 0.001) return `${(joules / 1e6).toFixed(1)} MJ — large-explosion-level energy`;
+    else if (tntTons < 0.001) return `${(joules / 1e6).toFixed(1)} MJ, large-explosion-level energy`;
     else if (tntTons < 1) return `${(tntTons * 1000).toFixed(1)} kg of TNT-equivalent energy`;
     else if (tntTons < 1000) return `${tntTons.toFixed(1)} tons of TNT-equivalent energy (building-level)`;
     else if (tntTons < 1e6) return `${(tntTons / 1000).toFixed(1)} kilotons of TNT-equivalent energy (town-level)`;
@@ -81,7 +81,7 @@ function KineticEnergyCalc() {
   }
 
   const featText = ke !== null
-    ? `Strikes with ${fmtJoulesShared(ke)} of kinetic energy (mass ${mass}${massUnit} at ${speed} ${speedUnit}) — ${describeEnergy(ke)}. (Raw energy figure; does not account for delivery, durability, or area of effect.)`
+    ? `Strikes with ${fmtJoulesShared(ke)} of kinetic energy (mass ${mass}${massUnit} at ${speed} ${speedUnit}): ${describeEnergy(ke)}. (Raw energy figure; does not account for delivery, durability, or area of effect.)`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -91,7 +91,7 @@ function KineticEnergyCalc() {
   return (
     <div className="calc-card">
       <h3 className="calc-title">Kinetic Energy</h3>
-      <p className="calc-desc">How hard does a character actually hit? Speed matters exponentially — doubling speed quadruples the energy.</p>
+      <p className="calc-desc">How hard does a character actually hit? Speed matters exponentially: doubling speed quadruples the energy.</p>
       <div className="calc-row">
         <label className="calc-label">Mass</label>
         <div className="calc-input-group">
@@ -116,7 +116,7 @@ function KineticEnergyCalc() {
           <div className="calc-result-sub">≈ {describeEnergy(ke)}</div>
           <div className="calc-disclaimer">
             Raw kinetic energy only. Real destructive capacity also depends on durability,
-            delivery, and area of effect — energy alone isn't a confirmed feat.
+            delivery, and area of effect; energy alone isn't a confirmed feat.
           </div>
           <button className="calc-copy-btn" onClick={copyFeat}>{copied ? "Copied!" : "Copy as feat"}</button>
         </div>
@@ -166,7 +166,7 @@ function SpeedConverter() {
   return (
     <div className="calc-card">
       <h3 className="calc-title">Speed Converter</h3>
-      <p className="calc-desc">Translate any speed into every scale — from mph to fractions of light speed.</p>
+      <p className="calc-desc">Translate any speed into every scale, from mph to fractions of light speed.</p>
       <div className="calc-row">
         <label className="calc-label">Speed</label>
         <div className="calc-input-group">
@@ -235,11 +235,11 @@ function FeatToSpeed() {
     const mph = ms / 0.44704;
     const mach = ms / 343;
     const pctC = (ms / 299792458) * 100;
-    if (pctC >= 100) return "faster than light — beyond physics";
-    if (pctC >= 10) return "relativistic — a real fraction of light speed";
-    if (pctC >= 1) return "sub-relativistic — almost incomprehensibly fast";
-    if (mach >= 5) return `hypersonic (Mach ${mach.toFixed(1)}) — like a re-entering spacecraft`;
-    if (mach >= 1) return `supersonic (Mach ${mach.toFixed(1)}) — like a fighter jet breaking the sound barrier`;
+    if (pctC >= 100) return "faster than light (beyond physics)";
+    if (pctC >= 10) return "relativistic (a real fraction of light speed)";
+    if (pctC >= 1) return "sub-relativistic, almost incomprehensibly fast";
+    if (mach >= 5) return `hypersonic (Mach ${mach.toFixed(1)}), like a re-entering spacecraft`;
+    if (mach >= 1) return `supersonic (Mach ${mach.toFixed(1)}), like a fighter jet breaking the sound barrier`;
     if (mph >= 150) return "like a Formula 1 car at top speed";
     if (mph >= 70) return "like a car speeding down the highway";
     if (mph >= 25) return "like a pro cyclist sprinting";
@@ -252,7 +252,7 @@ function FeatToSpeed() {
   }
 
   const featText = speedMs !== null
-    ? `Covered ${dist}${distUnit} in ${time}${timeUnit} — a speed of ${fmt(speedMs)} m/s (${fmt(speedMs / 0.44704)} mph, Mach ${fmt(speedMs / 343)}), ${describeSpeed(speedMs)}.`
+    ? `Covered ${dist}${distUnit} in ${time}${timeUnit}: a speed of ${fmt(speedMs)} m/s (${fmt(speedMs / 0.44704)} mph, Mach ${fmt(speedMs / 343)}), ${describeSpeed(speedMs)}.`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -328,7 +328,7 @@ function LiftingStrength() {
     if (kg < 1e11) return "a small mountain";
     if (kg < 1e15) return "a mountain range";
     if (kg < 1e18) return "a small moon";
-    return "planetary mass — class-defying";
+    return "planetary mass (class-defying)";
   }
   function fmtKg(n) {
     if (n === null) return "—";
@@ -339,7 +339,7 @@ function LiftingStrength() {
   }
 
   const featText = kg !== null
-    ? `Lifts ${fmtKg(kg)} (${newtons.toExponential(2)} N of force) — comparable to ${compare(kg)}.`
+    ? `Lifts ${fmtKg(kg)} (${newtons.toExponential(2)} N of force), comparable to ${compare(kg)}.`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -411,7 +411,7 @@ function ReactionTime() {
   }
   function describeReaction(s) {
     if (s === null) return "";
-    if (s < 1e-6) return "superhuman — far beyond biological possibility";
+    if (s < 1e-6) return "superhuman, far beyond biological possibility";
     if (s < 1e-3) return "vastly superhuman reaction";
     if (s < 0.05) return "well beyond human (humans react in ~0.25s)";
     if (s < 0.25) return "peak-human to enhanced reaction";
@@ -419,7 +419,7 @@ function ReactionTime() {
   }
 
   const featText = reactionS !== null
-    ? `Reacted to a projectile from ${dist}${distUnit} away traveling ${projSpeed} ${speedUnit} — a reaction time of ${fmtTime(reactionS)} (${describeReaction(reactionS)}).`
+    ? `Reacted to a projectile from ${dist}${distUnit} away traveling ${projSpeed} ${speedUnit}: a reaction time of ${fmtTime(reactionS)} (${describeReaction(reactionS)}).`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -509,7 +509,7 @@ function Durability() {
 
   const tier = joules != null ? tierOf(joules) : "";
   const featText = joules != null
-    ? `Survived/tanked an attack of ${fmtJ(joules)} — a durability feat at ${tier}. (Assumes the character took the hit and kept fighting; survival of the full energy is what's being scaled.)`
+    ? `Survived/tanked an attack of ${fmtJ(joules)}: a durability feat at ${tier}. (Assumes the character took the hit and kept fighting; survival of the full energy is what's being scaled.)`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -541,7 +541,7 @@ function Durability() {
           <div className="calc-result-sub">Withstood ≈ {fmtJ(joules)}</div>
           <div className="calc-disclaimer">
             Durability scaling assumes the character took the full hit and survived. It doesn't
-            account for dodging, blocking, intangibility, or regeneration — those are separate from raw toughness.
+            account for dodging, blocking, intangibility, or regeneration; those are separate from raw toughness.
           </div>
           <button className="calc-copy-btn" onClick={copyFeat}>{copied ? "Copied!" : "Copy as feat"}</button>
         </div>
@@ -561,11 +561,11 @@ const DESTRUCTION = [
 ];
 
 const SHAPES = [
-  { key: "cone", label: "Cone — dust cloud / plume", needs: ["D", "H"] },
-  { key: "cylinder", label: "Cylinder — column / pillar", needs: ["D", "H"] },
-  { key: "hemisphere", label: "Hemisphere — dome blast", needs: ["D"] },
-  { key: "sphere", label: "Sphere — fireball", needs: ["D"] },
-  { key: "crater", label: "Crater — half-ellipsoid", needs: ["D", "P"] },
+  { key: "cone", label: "Cone (dust cloud / plume)", needs: ["D", "H"] },
+  { key: "cylinder", label: "Cylinder (column / pillar)", needs: ["D", "H"] },
+  { key: "hemisphere", label: "Hemisphere (dome blast)", needs: ["D"] },
+  { key: "sphere", label: "Sphere (fireball)", needs: ["D"] },
+  { key: "crater", label: "Crater (half-ellipsoid)", needs: ["D", "P"] },
 ];
 
 // Pure line-drawing helper for the canvas
@@ -848,7 +848,7 @@ function ImageFeatScaler() {
   ].filter(Boolean).join(", ");
 
   const featText = energy != null
-    ? `Feat scaled from imagery: assuming a ${shape.label.split("—")[0].trim().toLowerCase()} roughly ${dimsText}, the affected volume is ~${fmtVol(volume)}. At ${destruction.label} (${destruction.jcc} J/cc), that is ~${fmtJoulesShared(energy)} of energy — ${tier}. (Scaling estimate; assumes idealized geometry and uniform material.)`
+    ? `Feat scaled from imagery: assuming a ${shape.label.split("(")[0].trim().toLowerCase()} roughly ${dimsText}, the affected volume is ~${fmtVol(volume)}. At ${destruction.label} (${destruction.jcc} J/cc), that is ~${fmtJoulesShared(energy)} of energy: ${tier}. (Scaling estimate; assumes idealized geometry and uniform material.)`
     : "";
   function copyFeat() {
     if (!featText) return;
@@ -861,7 +861,7 @@ function ImageFeatScaler() {
       <p className="calc-desc">
         Upload a feat image, draw a line over something of known size to set the scale, then measure
         the explosion, crater, or blast. The tool converts pixels → real meters → volume → energy → tier.
-        Your image stays in your browser — it is never uploaded to a server.
+        Your image stays in your browser; it is never uploaded to a server.
       </p>
 
       <ol className="scaler-steps">
@@ -873,8 +873,8 @@ function ImageFeatScaler() {
 
       <div className="scaler-warning">
         <strong>⚠ Same-distance rule:</strong> your reference object and the feat must sit at roughly
-        the same distance from the camera. Scaling a nearby object against a faraway one — like a
-        person standing in front of a distant mountain — gives wildly wrong results because of
+        the same distance from the camera. Scaling a nearby object against a faraway one (like a
+        person standing in front of a distant mountain) gives wildly wrong results because of
         perspective. For accurate feats, use a reference that's right next to (or inside) what you're measuring.
       </div>
 
@@ -946,8 +946,8 @@ function ImageFeatScaler() {
               {referenceLine
                 ? (metersPerPixel
                     ? `Scale set: 1 pixel ≈ ${metersPerPixel.toLocaleString(undefined, { maximumFractionDigits: 3 })} m`
-                    : "Reference line drawn — now enter its real length above.")
-                : "No reference line yet — switch to “Set Reference” and draw one."}
+                    : "Reference line drawn. Now enter its real length above.")
+                : "No reference line yet. Switch to \"Set Reference\" and draw one."}
             </div>
           </div>
 
@@ -1039,7 +1039,7 @@ function ImageFeatScaler() {
               <label className="calc-label">Material / destruction type</label>
               <select className="calc-unit calc-unit-full" value={destrIdx} onChange={e => setDestrIdx(Number(e.target.value))}>
                 {DESTRUCTION.map((d, i) => (
-                  <option key={i} value={i}>{d.label} ({d.jcc} J/cc) — {d.hint}</option>
+                  <option key={i} value={i}>{d.label} ({d.jcc} J/cc): {d.hint}</option>
                 ))}
               </select>
             </div>
@@ -1052,7 +1052,7 @@ function ImageFeatScaler() {
                 </div>
                 <div className="calc-disclaimer">
                   Scaling estimate only. Assumes idealized geometry and uniform material, and measures
-                  demonstrated energy — not durability, delivery, or hax. Reference accuracy decides everything.
+                  demonstrated energy, not durability, delivery, or hax. Reference accuracy decides everything.
                 </div>
                 <button className="calc-copy-btn" onClick={copyFeat}>{copied ? "Copied!" : "Copy as feat"}</button>
               </div>
@@ -1087,7 +1087,7 @@ function EnergyTierChart() {
       <h3 className="calc-title">Energy Tier Reference</h3>
       <p className="calc-desc">
         Got an energy number from any tool above? Find which destruction tier it lands in.
-        We compare the <em>physical result</em> of a feat — not the type of energy (ki, cursed energy, chakra all count the same here).
+        We compare the <em>physical result</em> of a feat, not the type of energy (ki, cursed energy, chakra all count the same here).
       </p>
       <div className="tier-table">
         <div className="tier-header">
@@ -1131,7 +1131,7 @@ export default function Tools({ onBack }) {
         <h1 className="about-title">The <span className="vs-word">Lab</span></h1>
         <p className="tools-intro">
           Real physics for real debates. Calculate striking power, speed, strength, and reaction time
-          from a character's feats — or scale a feat straight from an image — then copy any result
+          from a character's feats, or scale a feat straight from an image, then copy any result
           into your battle as a custom feat.
         </p>
 

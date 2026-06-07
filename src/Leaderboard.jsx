@@ -20,7 +20,7 @@ export default function Leaderboard({ onBack }) {
           </p>
           <p>
             Every time a matchup gets run in the Arena, it climbs the board. This is where you'll
-            find the internet's most-debated fights — the eternal rivalries, the surprise upsets,
+            find the internet's most-debated fights: the eternal rivalries, the surprise upsets,
             and whatever the community is obsessed with this week.
           </p>
         </div>
@@ -35,7 +35,7 @@ export default function Leaderboard({ onBack }) {
           <ul className="leaderboard-list">
             <li>Top 10 most-compared battles of all time</li>
             <li>Most-searched characters on the site</li>
-            <li>Biggest winners — characters with the highest verdict win rate</li>
+            <li>Biggest winners: characters with the highest verdict win rate</li>
             <li>Trending this week vs all-time legends</li>
           </ul>
           <p className="about-quiet">
