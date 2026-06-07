@@ -8,6 +8,9 @@
 //   Smarter:      "claude-sonnet-4-6"
 //   Top-tier:     "claude-opus-4-7"
 
+import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
+
 const MODEL = "claude-haiku-4-5-20251001";
 
 // ---- Limits (cost + abuse protection) ----
@@ -217,7 +220,30 @@ Respond ONLY with a valid JSON object (no markdown, no backticks, no text before
       return res.status(502).json({ error: "Got an unexpected response. Please try again." });
     }
 
-    return res.status(200).json(verdict);
+    // Save to Supabase and generate a share ID (fail-open: a DB error never breaks the verdict).
+    let shareId = null;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && supabaseKey) {
+      try {
+        shareId = randomBytes(6).toString("base64url");
+        const db = createClient(supabaseUrl, supabaseKey);
+        const { error: dbError } = await db.from("battles").insert({
+          id: shareId,
+          battle_data: { f1, f2, u1, u2, battleType, location, power, depth, claims1, claims2 },
+          result: verdict,
+        });
+        if (dbError) {
+          console.error("Supabase insert error:", dbError);
+          shareId = null;
+        }
+      } catch (dbErr) {
+        console.error("Failed to save battle:", dbErr);
+        shareId = null;
+      }
+    }
+
+    return res.status(200).json(shareId ? { ...verdict, id: shareId } : verdict);
   } catch (err) {
     console.error("Battle handler error:", err);
     return res.status(500).json({ error: "Something went wrong. Try again in a moment." });

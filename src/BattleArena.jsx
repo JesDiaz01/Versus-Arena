@@ -519,24 +519,26 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
   };
 }
 
-export default function BattleArena() {
-  const [f1, setF1] = useState("");
-  const [f2, setF2] = useState("");
-  const [u1, setU1] = useState("");
-  const [u2, setU2] = useState("");
+export default function BattleArena({ initialBattle = null }) {
+  const init = initialBattle?.battle_data || {};
+  const [f1, setF1] = useState(init.f1 || "");
+  const [f2, setF2] = useState(init.f2 || "");
+  const [u1, setU1] = useState(init.u1 || "");
+  const [u2, setU2] = useState(init.u2 || "");
   const [override1, setOverride1] = useState(null);
   const [override2, setOverride2] = useState(null);
-  const [claims1, setClaims1] = useState([]);
-  const [claims2, setClaims2] = useState([]);
+  const [claims1, setClaims1] = useState(init.claims1 || []);
+  const [claims2, setClaims2] = useState(init.claims2 || []);
   const [draft1, setDraft1] = useState("");
   const [draft2, setDraft2] = useState("");
-  const [battleType, setBattleType] = useState("Standard Fight");
-  const [location, setLocation] = useState("Neutral Terrain");
-  const [power, setPower] = useState("Canon Only");
-  const [depth, setDepth] = useState("Quick Verdict");
+  const [battleType, setBattleType] = useState(init.battleType || "Standard Fight");
+  const [location, setLocation] = useState(init.location || "Neutral Terrain");
+  const [power, setPower] = useState(init.power || "Canon Only");
+  const [depth, setDepth] = useState(init.depth || "Quick Verdict");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(initialBattle?.result || null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const img1 = useCharacterImage(f1, u1, override1);
   const img2 = useCharacterImage(f2, u2, override2);
@@ -606,7 +608,19 @@ export default function BattleArena() {
     setOverride1(null); setOverride2(null);
     setClaims1([]); setClaims2([]);
     setDraft1(""); setDraft2("");
-    setResult(null); setError("");
+    setResult(null); setError(""); setCopied(false);
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }
+
+  function shareBattle() {
+    if (!result || !result.id) return;
+    const url = window.location.origin + "/?b=" + result.id;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
   }
 
   const isWinner1 = result && result.winner.toLowerCase().includes(f1.toLowerCase());
@@ -800,8 +814,11 @@ export default function BattleArena() {
 
             <div className="share-row">
               <button className="rematch-btn" onClick={reset}>New Battle</button>
-              <button className="share-btn">Share Result</button>
-              <button className="share-btn">Copy Link</button>
+              {result.id && (
+                <button className="share-btn" onClick={shareBattle}>
+                  {copied ? "Link copied!" : "Share Battle"}
+                </button>
+              )}
             </div>
           </div>
         )}
