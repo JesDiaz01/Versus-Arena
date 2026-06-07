@@ -54,10 +54,9 @@
 
 .sb-v-logo {
   position: absolute;
-  left: 2.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 52px;
+  left: 0;
+  top: 0;
+  width: 80px;
   height: auto;
   display: block;
 }
@@ -245,7 +244,7 @@
 @media (max-width: 500px) {
   .sb-page { padding: 1.5rem 1rem 4rem; }
   .sb-header { padding: 1.25rem 1.5rem; }
-  .sb-v-logo { width: 38px; left: 1.5rem; }
+  .sb-v-logo { width: 54px; }
   .sb-matchup { padding: 1.5rem; gap: 0.75rem; }
   .sb-settings { padding: 0.75rem 1.5rem; }
   .sb-verdict { padding: 2rem 1.5rem 1.5rem; }
