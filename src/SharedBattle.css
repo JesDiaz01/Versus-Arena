@@ -54,7 +54,7 @@
 
 .sb-v-logo {
   position: absolute;
-  left: 0;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   width: 52px;
