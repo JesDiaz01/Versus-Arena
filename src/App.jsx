@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena from "./BattleArena";
+import SharedBattle from "./SharedBattle";
 import About from "./About";
 import Tools from "./Tools";
 import Leaderboard from "./Leaderboard";
@@ -100,6 +101,26 @@ export default function App() {
     );
   }
 
+  if (sharedLoading) {
+    return (
+      <div className="sb-loading-screen">
+        <div className="sb-loading-text">Loading battle...</div>
+      </div>
+    );
+  }
+
+  if (sharedBattle) {
+    return (
+      <SharedBattle
+        battle={sharedBattle}
+        onBackToArena={function() {
+          setSharedBattle(null);
+          window.history.replaceState({}, "", window.location.pathname);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="page">
       <nav className="navbar">
@@ -123,10 +144,7 @@ export default function App() {
         </p>
       </div>
 
-      {sharedLoading
-        ? <div className="shared-loading">Loading battle...</div>
-        : <BattleArena initialBattle={sharedBattle} />
-      }
+      <BattleArena />
 
       <div className="stats-strip">
         <div className="stat-item"><span className="stat-num">99.9%</span><span className="stat-label">Sourced Verdicts</span></div>

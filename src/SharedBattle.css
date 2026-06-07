@@ -1,0 +1,249 @@
+/* SharedBattle.css
+   All classes are prefixed .sb- so they cannot collide with the rest of the site.
+   This file is imported only by SharedBattle.jsx.
+*/
+
+/* ── Loading screen (used in App.jsx while the battle fetch is in flight) ── */
+.sb-loading-screen {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-loading-text {
+  font-family: "Cinzel", serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Page shell ── */
+.sb-page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1.5rem 5rem;
+}
+
+.sb-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+/* ── Header ── */
+.sb-header {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: center;
+}
+
+.sb-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sb-v-logo {
+  width: 26px;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sb-wordmark-text {
+  font-family: "Cinzel", serif;
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: 0.25em;
+  color: var(--ink);
+}
+
+/* ── Matchup ── */
+.sb-matchup {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 2rem 2.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sb-fighter {
+  flex: 1;
+  min-width: 0;
+}
+
+.sb-fighter-name {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.sb-fighter-universe {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+}
+
+.sb-claims {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.sb-claims-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.45rem;
+}
+
+.sb-claims-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sb-claims-list li {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.sb-vs {
+  font-family: "Cinzel", serif;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+  align-self: flex-start;
+}
+
+/* ── Settings ── */
+.sb-settings {
+  padding: 0.85rem 2.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Verdict ── */
+.sb-verdict {
+  padding: 2.5rem 2.5rem 2rem;
+  text-align: center;
+}
+
+.sb-verdict-eyebrow {
+  font-size: 0.62rem;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.55rem;
+}
+
+.sb-winner {
+  font-family: "Cinzel", serif;
+  font-weight: 900;
+  font-size: clamp(1.9rem, 5vw, 2.75rem);
+  color: var(--ink);
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  word-break: break-word;
+}
+
+.sb-chips {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.sb-chip {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: 0.3rem 0.8rem;
+  border-radius: 2px;
+}
+
+.sb-verdict-short {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.65;
+  margin: 0 0 1rem;
+}
+
+.sb-analysis {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* ── Footer ── */
+.sb-footer {
+  padding: 1.5rem 2.5rem 2rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: center;
+}
+
+.sb-back-btn {
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  padding: 0.7rem 1.75rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.sb-back-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+  .sb-page { padding: 1.5rem 1rem 4rem; }
+  .sb-header { padding: 1.25rem 1.5rem; }
+  .sb-matchup { padding: 1.5rem; gap: 0.75rem; }
+  .sb-settings { padding: 0.75rem 1.5rem; }
+  .sb-verdict { padding: 2rem 1.5rem 1.5rem; }
+  .sb-footer { padding: 1.25rem 1.5rem 1.75rem; }
+}
