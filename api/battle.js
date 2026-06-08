@@ -11,7 +11,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-sonnet-4-6";
 
 // ---- Limits (cost + abuse protection) ----
 const RL_PER_MIN = 5;        // max battles per minute per visitor
@@ -161,12 +161,24 @@ ${claimsBlock1}
 ${claimsBlock2}
 
 How to weigh abilities:
+- Use each character at their PEAK within the selected Power Level. Apply the character's strongest CONSISTENT canonical showing — never a weakened, early-series, or de-powered version. Apply the same evidentiary standard to both fighters; do not hold one to a stricter or looser bar than the other.
+- Power Level definitions (these form a strict tier ladder — never assign a higher power tier under a lesser setting):
+    Canon Only: strongest showing supported by the primary source work itself.
+    Composite: strongest showing across all canonical AND supplementary material (databooks, films, spin-offs, author statements). Must be greater than or equal to Canon Only; if no additional material exists beyond the primary work, state that rather than producing an identical verdict.
+    Post-Series Peak: the absolute maximum power the character has ever canonically reached (end-of-story / final form). This is the highest tier and must be greater than or equal to every other setting.
+    Current: the character as of the latest canonical point. Must be less than or equal to Post-Series Peak.
+- Battle Type governs WILLINGNESS, not power. Peak power is the baseline in every battle type:
+    In-Character: the character fights as they characteristically would, including any arrogance, mercy, reluctance, or tendency to hold back or not immediately use their strongest option. Power is still full; only behavior reflects personality.
+    Out of Character: the character fights fully optimized — complete tactical awareness, no hesitation, best options used immediately.
+    Standard Fight: the character fights seriously and competently to win, without heavy personality-based holding back.
+    Battle of Wits / Speed Blitz: keep their existing specialized behavior; peak power still applies.
 - Start from each fighter's canonical, demonstrated feats as the baseline.
 - ${hasClaims
   ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support — the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
   : `Judge purely on canonical, demonstrated feats.`}
+- Ground every verdict in specific, named in-universe feats — actual canonical events (what each character survived, destroyed, reacted to, lifted). Do NOT use vague power claims or external tier ratings. Describe any given feat the same way regardless of the opponent; do not inflate or deflate an established feat to fit the desired winner. The analysis must explicitly state which version and power tier of each character it is using (for example: "Cloud Strife at end-of-FFVII peak with full materia and Limit Breaks").
 - Do NOT favor the more popular or famous character. Judge purely on capability.
-- Apply the Battle Type, Location, and Power Level settings as constraints on the fight.
+- Apply the Location setting as a constraint on the fight.
 - Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
 
 Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
