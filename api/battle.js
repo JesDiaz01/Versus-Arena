@@ -75,8 +75,12 @@ function cleanStr(v, maxLen) {
     if (v == null) return "";
     v = String(v);
   }
-  // strip control chars, collapse, trim, cap length
-  return v.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, maxLen);
+  let out = "";
+  for (let i = 0; i < v.length; i++) {
+    const c = v.charCodeAt(i);
+    out += (c >= 32 && c !== 127) ? v[i] : " ";
+  }
+  return out.trim().slice(0, maxLen);
 }
 
 function cleanClaims(v) {
@@ -89,6 +93,103 @@ function cleanClaims(v) {
 
 function pickAllowed(v, list) {
   return list.includes(v) ? v : list[0];
+}
+
+// ---- Prompt builder ----
+// fa/ua = fighter listed first in this call; fb/ub = fighter listed second.
+// claimsBlockA/B = pre-built "GRANTED ABILITIES" strings, already name-tagged,
+// passed in the same swapped order as the fighters so grants stay attached to the
+// right character regardless of which slot they occupy.
+function buildPrompt(fa, ua, claimsBlockA, fb, ub, claimsBlockB, hasClaims, battleType, location, power, depth) {
+  return `You are an impartial fictional-character battle analyst for a site called Versus Arena. Your defining trait is that you have NO favoritism: you do not let a character's popularity, fanbase size, or cultural status influence the outcome. You weigh feats, powerscaling, and lore, treating both fighters by the exact same standard.
+
+Analyze this 1v1 fight:
+
+Fighter 1: ${fa} (${ua || "unknown universe"})
+Fighter 2: ${fb} (${ub || "unknown universe"})
+Battle Type: ${battleType}
+Location: ${location}
+Power Level: ${power}
+Depth: ${depth}
+${claimsBlockA}
+${claimsBlockB}
+
+How to weigh abilities:
+- Use each character at their PEAK within the selected Power Level. Apply the character's strongest CONSISTENT canonical showing — never a weakened, early-series, or de-powered version. Apply the same evidentiary standard to both fighters; do not hold one to a stricter or looser bar than the other.
+- Power Level definitions (these form a strict tier ladder — never assign a higher power tier under a lesser setting):
+    Canon Only: strongest showing supported by the primary source work itself.
+    Composite: strongest showing across all canonical AND supplementary material (databooks, films, spin-offs, author statements). Must be greater than or equal to Canon Only; if no additional material exists beyond the primary work, state that rather than producing an identical verdict.
+    Post-Series Peak: the absolute maximum power the character has ever canonically reached (end-of-story / final form). This is the highest tier and must be greater than or equal to every other setting.
+    Current: the character as of the latest canonical point. Must be less than or equal to Post-Series Peak.
+- Battle Type governs WILLINGNESS, not power. Peak power is the baseline in every battle type:
+    In-Character: the character fights as they characteristically would, including any arrogance, mercy, reluctance, or tendency to hold back or not immediately use their strongest option. Power is still full; only behavior reflects personality.
+    Out of Character: the character fights fully optimized — complete tactical awareness, no hesitation, best options used immediately.
+    Standard Fight: the character fights seriously and competently to win, without heavy personality-based holding back.
+    Battle of Wits / Speed Blitz: keep their existing specialized behavior; peak power still applies.
+- Start from each fighter's canonical, demonstrated feats as the baseline.
+- ${hasClaims
+  ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support — the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
+  : `Judge purely on canonical, demonstrated feats.`}
+- Ground every verdict in specific, named in-universe feats — actual canonical events (what each character survived, destroyed, reacted to, lifted). Do NOT use vague power claims or external tier ratings. Describe any given feat the same way regardless of the opponent; do not inflate or deflate an established feat to fit the desired winner. The analysis must explicitly state which version and power tier of each character it is using (for example: "Cloud Strife at end-of-FFVII peak with full materia and Limit Breaks").
+- When a feat has contested or disputed canonical scaling, commit to a single interpretation and apply it consistently to both fighters. If you accept that type of evidence as valid for one fighter, apply the same standard to the other. Never treat a contested feat as credible for one fighter but dismiss or downplay it for another. Describe and scale any feat identically no matter who has it or who is affected by it.
+- Do NOT favor the more popular or famous character. Judge purely on capability.
+- Apply the Location setting as a constraint on the fight.
+- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
+
+Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
+{
+  "winner": "exact name of the winner (${fa} or ${fb}) or Draw",
+  "verdict_short": "one confident sentence summarizing the outcome",
+  "analysis": "3-5 sentences citing specific feats and reasoning. When granted abilities decided the outcome, say so explicitly.",
+  "advantages": ["up to 3 short labels for the winner, like Speed Advantage or Higher Durability"],
+  "user_claims_used": ["short summary of each granted ability that influenced the verdict, empty array if none"],
+  "feats_scanned": a number between 20 and 80,
+  "sources": a number between 5 and 20
+}`;
+}
+
+// ---- Single Anthropic call + JSON parse ----
+// Returns { verdict } on success or { error } on any failure. Never throws.
+async function callAndParse(apiKey, prompt) {
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1200,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Anthropic API error:", response.status, errText);
+      return { error: "api_error" };
+    }
+
+    const data = await response.json();
+    const text = (data.content || []).map(i => i.text || "").join("");
+
+    // Make parsing forgiving: strip any markdown code fences, then pull out just
+    // the JSON object, in case the model adds a stray sentence before or after it.
+    let clean = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const firstBrace = clean.indexOf("{");
+    const lastBrace = clean.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      clean = clean.slice(firstBrace, lastBrace + 1);
+    }
+
+    const verdict = JSON.parse(clean);
+    return { verdict };
+  } catch (e) {
+    console.error("callAndParse error:", e);
+    return { error: "parse_error" };
+  }
 }
 
 export default async function handler(req, res) {
@@ -147,89 +248,72 @@ export default async function handler(req, res) {
 
     const hasClaims = claims1.length > 0 || claims2.length > 0;
 
-    const prompt = `You are an impartial fictional-character battle analyst for a site called Versus Arena. Your defining trait is that you have NO favoritism: you do not let a character's popularity, fanbase size, or cultural status influence the outcome. You weigh feats, powerscaling, and lore, treating both fighters by the exact same standard.
+    // --- Build prompts for both orderings ---
+    // Call A: f1 listed first (original order).
+    // Call B: f2 listed first (swapped). Claims blocks follow their fighter so
+    // each character's grants are always attributed to the right character.
+    // Running both and reconciling eliminates position bias: a fighter who wins
+    // only because they were listed first will not win the other call.
+    const promptA = buildPrompt(f1, u1, claimsBlock1, f2, u2, claimsBlock2, hasClaims, battleType, location, power, depth);
+    const promptB = buildPrompt(f2, u2, claimsBlock2, f1, u1, claimsBlock1, hasClaims, battleType, location, power, depth);
 
-Analyze this 1v1 fight:
+    // --- Fire both calls concurrently ---
+    const [resultA, resultB] = await Promise.allSettled([
+      callAndParse(apiKey, promptA),
+      callAndParse(apiKey, promptB),
+    ]);
 
-Fighter 1: ${f1} (${u1 || "unknown universe"})
-Fighter 2: ${f2} (${u2 || "unknown universe"})
-Battle Type: ${battleType}
-Location: ${location}
-Power Level: ${power}
-Depth: ${depth}
-${claimsBlock1}
-${claimsBlock2}
-
-How to weigh abilities:
-- Use each character at their PEAK within the selected Power Level. Apply the character's strongest CONSISTENT canonical showing — never a weakened, early-series, or de-powered version. Apply the same evidentiary standard to both fighters; do not hold one to a stricter or looser bar than the other.
-- Power Level definitions (these form a strict tier ladder — never assign a higher power tier under a lesser setting):
-    Canon Only: strongest showing supported by the primary source work itself.
-    Composite: strongest showing across all canonical AND supplementary material (databooks, films, spin-offs, author statements). Must be greater than or equal to Canon Only; if no additional material exists beyond the primary work, state that rather than producing an identical verdict.
-    Post-Series Peak: the absolute maximum power the character has ever canonically reached (end-of-story / final form). This is the highest tier and must be greater than or equal to every other setting.
-    Current: the character as of the latest canonical point. Must be less than or equal to Post-Series Peak.
-- Battle Type governs WILLINGNESS, not power. Peak power is the baseline in every battle type:
-    In-Character: the character fights as they characteristically would, including any arrogance, mercy, reluctance, or tendency to hold back or not immediately use their strongest option. Power is still full; only behavior reflects personality.
-    Out of Character: the character fights fully optimized — complete tactical awareness, no hesitation, best options used immediately.
-    Standard Fight: the character fights seriously and competently to win, without heavy personality-based holding back.
-    Battle of Wits / Speed Blitz: keep their existing specialized behavior; peak power still applies.
-- Start from each fighter's canonical, demonstrated feats as the baseline.
-- ${hasClaims
-  ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support — the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
-  : `Judge purely on canonical, demonstrated feats.`}
-- Ground every verdict in specific, named in-universe feats — actual canonical events (what each character survived, destroyed, reacted to, lifted). Do NOT use vague power claims or external tier ratings. Describe any given feat the same way regardless of the opponent; do not inflate or deflate an established feat to fit the desired winner. The analysis must explicitly state which version and power tier of each character it is using (for example: "Cloud Strife at end-of-FFVII peak with full materia and Limit Breaks").
-- Do NOT favor the more popular or famous character. Judge purely on capability.
-- Apply the Location setting as a constraint on the fight.
-- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
-
-Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
-{
-  "winner": "exact name of the winner (${f1} or ${f2}) or Draw",
-  "verdict_short": "one confident sentence summarizing the outcome",
-  "analysis": "3-5 sentences citing specific feats and reasoning. When granted abilities decided the outcome, say so explicitly.",
-  "advantages": ["up to 3 short labels for the winner, like Speed Advantage or Higher Durability"],
-  "user_claims_used": ["short summary of each granted ability that influenced the verdict, empty array if none"],
-  "feats_scanned": a number between 20 and 80,
-  "sources": a number between 5 and 20
-}`;
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1200,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic API error:", response.status, errText);
-      return res.status(502).json({ error: "The analyst is unavailable right now. Try again in a moment." });
-    }
-
-    const data = await response.json();
-    const text = (data.content || []).map(i => i.text || "").join("");
-
-    // Make parsing forgiving: strip any markdown code fences, then pull out just
-    // the JSON object, in case the model adds a stray sentence before or after it.
-    let clean = text.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const firstBrace = clean.indexOf("{");
-    const lastBrace = clean.lastIndexOf("}");
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-      clean = clean.slice(firstBrace, lastBrace + 1);
-    }
+    const verdictA = resultA.status === "fulfilled" && !resultA.value.error ? resultA.value.verdict : null;
+    const verdictB = resultB.status === "fulfilled" && !resultB.value.error ? resultB.value.verdict : null;
 
     let verdict;
-    try {
-      verdict = JSON.parse(clean);
-    } catch (e) {
-      console.error("Failed to parse model output:", clean);
-      return res.status(502).json({ error: "Got an unexpected response. Please try again." });
+
+    if (verdictA && verdictB) {
+      // Both calls succeeded — reconcile.
+      if (verdictA.winner === verdictB.winner) {
+        // Agreement: the same fighter (or Draw) won in both orderings.
+        // Use the verdict from the call where the winner was listed first so
+        // the displayed reasoning reads naturally for the actual winner.
+        // If it is a Draw, fall back to verdictA (original order).
+        if (verdictA.winner === f1 || verdictA.winner === "Draw") {
+          verdict = verdictA;
+        } else {
+          verdict = verdictB;
+        }
+      } else {
+        // Disagreement: each call named a different winner, which means the
+        // result is position-biased or genuinely knife-edge. Return an honest
+        // toss-up using the existing Draw machinery the frontend already handles.
+        const callForF1 = verdictA.winner === f1 ? verdictA : (verdictB.winner === f1 ? verdictB : null);
+        const callForF2 = verdictA.winner === f2 ? verdictA : (verdictB.winner === f2 ? verdictB : null);
+        const f1Point = callForF1 ? (callForF1.verdict_short || "") : "";
+        const f2Point = callForF2 ? (callForF2.verdict_short || "") : "";
+        verdict = {
+          winner: "Draw",
+          verdict_short: `${f1} vs ${f2} is too close to call — two independent analyses split the result.`,
+          analysis: [
+            `Two independent analyses of this matchup reached opposite conclusions, making a definitive verdict impossible.`,
+            f1Point ? `The case for ${f1}: ${f1Point}` : `${f1} mounted a credible case on canonical feats.`,
+            f2Point ? `The case for ${f2}: ${f2Point}` : `${f2} mounted a credible case on canonical feats.`,
+            `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge — the outcome is genuinely too close to call.`,
+          ].join(" "),
+          advantages: [],
+          user_claims_used: verdictA.user_claims_used || [],
+          feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
+          sources: Math.round(((verdictA.sources || 0) + (verdictB.sources || 0)) / 2),
+        };
+      }
+    } else if (verdictA) {
+      // Call B failed; fall back to call A.
+      console.error("Swap call failed, using original-order result as fallback.");
+      verdict = verdictA;
+    } else if (verdictB) {
+      // Call A failed; fall back to call B.
+      console.error("Original call failed, using swap-order result as fallback.");
+      verdict = verdictB;
+    } else {
+      // Both calls failed.
+      return res.status(502).json({ error: "The analyst is unavailable right now. Try again in a moment." });
     }
 
     // Save to Supabase and generate a share ID (fail-open: a DB error never breaks the verdict).
