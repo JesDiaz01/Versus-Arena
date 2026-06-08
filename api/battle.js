@@ -304,14 +304,12 @@ export default async function handler(req, res) {
           verdict = { ...base, winner: winnerName };
         } else {
           // Averaged scores within the draw margin — genuine toss-up.
-          const f1Score = Math.round(avgF1);
-          const f2Score = Math.round(avgF2);
           const f1Point = verdictA.verdict_short || `${f1} showed a strong canonical case.`;
           const f2Point = verdictB.verdict_short || `${f2} showed an equally strong canonical case.`;
           verdict = {
             winner: "Draw",
-            verdict_short: `${f1} vs ${f2} is too close to call — averaged dominance scores: ${f1Score} to ${f2Score}.`,
-            analysis: `Two independent analyses produced nearly identical dominance scores for ${f1} (${f1Score}) and ${f2} (${f2Score}) after averaging out position bias, making a definitive verdict impossible. ${f1Point} ${f2Point} When two independent runs of the same fight score this evenly, neither fighter has a clear decisive edge.`,
+            verdict_short: `${f1} vs ${f2} is too close to call — the matchup is essentially even.`,
+            analysis: `Two independent analyses reached nearly identical conclusions on this matchup after correcting for position bias, making a definitive verdict impossible. ${f1Point} ${f2Point} When two independent runs of the same fight come out this close, neither fighter has a clear decisive edge.`,
             advantages: [],
             user_claims_used: verdictA.user_claims_used || [],
             feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
