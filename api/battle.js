@@ -20,6 +20,7 @@ const MAX_NAME_LEN = 80;     // fighter name / universe cap
 const MAX_CLAIM_LEN = 200;   // per custom-feat cap
 const MAX_CLAIMS = 20;       // max custom feats per side
 const MAX_BODY_BYTES = 20000; // reject payloads bigger than ~20KB
+const DRAW_MARGIN = 10;       // averaged dominance-score gap below which the fight is a draw
 
 // Allowlists for the dropdown settings — anything else falls back to the default (first item).
 const ALLOWED = {
@@ -135,6 +136,7 @@ How to weigh abilities:
 - Do NOT favor the more popular or famous character. Judge purely on capability.
 - Apply the Location setting as a constraint on the fight.
 - Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
+- After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use 90/10 for near-total domination, 60/40 for a clear but incomplete edge, 50/50 for dead even — and honest values in between. If it is genuinely close, score it close.
 
 Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
 {
@@ -144,7 +146,8 @@ Respond ONLY with a valid JSON object (no markdown, no backticks, no text before
   "advantages": ["up to 3 short labels for the winner, like Speed Advantage or Higher Durability"],
   "user_claims_used": ["short summary of each granted ability that influenced the verdict, empty array if none"],
   "feats_scanned": a number between 20 and 80,
-  "sources": a number between 5 and 20
+  "sources": a number between 5 and 20,
+  "scores": { "${fa}": <dominance score 0-100, integer>, "${fb}": <dominance score 0-100, integer> }
 }`;
 }
 
@@ -162,6 +165,7 @@ async function callAndParse(apiKey, prompt) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 1200,
+        temperature: 0.4,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -190,6 +194,14 @@ async function callAndParse(apiKey, prompt) {
     console.error("callAndParse error:", e);
     return { error: "parse_error" };
   }
+}
+
+// Safely extract a named fighter's dominance score from a verdict's scores object.
+// Clamps to [0, 100] and returns null if the field is absent or malformed.
+function getScore(verdict, name) {
+  if (!verdict || typeof verdict.scores !== "object" || verdict.scores === null) return null;
+  const s = verdict.scores[name];
+  return (typeof s === "number" && isFinite(s)) ? Math.max(0, Math.min(100, s)) : null;
 }
 
 export default async function handler(req, res) {
@@ -269,46 +281,74 @@ export default async function handler(req, res) {
     let verdict;
 
     if (verdictA && verdictB) {
-      // Both calls succeeded — reconcile.
-      if (verdictA.winner === verdictB.winner) {
-        // Agreement: the same fighter (or Draw) won in both orderings.
-        // Use the verdict from the call where the winner was listed first so
-        // the displayed reasoning reads naturally for the actual winner.
-        // If it is a Draw, fall back to verdictA (original order).
-        if (verdictA.winner === f1 || verdictA.winner === "Draw") {
-          verdict = verdictA;
+      // Both calls succeeded — reconcile by averaging dominance scores.
+      // Call A had f1 in slot 1; Call B had f2 in slot 1. Each fighter occupies
+      // slot 1 in one call and slot 2 in the other, so averaging their scores
+      // across both calls cancels symmetric position bias.
+      const scoreA_f1 = getScore(verdictA, f1);
+      const scoreA_f2 = getScore(verdictA, f2);
+      const scoreB_f1 = getScore(verdictB, f1);
+      const scoreB_f2 = getScore(verdictB, f2);
+      const hasScores = scoreA_f1 !== null && scoreA_f2 !== null && scoreB_f1 !== null && scoreB_f2 !== null;
+
+      if (hasScores) {
+        const avgF1 = (scoreA_f1 + scoreB_f1) / 2;
+        const avgF2 = (scoreA_f2 + scoreB_f2) / 2;
+
+        if (Math.abs(avgF1 - avgF2) > DRAW_MARGIN) {
+          // Clear winner by averaged scores.
+          const winnerName = avgF1 > avgF2 ? f1 : f2;
+          // Use the verdict from the call where the winner was slot 1 — that
+          // call argued FOR the winner, so its reasoning reads most naturally.
+          const base = winnerName === f1 ? verdictA : verdictB;
+          verdict = { ...base, winner: winnerName };
         } else {
-          verdict = verdictB;
+          // Averaged scores within the draw margin — genuine toss-up.
+          const f1Score = Math.round(avgF1);
+          const f2Score = Math.round(avgF2);
+          const f1Point = verdictA.verdict_short || `${f1} showed a strong canonical case.`;
+          const f2Point = verdictB.verdict_short || `${f2} showed an equally strong canonical case.`;
+          verdict = {
+            winner: "Draw",
+            verdict_short: `${f1} vs ${f2} is too close to call — averaged dominance scores: ${f1Score} to ${f2Score}.`,
+            analysis: `Two independent analyses produced nearly identical dominance scores for ${f1} (${f1Score}) and ${f2} (${f2Score}) after averaging out position bias, making a definitive verdict impossible. ${f1Point} ${f2Point} When two independent runs of the same fight score this evenly, neither fighter has a clear decisive edge.`,
+            advantages: [],
+            user_claims_used: verdictA.user_claims_used || [],
+            feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
+            sources: Math.round(((verdictA.sources || 0) + (verdictB.sources || 0)) / 2),
+          };
         }
       } else {
-        // Disagreement: each call named a different winner, which means the
-        // result is position-biased or genuinely knife-edge. Return an honest
-        // toss-up using the existing Draw machinery the frontend already handles.
-        const callForF1 = verdictA.winner === f1 ? verdictA : (verdictB.winner === f1 ? verdictB : null);
-        const callForF2 = verdictA.winner === f2 ? verdictA : (verdictB.winner === f2 ? verdictB : null);
-        const f1Point = callForF1 ? (callForF1.verdict_short || "") : "";
-        const f2Point = callForF2 ? (callForF2.verdict_short || "") : "";
-        verdict = {
-          winner: "Draw",
-          verdict_short: `${f1} vs ${f2} is too close to call — two independent analyses split the result.`,
-          analysis: [
-            `Two independent analyses of this matchup reached opposite conclusions, making a definitive verdict impossible.`,
-            f1Point ? `The case for ${f1}: ${f1Point}` : `${f1} mounted a credible case on canonical feats.`,
-            f2Point ? `The case for ${f2}: ${f2Point}` : `${f2} mounted a credible case on canonical feats.`,
-            `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge — the outcome is genuinely too close to call.`,
-          ].join(" "),
-          advantages: [],
-          user_claims_used: verdictA.user_claims_used || [],
-          feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
-          sources: Math.round(((verdictA.sources || 0) + (verdictB.sources || 0)) / 2),
-        };
+        // Scores missing or malformed — fall back to comparing binary winners.
+        if (verdictA.winner === verdictB.winner) {
+          verdict = (verdictA.winner === f1 || verdictA.winner === "Draw") ? verdictA : verdictB;
+        } else {
+          const callForF1 = verdictA.winner === f1 ? verdictA : (verdictB.winner === f1 ? verdictB : null);
+          const callForF2 = verdictA.winner === f2 ? verdictA : (verdictB.winner === f2 ? verdictB : null);
+          const f1Point = callForF1 ? (callForF1.verdict_short || "") : "";
+          const f2Point = callForF2 ? (callForF2.verdict_short || "") : "";
+          verdict = {
+            winner: "Draw",
+            verdict_short: `${f1} vs ${f2} is too close to call — two independent analyses split the result.`,
+            analysis: [
+              `Two independent analyses of this matchup reached opposite conclusions, making a definitive verdict impossible.`,
+              f1Point ? `The case for ${f1}: ${f1Point}` : `${f1} mounted a credible case on canonical feats.`,
+              f2Point ? `The case for ${f2}: ${f2Point}` : `${f2} mounted a credible case on canonical feats.`,
+              `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge — the outcome is genuinely too close to call.`,
+            ].join(" "),
+            advantages: [],
+            user_claims_used: verdictA.user_claims_used || [],
+            feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
+            sources: Math.round(((verdictA.sources || 0) + (verdictB.sources || 0)) / 2),
+          };
+        }
       }
     } else if (verdictA) {
-      // Call B failed; fall back to call A.
+      // Call B failed; fall back to call A's result as-is.
       console.error("Swap call failed, using original-order result as fallback.");
       verdict = verdictA;
     } else if (verdictB) {
-      // Call A failed; fall back to call B.
+      // Call A failed; fall back to call B's result as-is.
       console.error("Original call failed, using swap-order result as fallback.");
       verdict = verdictB;
     } else {
