@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena from "./BattleArena";
+import SharedBattle from "./SharedBattle";
 import About from "./About";
 import Tools from "./Tools";
 import Leaderboard from "./Leaderboard";
@@ -11,6 +12,8 @@ import "./App.css";
 export default function App() {
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
+  const [sharedBattle, setSharedBattle] = useState(null);
+  const [sharedLoading, setSharedLoading] = useState(false);
 
   // When you switch pages, jump back to the top so you land at the start of the
   // new page (e.g. the arena on home) instead of staying scrolled down where the
@@ -18,6 +21,25 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [page]);
+
+  // On startup, check for a shared battle link (?b=<id>).
+  // If found, skip the splash and load the saved battle.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const battleId = params.get("b");
+    if (!battleId) return;
+
+    setEntered(true);
+    setSharedLoading(true);
+
+    fetch("/api/get-battle?id=" + encodeURIComponent(battleId))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.error) setSharedBattle(data);
+      })
+      .catch(function() {})
+      .finally(function() { setSharedLoading(false); });
+  }, []);
 
   if (!entered) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
@@ -76,6 +98,26 @@ export default function App() {
           onPrivacy={() => setPage("privacy")}
         />
       </>
+    );
+  }
+
+  if (sharedLoading) {
+    return (
+      <div className="sb-loading-screen">
+        <div className="sb-loading-text">Loading battle...</div>
+      </div>
+    );
+  }
+
+  if (sharedBattle) {
+    return (
+      <SharedBattle
+        battle={sharedBattle}
+        onBackToArena={function() {
+          setSharedBattle(null);
+          window.history.replaceState({}, "", window.location.pathname);
+        }}
+      />
     );
   }
 

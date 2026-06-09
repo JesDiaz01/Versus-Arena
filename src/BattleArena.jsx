@@ -21,6 +21,7 @@ function FighterSilhouette() {
 }
 
 const CLAIM_LIMIT = 100;
+const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
 const FANDOM_MAP = {
   "persona": "megamitensei", "persona 3": "megamitensei", "persona 4": "megamitensei",
@@ -72,6 +73,14 @@ const FANDOM_PAGE_SUFFIX = {
   "leagueoflegends": "/LoL",
 };
 
+function cleanImageUrl(url) {
+  const trimmed = url.trim();
+  // Fandom/Wikia CDN appends /revision/latest/... path segments after the file extension.
+  // Cutting there gives the clean direct image URL, matching what the auto-fetcher already does.
+  if (trimmed.includes("/revision/")) return trimmed.split("/revision/")[0];
+  return trimmed;
+}
+
 async function fetchFandomPageImage(wikiName, pageTitle) {
   try {
     const url = `https://${wikiName}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images|text&format=json&origin=*`;
@@ -101,7 +110,7 @@ async function fetchFandomPageImage(wikiName, pageTitle) {
     const html = data?.parse?.text?.["*"];
     if (html) {
       const match = html.match(/<img[^>]+src="(https?:\/\/[^"]+\.(?:png|jpg|jpeg|webp|gif))"/i);
-      if (match?.[1]) return match[1].split("/revision/")[0];
+      if (match?.[1]) return cleanImageUrl(match[1]);
     }
     return null;
   } catch (e) { return null; }
@@ -487,7 +496,7 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
 
   if (isDraw) {
     const verdict_short = rngPick(rng, [
-      "Too close to call — it's a draw.",
+      "Too close to call. It's a draw.",
       "A genuine stalemate.",
       "Dead even, no clear winner.",
     ]);
@@ -539,27 +548,41 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
   };
 }
 
-export default function BattleArena() {
-  const [f1, setF1] = useState("");
-  const [f2, setF2] = useState("");
-  const [u1, setU1] = useState("");
-  const [u2, setU2] = useState("");
+export default function BattleArena({ initialBattle = null }) {
+  const init = initialBattle?.battle_data || {};
+  const [f1, setF1] = useState(init.f1 || "");
+  const [f2, setF2] = useState(init.f2 || "");
+  const [u1, setU1] = useState(init.u1 || "");
+  const [u2, setU2] = useState(init.u2 || "");
   const [override1, setOverride1] = useState(null);
   const [override2, setOverride2] = useState(null);
-  const [claims1, setClaims1] = useState([]);
-  const [claims2, setClaims2] = useState([]);
+  const [claims1, setClaims1] = useState(init.claims1 || []);
+  const [claims2, setClaims2] = useState(init.claims2 || []);
   const [draft1, setDraft1] = useState("");
   const [draft2, setDraft2] = useState("");
-  const [battleType, setBattleType] = useState("Standard Fight");
-  const [location, setLocation] = useState("Neutral Terrain");
-  const [power, setPower] = useState("Canon Only");
-  const [depth, setDepth] = useState("Quick Verdict");
+  const [battleType, setBattleType] = useState(init.battleType || "Standard Fight");
+  const [location, setLocation] = useState(init.location || "Neutral Terrain");
+  const [power, setPower] = useState(init.power || "Canon Only");
+  const [depth, setDepth] = useState(init.depth || "Quick Verdict");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(initialBattle?.result || null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const [imgError1, setImgError1] = useState(false);
+  const [imgError2, setImgError2] = useState(false);
+  const [imgAdjust1, setImgAdjust1] = useState(DEFAULT_ADJUST);
+  const [imgAdjust2, setImgAdjust2] = useState(DEFAULT_ADJUST);
+  const [imgAdjusted1, setImgAdjusted1] = useState(false);
+  const [imgAdjusted2, setImgAdjusted2] = useState(false);
 
   const img1 = useCharacterImage(f1, u1, override1);
   const img2 = useCharacterImage(f2, u2, override2);
+
+  useEffect(() => { setImgError1(false); }, [img1.imageUrl]);
+  useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
+  useEffect(() => { setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false); }, [override1]);
+  useEffect(() => { setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false); }, [override2]);
 
   function addClaim(side) {
     const draft = side === 1 ? draft1 : draft2;
@@ -626,7 +649,19 @@ export default function BattleArena() {
     setOverride1(null); setOverride2(null);
     setClaims1([]); setClaims2([]);
     setDraft1(""); setDraft2("");
-    setResult(null); setError("");
+    setResult(null); setError(""); setCopied(false);
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }
+
+  function shareBattle() {
+    if (!result || !result.id) return;
+    const url = window.location.origin + "/?b=" + result.id;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
   }
 
   const isWinner1 = result && result.winner.toLowerCase().includes(f1.toLowerCase());
@@ -634,20 +669,81 @@ export default function BattleArena() {
 
   function renderAvatar(side) {
     const img = side === 1 ? img1 : img2;
+    const imgError = side === 1 ? imgError1 : imgError2;
+    const setImgError = side === 1 ? setImgError1 : setImgError2;
+    const adjust = side === 1 ? imgAdjust1 : imgAdjust2;
+    const setAdjust = side === 1 ? setImgAdjust1 : setImgAdjust2;
+    const adjusted = side === 1 ? imgAdjusted1 : imgAdjusted2;
+    const setAdjusted = side === 1 ? setImgAdjusted1 : setImgAdjusted2;
     const fighter = side === 1 ? f1 : f2;
     const stateClass = result
       ? (isDraw ? "active" : ((side === 1 ? isWinner1 : !isWinner1) ? "winner" : "loser"))
       : (fighter ? "active" : "");
+    const isDefaultAdjust = adjust.x === 50 && adjust.y === 50 && adjust.zoom === 1;
 
     return (
-      <div className={`fighter-avatar ${stateClass} ${img.loading ? "loading" : ""}`}>
-        {img.imageUrl ? (
-          <img src={img.imageUrl} alt={fighter} className="fighter-photo" onError={(e) => { e.target.style.display = 'none'; }} />
-        ) : (
-          <FighterSilhouette />
+      <>
+        <div className={`fighter-avatar ${stateClass} ${img.loading ? "loading" : ""}`}>
+          {img.imageUrl && !imgError ? (
+            <img
+              src={img.imageUrl}
+              alt={fighter}
+              className="fighter-photo"
+              onError={() => setImgError(true)}
+              style={{
+                objectPosition: `${adjust.x}% ${adjust.y}%`,
+                transform: `scale(${adjust.zoom})`,
+                transformOrigin: `${adjust.x}% ${adjust.y}%`,
+              }}
+            />
+          ) : (
+            <FighterSilhouette />
+          )}
+          {img.loading && <div className="avatar-spinner" />}
+        </div>
+        {img.imageUrl && !imgError && !result && !adjusted && (
+          <div className="img-adjust">
+            <div className="img-adjust-row">
+              <span className="img-adjust-label">vertical</span>
+              <input type="range" className="img-adjust-slider"
+                min="0" max="100" step="1" value={adjust.y}
+                onChange={e => setAdjust({ ...adjust, y: Number(e.target.value) })} />
+            </div>
+            <div className="img-adjust-row">
+              <span className="img-adjust-label">zoom</span>
+              <input type="range" className="img-adjust-slider"
+                min="1" max="3" step="0.05" value={adjust.zoom}
+                onChange={e => setAdjust({ ...adjust, zoom: Number(e.target.value) })} />
+            </div>
+            <div className="img-adjust-row">
+              <span className="img-adjust-label">horizontal</span>
+              <input type="range" className="img-adjust-slider"
+                min="0" max="100" step="1" value={adjust.x}
+                onChange={e => setAdjust({ ...adjust, x: Number(e.target.value) })} />
+            </div>
+            <div className="img-adjust-actions">
+              {!isDefaultAdjust && (
+                <button className="img-adjust-reset" onClick={() => setAdjust(DEFAULT_ADJUST)}>
+                  reset
+                </button>
+              )}
+              <button className="img-adjust-done" onClick={() => setAdjusted(true)}>
+                done
+              </button>
+            </div>
+          </div>
         )}
-        {img.loading && <div className="avatar-spinner" />}
-      </div>
+        {img.imageUrl && !imgError && !result && adjusted && (
+          <button className="img-readjust" onClick={() => setAdjusted(false)}>
+            Adjust
+          </button>
+        )}
+        {imgError && (
+          <p style={{ fontSize: "0.72rem", color: "var(--muted)", textAlign: "center", margin: "0.3rem 0 0.5rem" }}>
+            Couldn't load that image — try a different link.
+          </p>
+        )}
+      </>
     );
   }
 
@@ -781,7 +877,7 @@ export default function BattleArena() {
           <div className="result-panel">
             {result.demo && (
               <div className="demo-banner">
-                <strong>Demo verdict.</strong> Real AI analysis isn't connected yet — the winner here is illustrative only, to show how results will look.
+                <strong>Demo verdict.</strong> Real AI analysis isn't connected yet; the winner here is illustrative only, to show how results will look.
               </div>
             )}
             <div className="result-header">
@@ -820,8 +916,11 @@ export default function BattleArena() {
 
             <div className="share-row">
               <button className="rematch-btn" onClick={reset}>New Battle</button>
-              <button className="share-btn">Share Result</button>
-              <button className="share-btn">Copy Link</button>
+              {result.id && (
+                <button className="share-btn" onClick={shareBattle}>
+                  {copied ? "Link copied!" : "Share Battle"}
+                </button>
+              )}
             </div>
           </div>
         )}
