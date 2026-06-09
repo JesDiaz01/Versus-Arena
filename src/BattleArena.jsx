@@ -312,6 +312,26 @@ function useCharacterImage(name, universe, override) {
   return { imageUrl, loading };
 }
 
+function cleanImageUrl(url) {
+  let s = url.trim();
+  if (s.includes("imgurl=")) {
+    try {
+      const parsed = new URL(s);
+      const inner = parsed.searchParams.get("imgurl");
+      if (inner) s = decodeURIComponent(inner);
+    } catch (_) {
+      const idx = s.indexOf("imgurl=");
+      if (idx !== -1) {
+        const after = s.slice(idx + 7);
+        const end = after.indexOf("&");
+        s = decodeURIComponent(end === -1 ? after : after.slice(0, end));
+      }
+    }
+  }
+  s = s.split("/revision/")[0];
+  return s;
+}
+
 function ImageOverride({ onSet, hasOverride, onClear }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -320,7 +340,7 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
 
   function handleUrlSubmit() {
     if (!urlInput.trim()) return;
-    onSet(urlInput.trim());
+    onSet(cleanImageUrl(urlInput));
     setUrlInput("");
     setOpen(false);
     setMode(null);
