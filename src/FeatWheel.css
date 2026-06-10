@@ -1,0 +1,42 @@
+.fw-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fw-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-align: center;
+}
+
+.fw-svg {
+  display: block;
+  overflow: visible;
+}
+
+.fw-result {
+  font-size: 0.88rem;
+  text-align: center;
+  min-height: 1.4em;
+  line-height: 1.4;
+}
+
+.fw-result-label {
+  color: var(--muted);
+}
+
+.fw-result-value {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.fw-result-placeholder {
+  display: inline-block;
+  min-width: 1px;
+}

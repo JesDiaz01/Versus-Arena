@@ -8,12 +8,14 @@ import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
 import PrivacyPolicy from "./PrivacyPolicy";
 import "./App.css";
+import CanItBeatGoku from "./CanItBeatGoku";
 
 export default function App() {
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
   const [sharedBattle, setSharedBattle] = useState(null);
   const [sharedLoading, setSharedLoading] = useState(false);
+  const [showGoku, setShowGoku] = useState(false);
 
   // When you switch pages, jump back to the top so you land at the start of the
   // new page (e.g. the arena on home) instead of staying scrolled down where the
@@ -39,6 +41,15 @@ export default function App() {
       })
       .catch(function() {})
       .finally(function() { setSharedLoading(false); });
+  }, []);
+
+  useEffect(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("b")) return;
+    if (params.get("goku") !== null) {
+      setEntered(true);
+      setShowGoku(true);
+    }
   }, []);
 
   if (!entered) {
@@ -121,6 +132,17 @@ export default function App() {
     );
   }
 
+  if (showGoku) {
+    return (
+      <CanItBeatGoku
+        onBackToArena={function() {
+          setShowGoku(false);
+          window.history.replaceState({}, "", window.location.pathname);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="page">
       <nav className="navbar">
@@ -131,6 +153,7 @@ export default function App() {
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
           <li><a href="#">Categories</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
+          <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
           <li><a href="#" className="nav-cta">Sign Up Free</a></li>
         </ul>
       </nav>
