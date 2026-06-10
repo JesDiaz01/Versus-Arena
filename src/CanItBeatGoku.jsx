@@ -57,93 +57,107 @@ export default function CanItBeatGoku({ onBackToArena }) {
         </button>
       </div>
 
-      <header className="cbg-header">
-        <h1 className="cbg-title">CAN IT BEAT GOKU?</h1>
-        <p className="cbg-subtitle">Spin every wheel. Survive the comparison.</p>
-        <p className="cbg-subtitle">Put your own OC against Goku. Will they prevail?</p>
-      </header>
+      <div className="cbg-container">
+        <header className="cbg-header">
+          <h1 className="cbg-title">CAN IT BEAT GOKU?</h1>
+          <p className="cbg-subtitle">Spin every wheel. Survive the comparison.</p>
+          <p className="cbg-subtitle">Put your own OC against Goku. Will they prevail?</p>
+        </header>
 
-      {!done && currentCat && (
-        <div className="cbg-step-area">
+        {!done && currentCat && (
           <div className="cbg-progress">
             Stat {step + 1} of {CATEGORIES.length}: <strong>{currentCat.title}</strong>
           </div>
+        )}
 
-          <FeatWheel
-            key={currentCat.key}
-            title={currentCat.title}
-            items={currentCat.items}
-            onSpinStart={function() {
-              setResults(function(r) {
-                var next = Object.assign({}, r);
-                next[currentCat.key] = null;
-                return next;
-              });
-            }}
-            onResult={function(val) {
-              setResults(function(r) {
-                var next = Object.assign({}, r);
-                next[currentCat.key] = val;
-                return next;
-              });
-            }}
-            size={320}
-          />
+        <div className="cbg-layout">
+          <div className="cbg-wheel-col">
+            {!done && currentCat && (
+              <div className="cbg-step-area">
+                <FeatWheel
+                  key={currentCat.key}
+                  title={currentCat.title}
+                  items={currentCat.items}
+                  onSpinStart={function() {
+                    setResults(function(r) {
+                      var next = Object.assign({}, r);
+                      next[currentCat.key] = null;
+                      return next;
+                    });
+                  }}
+                  onResult={function(val) {
+                    setResults(function(r) {
+                      var next = Object.assign({}, r);
+                      next[currentCat.key] = val;
+                      return next;
+                    });
+                  }}
+                  size={500}
+                />
 
-          {currentResult && (
-            <button className="cbg-continue-btn" onClick={handleContinue}>
-              {step < CATEGORIES.length - 1 ? "Continue" : "See Verdict"}
-            </button>
-          )}
-        </div>
-      )}
+                {currentResult && (
+                  <button className="cbg-continue-btn" onClick={handleContinue}>
+                    {step < CATEGORIES.length - 1 ? "Continue" : "See Verdict"}
+                  </button>
+                )}
+              </div>
+            )}
 
-      {done && outcomeData && (
-        <div className="cbg-verdict-card">
-          <div className="cbg-eyebrow">VERDICT</div>
-          <h2 className="cbg-headline">
-            {outcomeData.result === "WIN"  ? "THEY BEAT GOKU" :
-             outcomeData.result === "DRAW" ? "DEAD EVEN"      : "GOKU WINS"}
-          </h2>
+            {done && outcomeData && (
+              <div className="cbg-verdict-card">
+                <div className="cbg-eyebrow">VERDICT</div>
+                <h2 className="cbg-headline">
+                  {outcomeData.result === "WIN"  ? "THEY BEAT GOKU" :
+                   outcomeData.result === "DRAW" ? "DEAD EVEN"      : "GOKU WINS"}
+                </h2>
 
-          <div className="cbg-comparison">
-            <div className="cbg-cmp-header">
-              <span>Stat</span>
-              <span>Your Fighter</span>
-              <span>{GOKU.version}</span>
-            </div>
-            {CATEGORIES.map(function(cat) {
-              var isShort = outcomeData.shortfalls.indexOf(cat.title) !== -1;
-              var isEdge  = outcomeData.edges.indexOf(cat.title)     !== -1;
-              return (
-                <div
-                  key={cat.key}
-                  className={"cbg-cmp-row" +
-                    (isShort ? " cbg-cmp-row--loss" : isEdge ? " cbg-cmp-row--win" : "")}
-                >
-                  <span className="cbg-cmp-cat">{cat.title}</span>
-                  <span className={"cbg-cmp-val" + (isShort ? " cbg-cmp-val--short" : "")}>
-                    {isShort ? "↓ " : isEdge ? "↑ " : ""}{results[cat.key]}
-                  </span>
-                  <span className="cbg-cmp-val">{GOKU[cat.key]}</span>
-                </div>
-              );
-            })}
+                <p className="cbg-flavor"><strong>{flavorLine}</strong></p>
+
+                <button className="cbg-respin-btn" onClick={handleRespinAll}>
+                  Respin All
+                </button>
+              </div>
+            )}
           </div>
 
-          {outcomeData.shortfalls.length > 0 && (
-            <p className="cbg-shortfall-note">
-              Falls short on: <strong>{outcomeData.shortfalls.join(", ")}</strong>
-            </p>
-          )}
+          <div className="cbg-score-col">
+            <div className="cbg-scorecard">
+              <div className="cbg-score-header">
+                <span></span>
+                <span>Your Fighter</span>
+                <span>Goku</span>
+              </div>
 
-          <p className="cbg-flavor"><strong>{flavorLine}</strong></p>
-
-          <button className="cbg-respin-btn" onClick={handleRespinAll}>
-            Respin All
-          </button>
+              {CATEGORIES.map(function(cat, i) {
+                var isCurrent = !done && i === step;
+                var isShort = done && outcomeData && outcomeData.shortfalls.indexOf(cat.title) !== -1;
+                var isEdge  = done && outcomeData && outcomeData.edges.indexOf(cat.title)     !== -1;
+                var fighterVal = results[cat.key];
+                return (
+                  <div
+                    key={cat.key}
+                    className={"cbg-score-row" + (isCurrent ? " cbg-score-row--current" : "")}
+                  >
+                    <span className="cbg-score-cat">{cat.title}</span>
+                    <span
+                      className={"cbg-score-val" +
+                        (!fighterVal ? " cbg-score-val--empty" : "") +
+                        (isShort ? " cbg-score-val--short" : "")}
+                    >
+                      {fighterVal || "--"}
+                      {isShort && <span className="cbg-score-tag">below</span>}
+                      {isEdge  && <span className="cbg-score-tag cbg-score-tag--up">above</span>}
+                    </span>
+                    <span className={"cbg-score-val" + (done ? "" : " cbg-score-val--empty")}>
+                      {done ? GOKU[cat.key] : "???"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

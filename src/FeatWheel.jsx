@@ -74,9 +74,14 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
       {title && <div className="fw-title">{title}</div>}
       <svg
         viewBox="0 0 320 320"
-        width={size}
-        height={size}
         className="fw-svg"
+        style={{
+          width: "100%",
+          height: "auto",
+          maxWidth: size + "px",
+          display: "block",
+          margin: "0 auto"
+        }}
       >
         {/* Rotating wheel group */}
         <g
