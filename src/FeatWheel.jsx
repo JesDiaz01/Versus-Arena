@@ -33,12 +33,14 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
 
   const [currentRotation, setCurrentRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
   const [landedItem, setLandedItem] = useState(null);
   const rotationRef = useRef(0);
   const wheelRef = useRef(null);
 
   function handleSpin() {
-    if (spinning) return;
+    if (spinning || hasSpun) return;
+    setHasSpun(true);
 
     const winnerIndex = Math.floor(Math.random() * n);
     const rawTarget = -((winnerIndex + 0.5) * segAngle);
@@ -146,7 +148,11 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
           r={HUB_R}
           fill="var(--ink)"
           onClick={handleSpin}
-          style={{ cursor: spinning ? "default" : "pointer", opacity: spinning ? 0.65 : 1 }}
+          style={{
+            cursor: spinning || hasSpun ? "default" : "pointer",
+            opacity: spinning || hasSpun ? 0.65 : 1,
+            pointerEvents: spinning || hasSpun ? "none" : "auto"
+          }}
         />
         <text
           x={CX}
