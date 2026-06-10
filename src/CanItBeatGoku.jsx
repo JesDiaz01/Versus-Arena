@@ -30,13 +30,13 @@ export default function CanItBeatGoku({ onBackToArena }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   var flavorLine = useMemo(function() {
     if (!outcomeData) return null;
-    var line = randomPick(FLAVOR_TEXT[outcomeData.result]);
+    var line = randomPick(FLAVOR_TEXT[outcomeData.bucket]);
     return fillTemplate(line, {
-      version:  GOKU.version,
-      strength: results.strength,
-      speed:    results.speed,
-      iq:       results.iq,
-      fighting: results.fighting
+      strength:   results.strength,
+      speed:      results.speed,
+      iq:         results.iq,
+      fighting:   results.fighting,
+      durability: results.durability
     });
   }, [outcomeData]);
 
@@ -107,8 +107,8 @@ export default function CanItBeatGoku({ onBackToArena }) {
               <div className="cbg-verdict-card">
                 <div className="cbg-eyebrow">VERDICT</div>
                 <h2 className="cbg-headline">
-                  {outcomeData.result === "WIN"  ? "THEY BEAT GOKU" :
-                   outcomeData.result === "DRAW" ? "DEAD EVEN"      : "GOKU WINS"}
+                  {outcomeData.bucket.endsWith("_WIN") ? "THEY BEAT GOKU" :
+                   outcomeData.bucket === "DRAW"       ? "DEAD EVEN"      : "GOKU WINS"}
                 </h2>
 
                 <p className="cbg-flavor"><strong>{flavorLine}</strong></p>
