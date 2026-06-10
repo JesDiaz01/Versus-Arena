@@ -73,14 +73,6 @@ const FANDOM_PAGE_SUFFIX = {
   "leagueoflegends": "/LoL",
 };
 
-function cleanImageUrl(url) {
-  const trimmed = url.trim();
-  // Fandom/Wikia CDN appends /revision/latest/... path segments after the file extension.
-  // Cutting there gives the clean direct image URL, matching what the auto-fetcher already does.
-  if (trimmed.includes("/revision/")) return trimmed.split("/revision/")[0];
-  return trimmed;
-}
-
 async function fetchFandomPageImage(wikiName, pageTitle) {
   try {
     const url = `https://${wikiName}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images|text&format=json&origin=*`;
