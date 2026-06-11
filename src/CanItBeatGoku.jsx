@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import FeatWheel from "./FeatWheel";
-import { CATEGORIES, GOKU, decideOutcome, FLAVOR_TEXT, fillTemplate } from "./gokuData";
+import { CATEGORIES, GOKU, decideOutcome, FLAVOR_TEXT, fillTemplate, tierNames, tierDesc } from "./gokuData";
 import "./CanItBeatGoku.css";
 
 function randomPick(arr) {
@@ -66,7 +66,7 @@ export default function CanItBeatGoku({ onBackToArena }) {
 
         {!done && currentCat && (
           <div className="cbg-progress">
-            Stat {step + 1} of {CATEGORIES.length}: <strong>{currentCat.title}</strong>
+            Stat {step + 1} of {CATEGORIES.length}
           </div>
         )}
 
@@ -74,10 +74,14 @@ export default function CanItBeatGoku({ onBackToArena }) {
           <div className="cbg-wheel-col">
             {!done && currentCat && (
               <div className="cbg-step-area">
+                <div className="cbg-wheel-heading">
+                  <div className="cbg-wheel-title">{currentCat.title}</div>
+                  <p className="cbg-cat-blurb">{currentCat.blurb}</p>
+                </div>
+
                 <FeatWheel
                   key={currentCat.key}
-                  title={currentCat.title}
-                  items={currentCat.items}
+                  items={tierNames(currentCat.items)}
                   onSpinStart={function() {
                     setResults(function(r) {
                       var next = Object.assign({}, r);
@@ -94,6 +98,10 @@ export default function CanItBeatGoku({ onBackToArena }) {
                   }}
                   size={500}
                 />
+
+                {currentResult && tierDesc(currentCat.items, currentResult) !== "" && (
+                  <p className="cbg-tier-desc">{tierDesc(currentCat.items, currentResult)}</p>
+                )}
 
                 {currentResult && (
                   <button className="cbg-continue-btn" onClick={handleContinue}>
@@ -147,6 +155,9 @@ export default function CanItBeatGoku({ onBackToArena }) {
                       {fighterVal || "--"}
                       {isShort && <span className="cbg-arrow-down" role="img" aria-label="below Goku">{"\u25BC"}</span>}
                       {isEdge  && <span className="cbg-arrow-up" role="img" aria-label="above Goku">{"\u25B2"}</span>}
+                      {fighterVal && tierDesc(cat.items, fighterVal) !== "" && (
+                        <span className="cbg-score-desc">{tierDesc(cat.items, fighterVal)}</span>
+                      )}
                     </span>
                     <span className={"cbg-score-val" + (done ? "" : " cbg-score-val--empty")}>
                       {done ? GOKU[cat.key] : "???"}

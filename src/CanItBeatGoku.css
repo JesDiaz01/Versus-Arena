@@ -134,6 +134,43 @@
   gap: 1.25rem;
 }
 
+/* Tier description under the landed result */
+.cbg-tier-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 420px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Wheel heading: title (moved out of FeatWheel) + fixed category blurb */
+.cbg-wheel-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+
+.cbg-wheel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-align: center;
+}
+
+.cbg-cat-blurb {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* ── Continue / See Verdict button ── */
 .cbg-continue-btn {
   font-family: 'Cinzel', serif;
@@ -308,6 +345,16 @@
 }
 .cbg-arrow-down {
   color: var(--down-red);
+}
+
+/* Tier description under the fighter's value in a scorecard row */
+.cbg-score-desc {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.35;
+  margin-top: 0.15rem;
 }
 
 /* ── Responsive ── */
