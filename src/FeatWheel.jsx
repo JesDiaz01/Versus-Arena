@@ -8,6 +8,9 @@ const SEG_R = 140;
 const RIM_R = 145;
 const HUB_R = 30;
 const TEXT_R = 108;
+const LABEL_INNER_STOP = HUB_R + 6;  // labels may not cross this radius
+const LABEL_MAX_LEN = TEXT_R - LABEL_INNER_STOP;
+const CHAR_W = 0.6;                  // rough average glyph width in em, for width estimation
 
 function toCartesian(angleDeg, r) {
   const rad = (angleDeg - 90) * Math.PI / 180;
@@ -111,6 +114,7 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
 
           {items.map(function(item, i) {
             var svgAngle = (i + 0.5) * segAngle - 90;
+            var clampLabel = item.length * fontSize * CHAR_W > LABEL_MAX_LEN;
             return (
               <g
                 key={i}
@@ -125,6 +129,8 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
                   fill="var(--ink)"
                   fontWeight="600"
                   fontFamily="Inter, sans-serif"
+                  textLength={clampLabel ? LABEL_MAX_LEN : undefined}
+                  lengthAdjust={clampLabel ? "spacingAndGlyphs" : undefined}
                 >
                   {item}
                 </text>

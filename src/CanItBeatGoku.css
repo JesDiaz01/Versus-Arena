@@ -29,15 +29,13 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   background: none;
-  border: 1px solid var(--line-strong);
-  color: var(--ink-soft);
+  border: none;
+  color: var(--gold);
   padding: 0.6rem 1.5rem;
-  border-radius: 2px;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition: color 0.2s;
 }
 .cbg-back-btn:hover {
-  border-color: var(--ink);
   color: var(--ink);
 }
 
