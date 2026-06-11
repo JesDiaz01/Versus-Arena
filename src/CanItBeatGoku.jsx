@@ -161,6 +161,9 @@ export default function CanItBeatGoku({ onBackToArena }) {
                     </span>
                     <span className={"cbg-score-val" + (done ? "" : " cbg-score-val--empty")}>
                       {done ? GOKU[cat.key] : "???"}
+                      {done && tierDesc(cat.items, GOKU[cat.key]) !== "" && (
+                        <span className="cbg-score-desc">{tierDesc(cat.items, GOKU[cat.key])}</span>
+                      )}
                     </span>
                   </div>
                 );
