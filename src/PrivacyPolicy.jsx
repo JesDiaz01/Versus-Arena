@@ -20,7 +20,7 @@ export default function PrivacyPolicy({ onBack }) {
           VERSUS<span> ARENA</span>
         </a>
         <ul className="nav-links">
-          <li><a href="#" onClick={goBack}>Back to Arena</a></li>
+          <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
         </ul>
       </nav>
 

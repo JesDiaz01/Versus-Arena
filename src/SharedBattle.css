@@ -229,16 +229,15 @@
   text-transform: uppercase;
   background: none;
   border: 1px solid var(--line-strong);
-  color: var(--ink-soft);
+  color: var(--ink);
   padding: 0.7rem 1.75rem;
   border-radius: 2px;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition: color 0.2s;
 }
 
 .sb-back-btn:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+  color: var(--gold);
 }
 
 /* ── Responsive ── */

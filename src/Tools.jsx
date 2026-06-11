@@ -1122,7 +1122,7 @@ export default function Tools({ onBack }) {
           VERSUS<span> ARENA</span>
         </a>
         <ul className="nav-links">
-          <li><a href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to Arena</a></li>
+          <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
         </ul>
       </nav>
 

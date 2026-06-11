@@ -75,6 +75,11 @@ body::before {
   transition: color 0.2s;
 }
 .nav-links a:hover { color: var(--ink); }
+.nav-links a.nav-back-link {
+  color: var(--ink);
+  transition: color 0.2s;
+}
+.nav-links a.nav-back-link:hover { color: var(--gold); }
 .nav-cta {
   background: var(--ink) !important;
   color: var(--bg) !important;
