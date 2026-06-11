@@ -9,6 +9,11 @@
   gap: 2rem;
 }
 
+/* Feature-scoped color: red for the "below Goku" arrow */
+.cbg-page {
+  --down-red: #B0322B;
+}
+
 /* ── Top bar ── */
 .cbg-topbar {
   width: 100%;
@@ -290,6 +295,21 @@
 }
 .cbg-score-tag--up {
   color: var(--gold);
+}
+
+.cbg-arrow-up,
+.cbg-arrow-down {
+  display: inline-block;
+  margin-left: 0.45rem;
+  font-size: 0.85em;
+  line-height: 1;
+  vertical-align: middle;
+}
+.cbg-arrow-up {
+  color: var(--gold);
+}
+.cbg-arrow-down {
+  color: var(--down-red);
 }
 
 /* ── Responsive ── */

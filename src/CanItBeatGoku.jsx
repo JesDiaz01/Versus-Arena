@@ -145,8 +145,8 @@ export default function CanItBeatGoku({ onBackToArena }) {
                         (isShort ? " cbg-score-val--short" : "")}
                     >
                       {fighterVal || "--"}
-                      {isShort && <span className="cbg-score-tag">below</span>}
-                      {isEdge  && <span className="cbg-score-tag cbg-score-tag--up">above</span>}
+                      {isShort && <span className="cbg-arrow-down" role="img" aria-label="below Goku">{"\u25BC"}</span>}
+                      {isEdge  && <span className="cbg-arrow-up" role="img" aria-label="above Goku">{"\u25B2"}</span>}
                     </span>
                     <span className={"cbg-score-val" + (done ? "" : " cbg-score-val--empty")}>
                       {done ? GOKU[cat.key] : "???"}
