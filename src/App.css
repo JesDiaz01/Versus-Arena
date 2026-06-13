@@ -2676,3 +2676,124 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .fighter-avatar { width: 110px; height: 110px; }
   .fight-btn { font-size: 0.85rem; letter-spacing: 0.15em; }
 }
+
+/* ===== BATTLE CLASH (loading animation) =====
+   Presentation only, shown while a battle is loading. Two portraits lean
+   toward center and a refined gold bloom flashes between them, looping until
+   the verdict arrives. Uses existing tokens only; no palette changes. */
+.clash-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 2rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+}
+.clash-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 300px;
+  height: 96px;
+}
+.clash-fighter {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  will-change: transform;
+}
+.clash-fighter svg { width: 70%; height: 70%; color: var(--ink); opacity: 0.85; }
+.clash-fighter img { width: 100%; height: 100%; object-fit: cover; }
+.clash-fighter.left  { animation: clashLeanLeft 1.9s ease-in-out infinite; }
+.clash-fighter.right { animation: clashLeanRight 1.9s ease-in-out infinite; }
+
+.clash-bloom {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120px;
+  height: 120px;
+  margin-left: -60px;
+  margin-top: -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--gold-bright) 0%,
+    rgba(212, 160, 23, 0.5) 35%,
+    rgba(184, 134, 11, 0) 70%);
+  z-index: 1;
+  pointer-events: none;
+  animation: clashBloom 1.9s ease-out infinite;
+}
+.clash-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  margin-top: -32px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  z-index: 1;
+  pointer-events: none;
+  animation: clashRing 1.9s ease-out infinite;
+}
+.clash-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 0.75rem;
+  animation: clashLabelPulse 1.9s ease-in-out infinite;
+}
+
+@keyframes clashLeanLeft {
+  0%   { transform: translateX(-46px) scale(0.95); }
+  45%  { transform: translateX(6px)   scale(1.03); }
+  55%  { transform: translateX(6px)   scale(1.03); }
+  100% { transform: translateX(-46px) scale(0.95); }
+}
+@keyframes clashLeanRight {
+  0%   { transform: translateX(46px)  scale(0.95); }
+  45%  { transform: translateX(-6px)  scale(1.03); }
+  55%  { transform: translateX(-6px)  scale(1.03); }
+  100% { transform: translateX(46px)  scale(0.95); }
+}
+@keyframes clashBloom {
+  0%, 30% { transform: scale(0.2); opacity: 0; }
+  50%     { transform: scale(1);   opacity: 0.85; }
+  72%     { transform: scale(1.5); opacity: 0; }
+  100%    { transform: scale(1.5); opacity: 0; }
+}
+@keyframes clashRing {
+  0%, 38% { transform: scale(0.3); opacity: 0; }
+  50%     { transform: scale(1);   opacity: 0.7; }
+  78%     { transform: scale(2.2); opacity: 0; }
+  100%    { transform: scale(2.2); opacity: 0; }
+}
+@keyframes clashLabelPulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clash-fighter.left  { animation: none; transform: translateX(-30px); }
+  .clash-fighter.right { animation: none; transform: translateX(30px); }
+  .clash-bloom { animation: none; opacity: 0.5; transform: scale(1); }
+  .clash-ring  { animation: none; opacity: 0; }
+  .clash-label { animation: none; opacity: 0.8; }
+}

@@ -20,6 +20,38 @@ function FighterSilhouette() {
   );
 }
 
+// Presentation only: a single charging portrait for the loading clash.
+// Falls back to the silhouette if the image is missing or fails to load.
+function ClashFighter({ url, name, side }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className={`clash-fighter ${side}`}>
+      {url && !err ? (
+        <img src={url} alt={name || ""} onError={() => setErr(true)} />
+      ) : (
+        <FighterSilhouette />
+      )}
+    </div>
+  );
+}
+
+// Presentation only: the loading "clash" animation. Two portraits lean toward
+// center and a refined gold bloom blooms between them, looping until the
+// verdict arrives. Decorative; the Analyzing button conveys status to AT.
+function BattleClash({ img1Url, img2Url, name1, name2 }) {
+  return (
+    <div className="clash-stage" aria-hidden="true">
+      <div className="clash-track">
+        <ClashFighter url={img1Url} name={name1} side="left" />
+        <div className="clash-bloom" />
+        <div className="clash-ring" />
+        <ClashFighter url={img2Url} name={name2} side="right" />
+      </div>
+      <div className="clash-label">The arena decides</div>
+    </div>
+  );
+}
+
 const CLAIM_LIMIT = 100;
 const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
@@ -858,6 +890,15 @@ export default function BattleArena({ initialBattle = null }) {
         </div>
 
         {error && <p className="error-msg">{error}</p>}
+
+        {loading && (
+          <BattleClash
+            img1Url={img1.imageUrl}
+            img2Url={img2.imageUrl}
+            name1={f1}
+            name2={f2}
+          />
+        )}
 
         <div className="fight-btn-wrap">
           <button className={`fight-btn ${loading ? "loading" : ""}`} onClick={simulate} disabled={loading}>
