@@ -22,12 +22,22 @@ function FighterSilhouette() {
 
 // Presentation only: a single charging portrait for the loading clash.
 // Falls back to the silhouette if the image is missing or fails to load.
-function ClashFighter({ url, name, side }) {
+function ClashFighter({ url, name, side, adjust }) {
   const [err, setErr] = useState(false);
+  const a = adjust || DEFAULT_ADJUST;
   return (
     <div className={`clash-fighter ${side}`}>
       {url && !err ? (
-        <img src={url} alt={name || ""} onError={() => setErr(true)} />
+        <img
+          src={url}
+          alt={name || ""}
+          onError={() => setErr(true)}
+          style={{
+            objectPosition: `${a.x}% ${a.y}%`,
+            transform: `scale(${a.zoom})`,
+            transformOrigin: `${a.x}% ${a.y}%`,
+          }}
+        />
       ) : (
         <FighterSilhouette />
       )}
@@ -38,14 +48,14 @@ function ClashFighter({ url, name, side }) {
 // Presentation only: the loading "clash" animation. Two portraits lean toward
 // center and a refined gold bloom blooms between them, looping until the
 // verdict arrives. Decorative; the Analyzing button conveys status to AT.
-function BattleClash({ img1Url, img2Url, name1, name2 }) {
+function BattleClash({ img1Url, img2Url, name1, name2, adjust1, adjust2 }) {
   return (
     <div className="clash-stage" aria-hidden="true">
       <div className="clash-track">
-        <ClashFighter url={img1Url} name={name1} side="left" />
+        <ClashFighter url={img1Url} name={name1} side="left" adjust={adjust1} />
         <div className="clash-bloom" />
         <div className="clash-ring" />
-        <ClashFighter url={img2Url} name={name2} side="right" />
+        <ClashFighter url={img2Url} name={name2} side="right" adjust={adjust2} />
       </div>
       <div className="clash-label">The arena decides</div>
     </div>
@@ -897,6 +907,8 @@ export default function BattleArena({ initialBattle = null }) {
             img2Url={img2.imageUrl}
             name1={f1}
             name2={f2}
+            adjust1={imgAdjust1}
+            adjust2={imgAdjust2}
           />
         )}
 

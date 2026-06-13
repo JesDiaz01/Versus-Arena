@@ -125,10 +125,9 @@ export const FIGHTING_TIERS = [
   { name: "Absolute",     desc: "Perfect, unbeatable technique." }
 ];
 
-// Array order is the ranking for v1 (Unknown lowest, Inapplicable highest).
+// Array order is the ranking for v1 (Below Average lowest, Inapplicable highest).
 // This ordering is intentional and hand-tunable.
 export const STAMINA_TIERS = [
-  { name: "Unknown",       desc: "Uncertain or no stamina feats available." },
   { name: "Below Average", desc: "Exhausted by mild exertion, disabled by basic injuries." },
   { name: "Average",       desc: "Typical human stamina and pain tolerance." },
   { name: "Athletic",      desc: "Above average human stamina and pain tolerance." },
