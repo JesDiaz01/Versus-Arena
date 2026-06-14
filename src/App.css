@@ -2805,3 +2805,62 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .clash-ring  { animation: none; opacity: 0; }
   .clash-label { animation: none; opacity: 0.8; }
 }
+
+/* === BATTLE LOADING OVERLAY (presentation only) === */
+/* Full-viewport dim that spotlights the clash in place. Lives in .page's
+   stacking context (z-index 1), so z-index 200 here paints over the navbar
+   (100) and the whole page. Always mounted so it can fade in AND out; when
+   inactive it is transparent and pointer-events:none, so it is fully inert
+   and can never get stuck blocking the page. */
+.battle-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.battle-dim.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The clash stays in its normal flow position but is lifted above the dim,
+   so it reads as a bright, spotlit panel. */
+.clash-spotlight {
+  position: relative;
+  z-index: 300;
+}
+
+/* Small, de-emphasized cancel control near the clash. */
+.clash-cancel {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.clash-cancel:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.clash-cancel:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-dim { transition: none; }
+}

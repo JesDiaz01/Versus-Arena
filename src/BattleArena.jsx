@@ -611,6 +611,11 @@ export default function BattleArena({ initialBattle = null }) {
   const [imgAdjusted1, setImgAdjusted1] = useState(false);
   const [imgAdjusted2, setImgAdjusted2] = useState(false);
 
+  // When true, a verdict that arrives AFTER the user cancelled is discarded so it
+  // doesn't pop onto a user who already left the clash. (The request still fired
+  // and still counted against the rate limit; this is a UI escape, not a refund.)
+  const cancelledRef = useRef(false);
+
   const img1 = useCharacterImage(f1, u1, override1);
   const img2 = useCharacterImage(f2, u2, override2);
 
@@ -618,6 +623,18 @@ export default function BattleArena({ initialBattle = null }) {
   useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
   useEffect(() => { setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false); }, [override1]);
   useEffect(() => { setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false); }, [override2]);
+
+  // Lock body scroll while a battle is processing so the clash overlay is the
+  // only thing the user can interact with. The cleanup is tied to `loading`, so
+  // it restores scroll on EVERY exit path (verdict, error, cancel, unmount) and
+  // can never get stuck locked. Saves/restores the prior value rather than
+  // hardcoding so it does not clobber any pre-existing overflow.
+  useEffect(() => {
+    if (!loading) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [loading]);
 
   function addClaim(side) {
     const draft = side === 1 ? draft1 : draft2;
@@ -639,6 +656,7 @@ export default function BattleArena({ initialBattle = null }) {
   async function simulate() {
     if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
     setError(""); setLoading(true); setResult(null);
+    cancelledRef.current = false;
 
     // ===== REAL VERDICT (calls your Vercel backend at /api/battle) =====
     // The backend holds the API key securely and calls Anthropic for you.
@@ -653,6 +671,7 @@ export default function BattleArena({ initialBattle = null }) {
       });
 
       if (!res.ok) {
+        if (cancelledRef.current) return;
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Something went wrong. Try again in a moment.");
         setLoading(false);
@@ -660,8 +679,10 @@ export default function BattleArena({ initialBattle = null }) {
       }
 
       const verdict = await res.json();
+      if (cancelledRef.current) return;
       setResult(verdict);
     } catch (e) {
+      if (cancelledRef.current) return;
       setError("Couldn't reach the analyst. Check your connection and try again.");
     }
     setLoading(false);
@@ -677,6 +698,15 @@ export default function BattleArena({ initialBattle = null }) {
     // });
     // setResult(mock);
     // setLoading(false);
+  }
+
+  // Cancel an in-flight battle: a UI escape only. Returns to the form with all
+  // entered fighters/feats intact (NOT a full reset), drops the dim + clash, and
+  // restores scroll via the loading-tied effect. The flag makes any verdict that
+  // arrives after this point get discarded in simulate().
+  function cancelBattle() {
+    cancelledRef.current = true;
+    setLoading(false);
   }
 
   function reset() {
@@ -784,6 +814,7 @@ export default function BattleArena({ initialBattle = null }) {
 
   return (
     <div className="arena">
+      <div className={"battle-dim" + (loading ? " active" : "")} aria-hidden="true" />
       <div className="arena-card">
         <div className="arena-header">
           <h2>The Arena</h2>
@@ -903,14 +934,24 @@ export default function BattleArena({ initialBattle = null }) {
         {error && <p className="error-msg">{error}</p>}
 
         {loading && (
-          <BattleClash
-            img1Url={img1.imageUrl}
-            img2Url={img2.imageUrl}
-            name1={f1}
-            name2={f2}
-            adjust1={imgAdjust1}
-            adjust2={imgAdjust2}
-          />
+          <div className="clash-spotlight">
+            <button
+              type="button"
+              className="clash-cancel"
+              aria-label="Cancel battle"
+              onClick={cancelBattle}
+            >
+              {"\u00D7"}
+            </button>
+            <BattleClash
+              img1Url={img1.imageUrl}
+              img2Url={img2.imageUrl}
+              name1={f1}
+              name2={f2}
+              adjust1={imgAdjust1}
+              adjust2={imgAdjust2}
+            />
+          </div>
         )}
 
         <div className="fight-btn-wrap">
