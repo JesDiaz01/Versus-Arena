@@ -2,9 +2,15 @@
 // Wraps occurrences of the user's granted-feat terms in a highlight span so they
 // stand out within the verdict analysis. Pure text-splitting into React nodes --
 // it never injects raw HTML, so AI output cannot smuggle markup in.
+//
+// Only the user's actually-entered claims are highlighted (never the AI's
+// reasoning vocabulary), and the fighter names are excluded so they do not light
+// up everywhere they appear.
 
-// Common words that should not, on their own, trigger a highlight.
+// Words that should not, on their own, trigger a highlight: generic English
+// stopwords plus common powerscaling / filler vocabulary.
 const STOPWORDS = new Set([
+  // generic
   "the", "and", "but", "for", "with", "that", "this", "they", "them", "their",
   "would", "could", "should", "have", "has", "had", "are", "was", "were", "will",
   "can", "from", "into", "onto", "over", "than", "then", "when", "what", "which",
@@ -12,21 +18,54 @@ const STOPWORDS = new Set([
   "all", "any", "not", "only", "also", "more", "most", "much", "very", "still",
   "even", "just", "like", "able", "make", "makes", "made", "give", "gives", "given",
   "here", "there", "where", "while", "both", "each", "some", "such", "every",
+  // powerscaling / filler
+  "speed", "power", "powers", "attack", "attacks", "movement", "moves", "does",
+  "granted", "grant", "grants", "fast", "faster", "strong", "stronger", "strength",
+  "level", "levels", "durability", "energy", "force", "damage", "ability",
+  "abilities", "fighter", "battle",
 ]);
 
-// Build the list of terms to highlight: each claim phrase as a whole, plus its
-// distinctive tokens (length >= 4, not a stopword). Longest first so full
-// phrases win over single tokens and matches do not partially overlap.
-function buildTerms(claims) {
+// Build the list of terms to highlight from the user's entered claims:
+//  - each multi-word claim as a whole phrase (preferred, matched longest-first), and
+//  - individual tokens only when genuinely distinctive (an all-caps acronym, or
+//    length >= 5 and not a common/filler word).
+// Fighter names (and their individual words) are always excluded.
+function buildTerms(claims, fighterNames) {
+  const excludeTok = new Set();
+  const excludeName = new Set();
+  for (const name of fighterNames || []) {
+    if (typeof name !== "string") continue;
+    const n = name.trim().toLowerCase();
+    if (!n) continue;
+    excludeName.add(n);
+    for (const tok of n.split(/[^a-z0-9+]+/)) if (tok) excludeTok.add(tok);
+  }
+
   const terms = new Set();
   for (const c of claims || []) {
     if (typeof c !== "string") continue;
     const phrase = c.trim();
-    if (phrase.length >= 4) terms.add(phrase.toLowerCase());
-    for (const tok of phrase.toLowerCase().split(/[^a-z0-9+]+/)) {
-      if (tok.length >= 4 && !STOPWORDS.has(tok)) terms.add(tok);
+    if (!phrase) continue;
+    const lowerPhrase = phrase.toLowerCase();
+
+    // Prefer the full phrase for any multi-word claim.
+    const wordCount = lowerPhrase.split(/\s+/).length;
+    if (wordCount >= 2 && lowerPhrase.length >= 4 && !excludeName.has(lowerPhrase)) {
+      terms.add(lowerPhrase);
+    }
+
+    // Fall back to genuinely distinctive single tokens.
+    for (const rawTok of phrase.split(/[^A-Za-z0-9+]+/)) {
+      if (!rawTok) continue;
+      const tok = rawTok.toLowerCase();
+      if (excludeTok.has(tok) || STOPWORDS.has(tok)) continue;
+      const isAcronym = rawTok.length >= 2 && rawTok === rawTok.toUpperCase() && /[A-Z]/.test(rawTok);
+      if (isAcronym || tok.length >= 5) terms.add(tok);
     }
   }
+
+  // Longest first so full phrases win over single tokens and matches do not
+  // partially overlap.
   return [...terms].sort((a, b) => b.length - a.length);
 }
 
@@ -36,9 +75,9 @@ function escapeRegExp(s) {
 
 // Returns either the original string (no claims / no matches) or an array of
 // React nodes with matched terms wrapped in <span className="claim-highlight">.
-export function highlightClaims(text, claims) {
+export function highlightClaims(text, claims, fighterNames) {
   if (typeof text !== "string" || !text) return text;
-  const terms = buildTerms(claims);
+  const terms = buildTerms(claims, fighterNames);
   if (terms.length === 0) return text;
 
   const re = new RegExp("\\b(" + terms.map(escapeRegExp).join("|") + ")\\b", "gi");

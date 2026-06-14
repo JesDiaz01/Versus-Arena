@@ -128,7 +128,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
           )}
           {analysis && (
             <p className="sb-analysis">
-              {highlightClaims(analysis, [...claims1, ...claims2, ...(result.user_claims_used || [])])}
+              {highlightClaims(analysis, [...claims1, ...claims2], [f1, f2])}
             </p>
           )}
         </div>

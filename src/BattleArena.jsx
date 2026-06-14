@@ -946,7 +946,7 @@ export default function BattleArena({ initialBattle = null }) {
 
             <p className="result-text">
               <strong className="verdict-short">{result.verdict_short}</strong>
-              {highlightClaims(result.analysis, [...claims1, ...claims2, ...(result.user_claims_used || [])])}
+              {highlightClaims(result.analysis, [...claims1, ...claims2], [f1, f2])}
             </p>
 
             {result.user_claims_used && result.user_claims_used.length > 0 && (
