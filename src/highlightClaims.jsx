@@ -18,6 +18,10 @@ const STOPWORDS = new Set([
   "all", "any", "not", "only", "also", "more", "most", "much", "very", "still",
   "even", "just", "like", "able", "make", "makes", "made", "give", "gives", "given",
   "here", "there", "where", "while", "both", "each", "some", "such", "every",
+  // short common words (the length floor is low, so noise is filtered here)
+  "how", "why", "one", "two", "get", "got", "off", "out", "way", "let", "set",
+  "use", "used", "uses", "hit", "hits", "big", "now", "yet", "per", "via", "him",
+  "she",
   // powerscaling / filler
   "speed", "power", "powers", "attack", "attacks", "movement", "moves", "does",
   "granted", "grant", "grants", "fast", "faster", "strong", "stronger", "strength",
@@ -28,7 +32,8 @@ const STOPWORDS = new Set([
 // Build the list of terms to highlight from the user's entered claims:
 //  - each multi-word claim as a whole phrase (preferred, matched longest-first), and
 //  - individual tokens only when genuinely distinctive (an all-caps acronym, or
-//    length >= 5 and not a common/filler word).
+//    length >= 3 and not a common/filler word). The stopword list, not the
+//    length cutoff, is what filters noise.
 // Fighter names (and their individual words) are always excluded.
 function buildTerms(claims, fighterNames) {
   const excludeTok = new Set();
@@ -60,7 +65,7 @@ function buildTerms(claims, fighterNames) {
       const tok = rawTok.toLowerCase();
       if (excludeTok.has(tok) || STOPWORDS.has(tok)) continue;
       const isAcronym = rawTok.length >= 2 && rawTok === rawTok.toUpperCase() && /[A-Z]/.test(rawTok);
-      if (isAcronym || tok.length >= 5) terms.add(tok);
+      if (isAcronym || tok.length >= 3) terms.add(tok);
     }
   }
 
