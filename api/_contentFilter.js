@@ -19,7 +19,14 @@ import {
 // Project-specific terms to ALSO block. Plain strings; each gets the same
 // leetspeak / confusable / word-boundary handling as the built-in dataset.
 // Edit this list to add terms over time.
-const CUSTOM_BLOCKED = [];
+const CUSTOM_BLOCKED = [
+  "coochie",
+  "cooch",
+  "coochy",
+  "kooch",
+  "punani",
+  "punany",
+];
 
 // Legitimate words that must NEVER be blocked even though they contain a banned
 // substring (the Scunthorpe problem). These are whitelisted globally so any
