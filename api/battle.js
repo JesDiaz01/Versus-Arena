@@ -10,12 +10,11 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
+import { getClientIp, checkBattleLimit } from "./_rateLimit.js";
 
 const MODEL = "claude-sonnet-4-6";
 
 // ---- Limits (cost + abuse protection) ----
-const RL_PER_MIN = 5;        // max battles per minute per visitor
-const RL_PER_HOUR = 30;      // max battles per hour per visitor
 const MAX_NAME_LEN = 80;     // fighter name / universe cap
 const MAX_CLAIM_LEN = 200;   // per custom-feat cap
 const MAX_CLAIMS = 20;       // max custom feats per side
@@ -29,46 +28,6 @@ const ALLOWED = {
   power: ["Canon Only", "Composite", "Post-Series Peak", "Current"],
   depth: ["Quick Verdict", "Detailed Analysis", "Deep Dive"],
 };
-
-// ---- Best-effort in-memory rate limiter ----
-// NOTE: Vercel serverless instances are ephemeral and not shared, so this catches
-// rapid-fire abuse hitting a warm instance but is not bulletproof across all instances.
-// The real backstop is the prepaid spending cap on the Anthropic account.
-// For bulletproof limits, upgrade to Upstash Redis later.
-const hits = new Map(); // ip -> number[] (timestamps, ms)
-
-function getClientIp(req) {
-  const xff = req.headers["x-forwarded-for"];
-  if (typeof xff === "string" && xff.length) return xff.split(",")[0].trim();
-  if (Array.isArray(xff) && xff.length) return String(xff[0]).trim();
-  return req.headers["x-real-ip"] || "unknown";
-}
-
-function rateLimited(ip) {
-  const now = Date.now();
-  const minAgo = now - 60 * 1000;
-  const hourAgo = now - 60 * 60 * 1000;
-
-  let arr = hits.get(ip) || [];
-  arr = arr.filter(t => t > hourAgo); // prune anything older than an hour
-
-  const inLastMin = arr.filter(t => t > minAgo).length;
-  if (inLastMin >= RL_PER_MIN) { hits.set(ip, arr); return { limited: true, scope: "minute" }; }
-  if (arr.length >= RL_PER_HOUR) { hits.set(ip, arr); return { limited: true, scope: "hour" }; }
-
-  arr.push(now);
-  hits.set(ip, arr);
-
-  // Light memory cleanup so the Map can't grow forever on a long-lived instance.
-  if (hits.size > 5000) {
-    for (const [k, v] of hits) {
-      const fresh = v.filter(t => t > hourAgo);
-      if (fresh.length === 0) hits.delete(k);
-      else hits.set(k, fresh);
-    }
-  }
-  return { limited: false };
-}
 
 // ---- Input sanitizing ----
 function cleanStr(v, maxLen) {
@@ -216,7 +175,7 @@ export default async function handler(req, res) {
 
   // --- Rate limit ---
   const ip = getClientIp(req);
-  const rl = rateLimited(ip);
+  const rl = await checkBattleLimit(ip);
   if (rl.limited) {
     res.setHeader("Retry-After", rl.scope === "minute" ? "60" : "3600");
     return res.status(429).json({

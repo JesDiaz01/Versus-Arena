@@ -3,10 +3,18 @@
 // Uses the service role key server-side only; the key is never sent to the browser.
 
 import { createClient } from "@supabase/supabase-js";
+import { getClientIp, checkReadLimit } from "./_rateLimit.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // --- Rate limit (shared, Redis-backed; fails open) ---
+  const rl = await checkReadLimit(getClientIp(req));
+  if (rl.limited) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "Too many requests. Please slow down and try again shortly." });
   }
 
   const id = typeof req.query.id === "string" ? req.query.id.trim() : "";
