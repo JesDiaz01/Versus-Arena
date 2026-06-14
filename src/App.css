@@ -2669,6 +2669,14 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .scaler-toolbar { gap: 0.5rem; }
 }
 
+/* Granted-feat highlight inside the verdict analysis (BattleArena + SharedBattle) */
+.claim-highlight {
+  background: rgba(184, 134, 11, 0.12);
+  border-bottom: 1px solid var(--gold);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 /* Extra-small phones */
 @media (max-width: 380px) {
   .nav-links { gap: 0.7rem 0.8rem; }

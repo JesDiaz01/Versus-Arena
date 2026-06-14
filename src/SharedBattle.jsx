@@ -1,3 +1,4 @@
+import { highlightClaims } from "./highlightClaims";
 import "./SharedBattle.css";
 
 export default function SharedBattle({ battle, onBackToArena }) {
@@ -126,7 +127,9 @@ export default function SharedBattle({ battle, onBackToArena }) {
             <p className="sb-verdict-short">{verdictShort}</p>
           )}
           {analysis && (
-            <p className="sb-analysis">{analysis}</p>
+            <p className="sb-analysis">
+              {highlightClaims(analysis, [...claims1, ...claims2, ...(result.user_claims_used || [])])}
+            </p>
           )}
         </div>
 

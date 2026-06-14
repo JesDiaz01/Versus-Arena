@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { highlightClaims } from "./highlightClaims";
 
 function FighterSilhouette() {
   return (
@@ -945,7 +946,7 @@ export default function BattleArena({ initialBattle = null }) {
 
             <p className="result-text">
               <strong className="verdict-short">{result.verdict_short}</strong>
-              {result.analysis}
+              {highlightClaims(result.analysis, [...claims1, ...claims2, ...(result.user_claims_used || [])])}
             </p>
 
             {result.user_claims_used && result.user_claims_used.length > 0 && (
