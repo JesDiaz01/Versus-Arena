@@ -40,21 +40,35 @@ const CUSTOM_ALLOWED = [
   "asskicking",
 ];
 
-// Build the matcher ONCE at module load (not per request).
+// Build the dataset ONCE at module load (dataset terms + any CUSTOM_BLOCKED).
 let dataset = new DataSet().addAll(englishDataset);
 for (const term of CUSTOM_BLOCKED) {
   dataset = dataset.addPhrase((phrase) => phrase.addPattern(parseRawPattern(term)));
 }
 const built = dataset.build();
+const whitelistedTerms = [...built.whitelistedTerms, ...CUSTOM_ALLOWED];
 
-// Append skipNonAlphabeticTransformer to the blacklist pipeline so separators
-// inserted between letters (spaces, dots, hyphens) are collapsed before
-// matching, catching evasion like "f u c k" and "f.u.c.k". It runs AFTER the
-// recommended leetspeak/confusable transformers so "n1gg@" still resolves to
-// letters before the digits/symbols are stripped.
-const matcher = new RegExpMatcher({
+// Two matchers, checked together (see containsBlockedContent):
+//
+// 1) mNormal uses obscenity's recommended transformers ONLY, keeping word
+//    boundaries intact. This is the primary matcher: a banned word embedded in
+//    a longer sentence (e.g. "ass" in "his power is to ass someone") still
+//    matches, because the dataset's patterns are boundary-anchored.
+//
+// 2) mCollapsed additionally strips non-alphabetic characters between letters
+//    (skipNonAlphabeticTransformer) to catch separator evasion like "f u c k"
+//    and "a s s". That transformer glues the whole field into one token and
+//    destroys word boundaries, so it is used ONLY as a second pass, never on
+//    its own -- using it alone was the bug that let embedded words leak through.
+const mNormal = new RegExpMatcher({
   blacklistedTerms: built.blacklistedTerms,
-  whitelistedTerms: [...built.whitelistedTerms, ...CUSTOM_ALLOWED],
+  whitelistedTerms,
+  ...englishRecommendedTransformers,
+});
+
+const mCollapsed = new RegExpMatcher({
+  blacklistedTerms: built.blacklistedTerms,
+  whitelistedTerms,
   blacklistMatcherTransformers: [
     ...englishRecommendedTransformers.blacklistMatcherTransformers,
     skipNonAlphabeticTransformer(),
@@ -63,11 +77,13 @@ const matcher = new RegExpMatcher({
 });
 
 // Returns true if ANY supplied field contains blocked content. Each field is
-// checked independently so matches cannot span across separate inputs.
+// checked independently so matches cannot span across separate inputs, and is
+// run through both matchers so embedded words and separator-evasion are caught.
 export function containsBlockedContent(fields) {
   if (!Array.isArray(fields)) return false;
   for (const field of fields) {
-    if (typeof field === "string" && field.length && matcher.hasMatch(field)) {
+    if (typeof field === "string" && field.length &&
+        (mNormal.hasMatch(field) || mCollapsed.hasMatch(field))) {
       return true;
     }
   }
