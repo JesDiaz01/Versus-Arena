@@ -11,6 +11,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { getClientIp, checkBattleLimit } from "./_rateLimit.js";
+import { containsBlockedContent } from "./_contentFilter.js";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -211,6 +212,13 @@ export default async function handler(req, res) {
 
     if (!f1 || !f2) {
       return res.status(400).json({ error: "Both fighter names are required." });
+    }
+
+    // --- Block inappropriate content (profanity, slurs, sexual content) ---
+    // Only user free-text fields; dropdowns are already allowlisted. Runs before
+    // any Anthropic call so a blocked battle costs nothing.
+    if (containsBlockedContent([f1, f2, u1, u2, ...claims1, ...claims2])) {
+      return res.status(400).json({ error: "Please remove inappropriate content and try again." });
     }
 
     const claimsBlock1 = claims1.length
