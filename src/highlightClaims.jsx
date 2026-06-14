@@ -29,11 +29,42 @@ const STOPWORDS = new Set([
   "abilities", "fighter", "battle",
 ]);
 
-// Build the list of terms to highlight from the user's entered claims:
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Common English suffixes appended to a token stem so the AI's grammatical
+// rewordings still match (lift -> lifting/lifted, hypersonic -> hypersonics).
+// The match stays whole-word anchored, so a suffix can only extend the stem
+// into a complete word, never bleed into an unrelated one.
+const COMMON_SUFFIXES = "(?:s|es|ed|ing|er|ion)?";
+
+// Explicit word-form sets for cases where simple suffixing does not reach the
+// real form (fly -> flies/flight). The map is authoritative for its keys.
+const FORM_MAP = {
+  fly: ["fly", "flies", "flying", "flight"],
+  lift: ["lift", "lifts", "lifting", "lifted"],
+};
+
+// Regex source that matches a distinctive token and its common word-forms.
+function tokenSource(tok) {
+  if (FORM_MAP[tok]) {
+    const forms = [...FORM_MAP[tok]]
+      .sort((a, b) => b.length - a.length)
+      .map(escapeRegExp);
+    return "(?:" + forms.join("|") + ")";
+  }
+  // Stems of 4+ letters get conservative suffix tolerance. Length-3 tokens stay
+  // literal so a short stem cannot pick up an unrelated word (e.g. ton/toned).
+  if (tok.length >= 4) return escapeRegExp(tok) + COMMON_SUFFIXES;
+  return escapeRegExp(tok);
+}
+
+// Build the list of regex-source fragments to highlight from the user's claims:
 //  - each multi-word claim as a whole phrase (preferred, matched longest-first), and
 //  - individual tokens only when genuinely distinctive (an all-caps acronym, or
-//    length >= 3 and not a common/filler word). The stopword list, not the
-//    length cutoff, is what filters noise.
+//    length >= 3 and not a common/filler word), expanded to common word-forms.
+// The stopword list, not the length cutoff, is what filters noise.
 // Fighter names (and their individual words) are always excluded.
 function buildTerms(claims, fighterNames) {
   const excludeTok = new Set();
@@ -46,17 +77,18 @@ function buildTerms(claims, fighterNames) {
     for (const tok of n.split(/[^a-z0-9+]+/)) if (tok) excludeTok.add(tok);
   }
 
-  const terms = new Set();
+  // base (for length sorting / dedupe) -> regex source.
+  const frags = new Map();
   for (const c of claims || []) {
     if (typeof c !== "string") continue;
     const phrase = c.trim();
     if (!phrase) continue;
     const lowerPhrase = phrase.toLowerCase();
 
-    // Prefer the full phrase for any multi-word claim.
+    // Prefer the full phrase for any multi-word claim (literal, no suffixing).
     const wordCount = lowerPhrase.split(/\s+/).length;
     if (wordCount >= 2 && lowerPhrase.length >= 4 && !excludeName.has(lowerPhrase)) {
-      terms.add(lowerPhrase);
+      frags.set(lowerPhrase, escapeRegExp(lowerPhrase));
     }
 
     // Fall back to genuinely distinctive single tokens.
@@ -65,27 +97,26 @@ function buildTerms(claims, fighterNames) {
       const tok = rawTok.toLowerCase();
       if (excludeTok.has(tok) || STOPWORDS.has(tok)) continue;
       const isAcronym = rawTok.length >= 2 && rawTok === rawTok.toUpperCase() && /[A-Z]/.test(rawTok);
-      if (isAcronym || tok.length >= 3) terms.add(tok);
+      if (isAcronym || tok.length >= 3) frags.set(tok, tokenSource(tok));
     }
   }
 
-  // Longest first so full phrases win over single tokens and matches do not
+  // Longest base first so full phrases win over single tokens and matches do not
   // partially overlap.
-  return [...terms].sort((a, b) => b.length - a.length);
-}
-
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return [...frags.entries()]
+    .sort((a, b) => b[0].length - a[0].length)
+    .map((e) => e[1]);
 }
 
 // Returns either the original string (no claims / no matches) or an array of
 // React nodes with matched terms wrapped in <span className="claim-highlight">.
 export function highlightClaims(text, claims, fighterNames) {
   if (typeof text !== "string" || !text) return text;
-  const terms = buildTerms(claims, fighterNames);
-  if (terms.length === 0) return text;
+  const fragments = buildTerms(claims, fighterNames);
+  if (fragments.length === 0) return text;
 
-  const re = new RegExp("\\b(" + terms.map(escapeRegExp).join("|") + ")\\b", "gi");
+  // fragments are already escaped regex sources (literals + suffix groups).
+  const re = new RegExp("\\b(" + fragments.join("|") + ")\\b", "gi");
   const out = [];
   let last = 0;
   let key = 0;
