@@ -2840,8 +2840,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
   border-radius: 18px;
   padding: 1.5rem;
   box-shadow:
-    0 0 48px 6px rgba(184, 134, 11, 0.20),
-    0 0 16px rgba(184, 134, 11, 0.14);
+    0 0 64px 10px rgba(184, 134, 11, 0.30),
+    0 0 28px 4px rgba(184, 134, 11, 0.22),
+    0 0 12px rgba(184, 134, 11, 0.16);
 }
 
 /* Small, de-emphasized cancel control near the clash. */
