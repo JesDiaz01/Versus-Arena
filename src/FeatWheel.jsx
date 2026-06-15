@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./FeatWheel.css";
 
 const WHEEL_COLORS = ["#FFFFFF", "#F7F2E6", "#FFFFFF", "#EFE7D4"];
@@ -28,7 +28,7 @@ function buildSegPath(i, n) {
     " Z";
 }
 
-export default function FeatWheel({ title, items, onSpinStart, onResult, size }) {
+export default function FeatWheel({ title, items, onSpinStart, onResult, size, autoSpin, onAdvanceRequest, hubLabel }) {
   size = size || 320;
   const n = items.length;
   const segAngle = 360 / n;
@@ -40,6 +40,26 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
   const [landedItem, setLandedItem] = useState(null);
   const rotationRef = useRef(0);
   const wheelRef = useRef(null);
+  const didAutoSpin = useRef(false);
+
+  // When mounted as the next feat (advanced into), spin immediately so a single
+  // hub click both advances and spins. The ref guard keeps StrictMode's dev
+  // double-invoke from spinning twice.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(function() {
+    if (autoSpin && !didAutoSpin.current) {
+      didAutoSpin.current = true;
+      handleSpin();
+    }
+  }, []);
+
+  // The hub is the only control: spin the current wheel if it has not spun yet,
+  // otherwise ask the parent to advance (which mounts and auto-spins the next).
+  function handleHubClick() {
+    if (spinning) return;
+    if (!hasSpun) handleSpin();
+    else if (onAdvanceRequest) onAdvanceRequest();
+  }
 
   function handleSpin() {
     if (spinning || hasSpun) return;
@@ -153,11 +173,11 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
           cy={CY}
           r={HUB_R}
           fill="var(--ink)"
-          onClick={handleSpin}
+          onClick={handleHubClick}
           style={{
-            cursor: spinning || hasSpun ? "default" : "pointer",
-            opacity: spinning || hasSpun ? 0.65 : 1,
-            pointerEvents: spinning || hasSpun ? "none" : "auto"
+            cursor: spinning ? "default" : "pointer",
+            opacity: spinning ? 0.65 : 1,
+            pointerEvents: spinning ? "none" : "auto"
           }}
         />
         <text
@@ -171,7 +191,7 @@ export default function FeatWheel({ title, items, onSpinStart, onResult, size })
           fontWeight="700"
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
-          Spin
+          {hubLabel || "Spin"}
         </text>
       </svg>
 

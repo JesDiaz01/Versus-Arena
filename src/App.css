@@ -395,6 +395,22 @@ body::before {
 }
 .result-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; letter-spacing: 0.1em; }
 
+/* Difficulty ("diff") tier pill, derived from the winner's dominance score.
+   Shared by the BattleArena and SharedBattle verdict headers. */
+.verdict-diff {
+  display: inline-block;
+  margin: 0.35rem 0 0.15rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+}
+
 .verdict-chips {
   display: flex;
   gap: 0.6rem;
@@ -2694,13 +2710,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Extra top padding gives the upward bloom room to fade to transparent before
-     it reaches the overflow:hidden clip edge, matching the soft fade at the
-     bottom (the bloom center would otherwise sit too close to the top edge and
-     get sliced as a hard line). */
-  padding: 2.75rem 2rem 1rem;
-  background: var(--surface);
-  border-top: 1px solid var(--line);
+padding: 2.75rem 0 0;
+  background: transparent;
+  border-top: none;
   overflow: hidden;
 }
 .clash-track {
@@ -2819,7 +2831,12 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .battle-dim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.66) 0%,
+    rgba(0, 0, 0, 0.48) 50%,
+    rgba(0, 0, 0, 0.34) 100%
+  );
   z-index: 200;
   opacity: 0;
   pointer-events: none;
@@ -2835,13 +2852,20 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .clash-spotlight {
   position: relative;
   z-index: 300;
+  background: var(--bg);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow:
+    0 0 64px 10px rgba(184, 134, 11, 0.30),
+    0 0 28px 4px rgba(184, 134, 11, 0.22),
+    0 0 12px rgba(184, 134, 11, 0.16);
 }
 
 /* Small, de-emphasized cancel control near the clash. */
 .clash-cancel {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.75rem;
+  right: 0.75rem;
   width: 28px;
   height: 28px;
   display: flex;
