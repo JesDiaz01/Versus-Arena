@@ -40,7 +40,10 @@ export default function CanItBeatGoku({ onBackToArena }) {
     });
   }, [outcomeData]);
 
-  function handleContinue() {
+  // Advance to the next feat (or, from the last feat, reveal the verdict).
+  // The next wheel mounts with autoSpin, so this single action both advances
+  // and spins it.
+  function handleAdvance() {
     setStep(function(s) { return s + 1; });
   }
 
@@ -82,6 +85,9 @@ export default function CanItBeatGoku({ onBackToArena }) {
                 <FeatWheel
                   key={currentCat.key}
                   items={tierNames(currentCat.items)}
+                  autoSpin={step > 0}
+                  onAdvanceRequest={handleAdvance}
+                  hubLabel={currentResult && step === CATEGORIES.length - 1 ? "Verdict" : "Spin"}
                   onSpinStart={function() {
                     setResults(function(r) {
                       var next = Object.assign({}, r);
@@ -101,12 +107,6 @@ export default function CanItBeatGoku({ onBackToArena }) {
 
                 {currentResult && tierDesc(currentCat.items, currentResult) !== "" && (
                   <p className="cbg-tier-desc">{tierDesc(currentCat.items, currentResult)}</p>
-                )}
-
-                {currentResult && (
-                  <button className="cbg-continue-btn" onClick={handleContinue}>
-                    {step < CATEGORIES.length - 1 ? "Continue" : "See Verdict"}
-                  </button>
                 )}
               </div>
             )}
