@@ -2694,7 +2694,11 @@ html, body { max-width: 100%; overflow-x: hidden; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.75rem 2rem 1rem;
+  /* Extra top padding gives the upward bloom room to fade to transparent before
+     it reaches the overflow:hidden clip edge, matching the soft fade at the
+     bottom (the bloom center would otherwise sit too close to the top edge and
+     get sliced as a hard line). */
+  padding: 2.75rem 2rem 1rem;
   background: var(--surface);
   border-top: 1px solid var(--line);
   overflow: hidden;
