@@ -395,6 +395,22 @@ body::before {
 }
 .result-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; letter-spacing: 0.1em; }
 
+/* Difficulty ("diff") tier pill, derived from the winner's dominance score.
+   Shared by the BattleArena and SharedBattle verdict headers. */
+.verdict-diff {
+  display: inline-block;
+  margin: 0.35rem 0 0.15rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+}
+
 .verdict-chips {
   display: flex;
   gap: 0.6rem;

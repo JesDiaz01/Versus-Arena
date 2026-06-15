@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { highlightClaims } from "./highlightClaims";
+import { verdictDiffLabel } from "./diffTier";
 
 function FighterSilhouette() {
   return (
@@ -735,6 +736,7 @@ export default function BattleArena({ initialBattle = null }) {
 
   const isWinner1 = result && result.winner.toLowerCase().includes(f1.toLowerCase());
   const isDraw = result && result.winner === "Draw";
+  const diffLabel = result ? verdictDiffLabel(result) : null;
 
   function renderAvatar(side) {
     const img = side === 1 ? img1 : img2;
@@ -977,6 +979,7 @@ export default function BattleArena({ initialBattle = null }) {
                 <div className="result-title">
                   {isDraw ? "It's a Draw" : `Winner: ${result.winner}`}
                 </div>
+                {diffLabel && <div className="verdict-diff">{diffLabel}</div>}
                 <div className="result-subtitle">
                   Analyzed {result.feats_scanned} feats · {result.sources} sources
                 </div>

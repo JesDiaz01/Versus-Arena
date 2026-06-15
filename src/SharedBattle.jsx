@@ -1,4 +1,5 @@
 import { highlightClaims } from "./highlightClaims";
+import { verdictDiffLabel } from "./diffTier";
 import "./SharedBattle.css";
 
 export default function SharedBattle({ battle, onBackToArena }) {
@@ -21,6 +22,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
   const verdictShort = result.verdict_short || "";
   const analysis = result.analysis || "";
   const advantages = Array.isArray(result.advantages) ? result.advantages : [];
+  const diffLabel = verdictDiffLabel(result);
 
   const settings = [battleType, location, power, depth].filter(Boolean);
 
@@ -116,6 +118,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
           <div className="sb-winner">
             {isDraw ? "Draw" : winner}
           </div>
+          {diffLabel && <div className="verdict-diff">{diffLabel}</div>}
           {advantages.length > 0 && (
             <div className="sb-chips">
               {advantages.map(function(a, i) {
