@@ -621,8 +621,12 @@ export default function BattleArena({ initialBattle = null }) {
 
   useEffect(() => { setImgError1(false); }, [img1.imageUrl]);
   useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
-  useEffect(() => { setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false); }, [override1]);
-  useEffect(() => { setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false); }, [override2]);
+  // Reset framing whenever a fighter's image changes (new name, universe, or
+  // override). Keyed per fighter so editing one never wipes the other's
+  // in-progress adjustment, and so a freshly loaded image starts in the
+  // adjustable (un-done) state rather than inheriting the prior image's framing.
+  useEffect(() => { setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false); }, [img1.imageUrl]);
+  useEffect(() => { setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false); }, [img2.imageUrl]);
 
   // Lock body scroll while a battle is processing so the clash overlay is the
   // only thing the user can interact with. The cleanup is tied to `loading`, so
@@ -766,7 +770,7 @@ export default function BattleArena({ initialBattle = null }) {
           )}
           {img.loading && <div className="avatar-spinner" />}
         </div>
-        {img.imageUrl && !imgError && !result && !adjusted && (
+        {img.imageUrl && !imgError && !adjusted && (
           <div className="img-adjust">
             <div className="img-adjust-row">
               <span className="img-adjust-label">vertical</span>
@@ -798,7 +802,7 @@ export default function BattleArena({ initialBattle = null }) {
             </div>
           </div>
         )}
-        {img.imageUrl && !imgError && !result && adjusted && (
+        {img.imageUrl && !imgError && adjusted && (
           <button className="img-readjust" onClick={() => setAdjusted(false)}>
             Adjust
           </button>
