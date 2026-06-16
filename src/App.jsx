@@ -7,6 +7,7 @@ import Tools from "./Tools";
 import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
 import PrivacyPolicy from "./PrivacyPolicy";
+import Disclaimer from "./Disclaimer";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
 
@@ -65,6 +66,7 @@ export default function App() {
           onAbout={() => setPage("about")}
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
         />
       </>
     );
@@ -79,6 +81,7 @@ export default function App() {
           onAbout={() => setPage("about")}
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
         />
       </>
     );
@@ -93,6 +96,7 @@ export default function App() {
           onAbout={() => setPage("about")}
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
         />
       </>
     );
@@ -107,6 +111,22 @@ export default function App() {
           onAbout={() => setPage("about")}
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
+        />
+      </>
+    );
+  }
+
+  if (page === "disclaimer") {
+    return (
+      <>
+        <Disclaimer onBack={() => setPage("home")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
         />
       </>
     );
@@ -179,6 +199,7 @@ export default function App() {
         onAbout={() => setPage("about")}
         onLeaderboard={() => setPage("leaderboard")}
         onPrivacy={() => setPage("privacy")}
+        onDisclaimer={() => setPage("disclaimer")}
       />
     </div>
   );

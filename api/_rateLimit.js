@@ -77,9 +77,32 @@ export async function checkBattleLimit(ip) {
 }
 
 // Read endpoint: single generous window.
+//
+// The Upstash check is awaited in front of the Supabase read, so a slow or cold
+// Redis (whose SDK retries with exponential backoff) could otherwise block a
+// shared-link open for several seconds before failing open. To keep reads fast,
+// race the limiter against a short timeout: if Redis does not answer within
+// READ_LIMIT_TIMEOUT_MS, fail OPEN and let the read proceed. The limiter promise
+// is still allowed to settle (and is counted) on the warm path; on the slow path
+// it is orphaned, so we attach a no-op catch to it so a late rejection never
+// surfaces as an unhandledRejection.
+const READ_LIMIT_TIMEOUT_MS = 600;
+
 export async function checkReadLimit(ip) {
   try {
-    const r = await getReadLimiter().limit(ip);
+    const limitPromise = getReadLimiter().limit(ip);
+    // Swallow a late rejection of the orphaned promise (after the race resolves).
+    limitPromise.catch(() => {});
+
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(function() { resolve({ timedOut: true }); }, READ_LIMIT_TIMEOUT_MS);
+    });
+
+    const r = await Promise.race([limitPromise, timeoutPromise]);
+    if (r && r.timedOut) {
+      // Redis was too slow; fail open rather than delay the read.
+      return { limited: false };
+    }
     return { limited: !r.success };
   } catch (e) {
     console.warn("Rate limiter unavailable, failing open:", e && e.message);
