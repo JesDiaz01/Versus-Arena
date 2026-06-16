@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import SplashScreen from "./SplashScreen";
-import BattleArena from "./BattleArena";
+import BattleArena, { DEFAULT_ADJUST } from "./BattleArena";
 import SharedBattle from "./SharedBattle";
 import About from "./About";
 import Tools from "./Tools";
@@ -17,6 +17,29 @@ export default function App() {
   const [sharedBattle, setSharedBattle] = useState(null);
   const [sharedLoading, setSharedLoading] = useState(false);
   const [showGoku, setShowGoku] = useState(false);
+
+  // Battle INPUT state lives here (not in BattleArena) so it survives in-site
+  // navigation: App never unmounts, but BattleArena does when you switch pages,
+  // which would otherwise destroy these. Passed down to BattleArena as props.
+  // (Verdict result, loading, and cancel state stay inside BattleArena.)
+  const [f1, setF1] = useState("");
+  const [f2, setF2] = useState("");
+  const [u1, setU1] = useState("");
+  const [u2, setU2] = useState("");
+  const [override1, setOverride1] = useState(null);
+  const [override2, setOverride2] = useState(null);
+  const [claims1, setClaims1] = useState([]);
+  const [claims2, setClaims2] = useState([]);
+  const [draft1, setDraft1] = useState("");
+  const [draft2, setDraft2] = useState("");
+  const [battleType, setBattleType] = useState("Standard Fight");
+  const [location, setLocation] = useState("Neutral Terrain");
+  const [power, setPower] = useState("Canon Only");
+  const [depth, setDepth] = useState("Quick Verdict");
+  const [imgAdjust1, setImgAdjust1] = useState(DEFAULT_ADJUST);
+  const [imgAdjust2, setImgAdjust2] = useState(DEFAULT_ADJUST);
+  const [imgAdjusted1, setImgAdjusted1] = useState(false);
+  const [imgAdjusted2, setImgAdjusted2] = useState(false);
 
   // When you switch pages, jump back to the top so you land at the start of the
   // new page (e.g. the arena on home) instead of staying scrolled down where the
@@ -187,7 +210,24 @@ export default function App() {
         </p>
       </div>
 
-      <BattleArena />
+      <BattleArena
+        f1={f1} setF1={setF1} f2={f2} setF2={setF2}
+        u1={u1} setU1={setU1} u2={u2} setU2={setU2}
+        override1={override1} setOverride1={setOverride1}
+        override2={override2} setOverride2={setOverride2}
+        claims1={claims1} setClaims1={setClaims1}
+        claims2={claims2} setClaims2={setClaims2}
+        draft1={draft1} setDraft1={setDraft1}
+        draft2={draft2} setDraft2={setDraft2}
+        battleType={battleType} setBattleType={setBattleType}
+        location={location} setLocation={setLocation}
+        power={power} setPower={setPower}
+        depth={depth} setDepth={setDepth}
+        imgAdjust1={imgAdjust1} setImgAdjust1={setImgAdjust1}
+        imgAdjust2={imgAdjust2} setImgAdjust2={setImgAdjust2}
+        imgAdjusted1={imgAdjusted1} setImgAdjusted1={setImgAdjusted1}
+        imgAdjusted2={imgAdjusted2} setImgAdjusted2={setImgAdjusted2}
+      />
 
       <div className="stats-strip">
         <div className="stat-item"><span className="stat-num">99.9%</span><span className="stat-label">Sourced Verdicts</span></div>

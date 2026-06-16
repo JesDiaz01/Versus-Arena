@@ -65,7 +65,7 @@ function BattleClash({ img1Url, img2Url, name1, name2, adjust1, adjust2 }) {
 }
 
 const CLAIM_LIMIT = 100;
-const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
+export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
 const FANDOM_MAP = {
   "persona": "megamitensei", "persona 3": "megamitensei", "persona 4": "megamitensei",
@@ -584,22 +584,20 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
   };
 }
 
-export default function BattleArena({ initialBattle = null }) {
-  const init = initialBattle?.battle_data || {};
-  const [f1, setF1] = useState(init.f1 || "");
-  const [f2, setF2] = useState(init.f2 || "");
-  const [u1, setU1] = useState(init.u1 || "");
-  const [u2, setU2] = useState(init.u2 || "");
-  const [override1, setOverride1] = useState(null);
-  const [override2, setOverride2] = useState(null);
-  const [claims1, setClaims1] = useState(init.claims1 || []);
-  const [claims2, setClaims2] = useState(init.claims2 || []);
-  const [draft1, setDraft1] = useState("");
-  const [draft2, setDraft2] = useState("");
-  const [battleType, setBattleType] = useState(init.battleType || "Standard Fight");
-  const [location, setLocation] = useState(init.location || "Neutral Terrain");
-  const [power, setPower] = useState(init.power || "Canon Only");
-  const [depth, setDepth] = useState(init.depth || "Quick Verdict");
+export default function BattleArena({
+  initialBattle = null,
+  f1, setF1, f2, setF2, u1, setU1, u2, setU2,
+  override1, setOverride1, override2, setOverride2,
+  claims1, setClaims1, claims2, setClaims2,
+  draft1, setDraft1, draft2, setDraft2,
+  battleType, setBattleType, location, setLocation, power, setPower, depth, setDepth,
+  imgAdjust1, setImgAdjust1, imgAdjust2, setImgAdjust2,
+  imgAdjusted1, setImgAdjusted1, imgAdjusted2, setImgAdjusted2,
+}) {
+  // Battle INPUTS (names, universes, feats, drafts, dropdowns, image overrides,
+  // and framing) are lifted to App.jsx so they survive in-site navigation; this
+  // component receives them and their setters as props. The verdict result and
+  // the transient UI state below stay local and clear normally on unmount.
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(initialBattle?.result || null);
   const [error, setError] = useState("");
@@ -607,10 +605,6 @@ export default function BattleArena({ initialBattle = null }) {
 
   const [imgError1, setImgError1] = useState(false);
   const [imgError2, setImgError2] = useState(false);
-  const [imgAdjust1, setImgAdjust1] = useState(DEFAULT_ADJUST);
-  const [imgAdjust2, setImgAdjust2] = useState(DEFAULT_ADJUST);
-  const [imgAdjusted1, setImgAdjusted1] = useState(false);
-  const [imgAdjusted2, setImgAdjusted2] = useState(false);
 
   // When true, a verdict that arrives AFTER the user cancelled is discarded so it
   // doesn't pop onto a user who already left the clash. (The request still fired
@@ -622,12 +616,25 @@ export default function BattleArena({ initialBattle = null }) {
 
   useEffect(() => { setImgError1(false); }, [img1.imageUrl]);
   useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
-  // Reset framing whenever a fighter's image changes (new name, universe, or
-  // override). Keyed per fighter so editing one never wipes the other's
-  // in-progress adjustment, and so a freshly loaded image starts in the
-  // adjustable (un-done) state rather than inheriting the prior image's framing.
-  useEffect(() => { setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false); }, [img1.imageUrl]);
-  useEffect(() => { setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false); }, [img2.imageUrl]);
+  // Reset framing when the user changes a fighter (name, universe, or override),
+  // so a new image starts in the adjustable (un-done) state instead of inheriting
+  // the prior image's framing. Keyed on the lifted INPUTS (not img.imageUrl) and
+  // skipping the first run after each mount: framing still resets on a real
+  // change, but a remount from in-site navigation preserves the lifted framing
+  // instead of wiping it when the image re-fetches. Per fighter, so editing one
+  // never resets the other.
+  const skipFrame1 = useRef(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (skipFrame1.current) { skipFrame1.current = false; return; }
+    setImgAdjust1(DEFAULT_ADJUST); setImgAdjusted1(false);
+  }, [f1, u1, override1]);
+  const skipFrame2 = useRef(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (skipFrame2.current) { skipFrame2.current = false; return; }
+    setImgAdjust2(DEFAULT_ADJUST); setImgAdjusted2(false);
+  }, [f2, u2, override2]);
 
   // Lock body scroll while a battle is processing so the clash overlay is the
   // only thing the user can interact with. The cleanup is tied to `loading`, so
