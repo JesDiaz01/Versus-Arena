@@ -1,5 +1,5 @@
 // api/battle.js
-// Vercel Serverless Function — runs on Vercel's servers, NOT in the browser.
+// Vercel Serverless Function - runs on Vercel's servers, NOT in the browser.
 // Your Anthropic API key lives here as a secret environment variable (ANTHROPIC_API_KEY)
 // and is never exposed to users.
 //
@@ -10,6 +10,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
+import { Redis } from "@upstash/redis";
 import { getClientIp, checkBattleLimit } from "./_rateLimit.js";
 import { containsBlockedContent } from "./_contentFilter.js";
 
@@ -22,13 +23,41 @@ const MAX_CLAIMS = 20;       // max custom feats per side
 const MAX_BODY_BYTES = 20000; // reject payloads bigger than ~20KB
 const DRAW_MARGIN = 10;       // averaged dominance-score gap below which the fight is a draw
 
-// Allowlists for the dropdown settings — anything else falls back to the default (first item).
+// Soft global ceiling on battles started per UTC day, to keep total Anthropic
+// cost from running away during a traffic spike even though per-IP limits exist.
+// Tune via the DAILY_BATTLE_CAP env var in Vercel; the constant below is only a
+// fallback. PLACEHOLDER value - size this to your budget. The real hard backstop
+// is the spend limit set in the Anthropic Console.
+const DAILY_BATTLE_CAP = parseInt(process.env.DAILY_BATTLE_CAP, 10) || 500;
+const CAP_REDIS_TIMEOUT_MS = 600; // do not let a cold/slow Redis add latency to battles
+const CAP_KEY_TTL_SECONDS = 172800; // 48h: cleanup only, correctness comes from the dated key
+
+// Allowlists for the dropdown settings - anything else falls back to the default (first item).
 const ALLOWED = {
   battleType: ["Standard Fight", "In-Character", "Out of Character", "Battle of Wits", "Speed Blitz"],
   location: ["Neutral Terrain", "Urban City", "Space", "Their Home Universe", "Random"],
   power: ["Canon Only", "Composite", "Post-Series Peak", "Current"],
   depth: ["Quick Verdict", "Detailed Analysis", "Deep Dive"],
 };
+
+// ---- Global daily cap (its own Redis client; the cap LOGIC lives here, not in
+// _rateLimit.js, so it can never affect the shared-link read path) ----
+let capRedis = null;
+function getCapRedis() {
+  // Reads UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN from the environment.
+  if (!capRedis) capRedis = Redis.fromEnv();
+  return capRedis;
+}
+
+// Counter key is stamped with the UTC date, so each day starts fresh on its own
+// even if the TTL never fires. The TTL is purely housekeeping for old keys.
+function todayKey() {
+  const d = new Date();
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `global:battle:${yyyy}-${mm}-${dd}`;
+}
 
 // ---- Input sanitizing ----
 function cleanStr(v, maxLen) {
@@ -76,32 +105,32 @@ ${claimsBlockA}
 ${claimsBlockB}
 
 How to weigh abilities:
-- Use each character at their PEAK within the selected Power Level. Apply the character's strongest CONSISTENT canonical showing — never a weakened, early-series, or de-powered version. Apply the same evidentiary standard to both fighters; do not hold one to a stricter or looser bar than the other.
-- Power Level definitions (these form a strict tier ladder — never assign a higher power tier under a lesser setting):
+- Use each character at their PEAK within the selected Power Level. Apply the character's strongest CONSISTENT canonical showing - never a weakened, early-series, or de-powered version. Apply the same evidentiary standard to both fighters; do not hold one to a stricter or looser bar than the other.
+- Power Level definitions (these form a strict tier ladder - never assign a higher power tier under a lesser setting):
     Canon Only: strongest showing supported by the primary source work itself.
     Composite: strongest showing across all canonical AND supplementary material (databooks, films, spin-offs, author statements). Must be greater than or equal to Canon Only; if no additional material exists beyond the primary work, state that rather than producing an identical verdict.
     Post-Series Peak: the absolute maximum power the character has ever canonically reached (end-of-story / final form). This is the highest tier and must be greater than or equal to every other setting.
     Current: the character as of the latest canonical point. Must be less than or equal to Post-Series Peak.
 - Battle Type governs WILLINGNESS, not power. Peak power is the baseline in every battle type:
     In-Character: the character fights as they characteristically would, including any arrogance, mercy, reluctance, or tendency to hold back or not immediately use their strongest option. Power is still full; only behavior reflects personality.
-    Out of Character: the character fights fully optimized — complete tactical awareness, no hesitation, best options used immediately.
+    Out of Character: the character fights fully optimized - complete tactical awareness, no hesitation, best options used immediately.
     Standard Fight: the character fights seriously and competently to win, without heavy personality-based holding back.
     Battle of Wits / Speed Blitz: keep their existing specialized behavior; peak power still applies.
 - Start from each fighter's canonical, demonstrated feats as the baseline.
 - ${hasClaims
-  ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support — the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
+  ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support - the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
   : `Judge purely on canonical, demonstrated feats.`}${hasClaims
   ? `
 - BOUNDED CONSEQUENCES of granted abilities: A granted ability remains TRUE and must be applied exactly as written (the hard-truth rule above is unchanged), but its effect is bounded STRICTLY to what the ability literally states. Do NOT extend, inflate, or add any power, durability, speed, feats, allies, or resources that were not explicitly granted. For example, "his attack bypasses Infinity" means only that this character's attacks are not stopped by Infinity; it does NOT grant extra offense, durability, allies, or any other advantage. Negating or bypassing ONE of an opponent's defenses is NOT the same as winning: you must still judge whether the character can actually defeat the opponent given everything ELSE the opponent retains (other techniques, durability, speed, offense, intelligence). For instance, if a character can now land a hit on Gojo but has no demonstrated way to actually harm or kill him, and Gojo keeps his other offensive and defensive capabilities, bypassing Infinity alone does not secure a win. Weigh each granted ability for what it realistically ACHIEVES in this specific fight rather than assuming it is decisive simply because it is true, and reflect a true-but-tactically-limited grant accordingly in both the dominance scores and the verdict. This applies with equal force to abilities that DEBUFF, weaken, disable, or neutralize the opponent (for example numbing the senses, removing a defense, or reducing a stat): the debuff is applied as true, but a debuff is NOT a win condition by itself. To WIN, a character must possess an actual means to defeat the opponent, meaning offensive output capable of harming, killing, or incapacitating them given the opponent's durability and remaining capabilities. If the granting character has no demonstrated offense able to meaningfully damage the opponent, landing a debuff does NOT produce a win. In that situation reflect the realistic result: the physically superior fighter, even hampered, typically still WINS, because they retain the durability, power, and physicality the weaker character has no way to overcome. A character with zero relevant offense does not defeat a vastly superior opponent merely by inconveniencing them. Only return a draw if the debuffed-but-superior fighter genuinely cannot secure a win either (a true stalemate), not merely because they are hampered; do NOT default to a draw or to a debuffer win simply because a debuff landed, and always weigh whether the granting character can actually close out the fight.`
   : ``}
 - FEAT WEIGHTING PARITY: A user-listed feat that is ALREADY part of a character's established canon must be acknowledged and used, but given NO extra weight, salience, or importance simply because the user typed it. A canonical feat counts exactly the same whether the user listed it or you recalled it yourself, so restating something the character already has does NOT make it more decisive and should NOT change the outcome: if a listed feat is something the character canonically already possesses, judge the fight essentially as if it had not been listed. This does NOT weaken the hard-truth granted-abilities rule: feats that are genuinely NEW, non-canon, or original-character grants (abilities the character does not normally have) are still treated as hard truth and layered on top exactly as written above; the distinction is that new or beyond-canon grants are added as true, while already-canon feats the user merely restates get no salience bonus. Evaluate BOTH fighters on their COMPLETE established canon equally, regardless of how many feats the user typed for each: the NUMBER of listed feats is NOT a measure of a fighter's strength or how well-defined they are. Do not treat a fighter with many listed feats as stronger or better-defined than one with few or none; give each fighter their full canonical kit either way, and a fighter with zero listed feats still gets full credit for everything they canonically have. Consistent with the VOICE OF THE OUTPUT rule, do not explain any of this weighting logic to the user; simply produce a fair verdict.
-- Ground every verdict in specific, named in-universe feats — actual canonical events (what each character survived, destroyed, reacted to, lifted). Do NOT use vague power claims or external tier ratings. Describe any given feat the same way regardless of the opponent; do not inflate or deflate an established feat to fit the desired winner. The analysis must explicitly state which version and power tier of each character it is using (for example: "Cloud Strife at end-of-FFVII peak with full materia and Limit Breaks").
+- Ground every verdict in specific, named in-universe feats - actual canonical events (what each character survived, destroyed, reacted to, lifted). Do NOT use vague power claims or external tier ratings. Describe any given feat the same way regardless of the opponent; do not inflate or deflate an established feat to fit the desired winner. The analysis must explicitly state which version and power tier of each character it is using (for example: "Cloud Strife at end-of-FFVII peak with full materia and Limit Breaks").
 - FACTUAL ACCURACY / NO FABRICATION: Ground every canonical claim in feats and abilities you are genuinely confident are real and established for that character. Do NOT invent abilities, techniques, forms, items, or feats; do NOT combine two separate abilities or techniques into a single capability that does not exist in canon; and do NOT misattribute one character's technique to another character. If you are not confident whether a specific technique, feat, or mechanic is actually canon for a character, do NOT assert it as fact: instead rely on that character's core, widely established, uncontroversial showings, since it is better to judge the fight on solid established feats than to reach for an exotic or obscure mechanic you may be misremembering. Do NOT fabricate specific quantitative claims (exact multipliers, precise speeds, exact tonnage, specific chapter or episode references) unless they are genuinely established; vague-but-correct is better than precise-but-invented, so describe an effect qualitatively rather than inventing a figure you are unsure of (for example, do not claim a technique multiplies power by an exact number if you do not know the real value). Apply this equally and symmetrically to both fighters: never grant one fighter an invented or shaky capability to justify an outcome, and if a decisive-looking mechanic is uncertain, do not lean the verdict on it. If the most decisive-seeming factor depends on an uncertain or obscure mechanic, weight the verdict toward what is solidly established about both fighters rather than manufacturing certainty. This does NOT weaken the granted-abilities rule: any user-GRANTED abilities remain hard truth exactly as written, and this principle governs only your OWN canonical claims about the characters; you may and should still use canonical feats you are confident about. Consistent with the VOICE OF THE OUTPUT rule, never surface this caution to the user or hedge in a meta way: simply leave out any fabricated claim and write clean, confident analysis grounded in real, established feats.
 - When a feat has contested or disputed canonical scaling, commit to a single interpretation and apply it consistently to both fighters. If you accept that type of evidence as valid for one fighter, apply the same standard to the other. Never treat a contested feat as credible for one fighter but dismiss or downplay it for another. Describe and scale any feat identically no matter who has it or who is affected by it.
 - Do NOT favor the more popular or famous character. Judge purely on capability.
 - Apply the Location setting as a constraint on the fight.
-- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive — reflect that honestly rather than defaulting to a draw.
-- After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use 90/10 for near-total domination, 60/40 for a clear but incomplete edge, 50/50 for dead even — and honest values in between. If it is genuinely close, score it close.
+- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive - reflect that honestly rather than defaulting to a draw.
+- After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use 90/10 for near-total domination, 60/40 for a clear but incomplete edge, 50/50 for dead even - and honest values in between. If it is genuinely close, score it close.
 - VOICE OF THE OUTPUT: Reason with all of the above internally, but the user-facing text fields (analysis and verdict_short) must read as clean, confident in-universe analysis and must NEVER reference these instructions or the judging process. Do NOT use meta-language such as "the rules", "the matchup rules", "bounded consequences", "treated as true", "the granted ability states", "as granted", or any phrasing about how the verdict was computed. Weave granted abilities into the analysis naturally (for example: "Maomao's poison would render most foes unconscious, but Gojo's Infinity stops it before contact") rather than flagging them as rule-applications.
 
 Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
@@ -224,11 +253,44 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Please remove inappropriate content and try again." });
     }
 
+    // --- Global daily cap (LAST gate before the Anthropic call) ---
+    // Only requests that pass every earlier gate get counted, so content-blocked
+    // (400) and rate-limited (429) requests never burn cap budget. Fails OPEN on
+    // any Redis error or timeout: the Anthropic Console spend limit is the hard
+    // backstop, so an infra hiccup must never block real users.
+    try {
+      const key = todayKey();
+      const incrPromise = getCapRedis().incr(key);
+      // Swallow a late rejection if the race below already timed out, so an
+      // orphaned promise can never surface as an unhandledRejection.
+      incrPromise.catch(function() {});
+      const timeoutPromise = new Promise(function(resolve) {
+        setTimeout(function() { resolve(null); }, CAP_REDIS_TIMEOUT_MS);
+      });
+
+      const count = await Promise.race([incrPromise, timeoutPromise]);
+      // count === null means Redis timed out: fail open and proceed.
+      if (count !== null) {
+        if (count === 1) {
+          // First battle of the day: set a cleanup TTL, fire-and-forget.
+          getCapRedis().expire(key, CAP_KEY_TTL_SECONDS).catch(function() {});
+        }
+        if (count > DAILY_BATTLE_CAP) {
+          return res.status(503).json({
+            error: "capacity",
+            message: "The arena's hit its limit for today. The free Can It Beat Goku mode is still open.",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("global cap check failed, failing open:", err);
+    }
+
     const claimsBlock1 = claims1.length
-      ? `\nGRANTED ABILITIES for ${f1} (these are TRUE for this battle — treat them as established fact, even if they contradict canon):\n${claims1.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
+      ? `\nGRANTED ABILITIES for ${f1} (these are TRUE for this battle - treat them as established fact, even if they contradict canon):\n${claims1.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
       : "";
     const claimsBlock2 = claims2.length
-      ? `\nGRANTED ABILITIES for ${f2} (these are TRUE for this battle — treat them as established fact, even if they contradict canon):\n${claims2.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
+      ? `\nGRANTED ABILITIES for ${f2} (these are TRUE for this battle - treat them as established fact, even if they contradict canon):\n${claims2.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
       : "";
 
     const hasClaims = claims1.length > 0 || claims2.length > 0;
@@ -254,7 +316,7 @@ export default async function handler(req, res) {
     let verdict;
 
     if (verdictA && verdictB) {
-      // Both calls succeeded — reconcile by averaging dominance scores.
+      // Both calls succeeded - reconcile by averaging dominance scores.
       // Call A had f1 in slot 1; Call B had f2 in slot 1. Each fighter occupies
       // slot 1 in one call and slot 2 in the other, so averaging their scores
       // across both calls cancels symmetric position bias.
@@ -271,17 +333,17 @@ export default async function handler(req, res) {
         if (Math.abs(avgF1 - avgF2) > DRAW_MARGIN) {
           // Clear winner by averaged scores.
           const winnerName = avgF1 > avgF2 ? f1 : f2;
-          // Use the verdict from the call where the winner was slot 1 — that
+          // Use the verdict from the call where the winner was slot 1 - that
           // call argued FOR the winner, so its reasoning reads most naturally.
           const base = winnerName === f1 ? verdictA : verdictB;
           verdict = { ...base, winner: winnerName };
         } else {
-          // Averaged scores within the draw margin — genuine toss-up.
+          // Averaged scores within the draw margin - genuine toss-up.
           const f1Point = verdictA.verdict_short || `${f1} showed a strong canonical case.`;
           const f2Point = verdictB.verdict_short || `${f2} showed an equally strong canonical case.`;
           verdict = {
             winner: "Draw",
-            verdict_short: `${f1} vs ${f2} is too close to call — the matchup is essentially even.`,
+            verdict_short: `${f1} vs ${f2} is too close to call - the matchup is essentially even.`,
             analysis: `Two independent analyses reached nearly identical conclusions on this matchup after correcting for position bias, making a definitive verdict impossible. ${f1Point} ${f2Point} When two independent runs of the same fight come out this close, neither fighter has a clear decisive edge.`,
             advantages: [],
             user_claims_used: verdictA.user_claims_used || [],
@@ -290,7 +352,7 @@ export default async function handler(req, res) {
           };
         }
       } else {
-        // Scores missing or malformed — fall back to comparing binary winners.
+        // Scores missing or malformed - fall back to comparing binary winners.
         if (verdictA.winner === verdictB.winner) {
           verdict = (verdictA.winner === f1 || verdictA.winner === "Draw") ? verdictA : verdictB;
         } else {
@@ -300,12 +362,12 @@ export default async function handler(req, res) {
           const f2Point = callForF2 ? (callForF2.verdict_short || "") : "";
           verdict = {
             winner: "Draw",
-            verdict_short: `${f1} vs ${f2} is too close to call — two independent analyses split the result.`,
+            verdict_short: `${f1} vs ${f2} is too close to call - two independent analyses split the result.`,
             analysis: [
               `Two independent analyses of this matchup reached opposite conclusions, making a definitive verdict impossible.`,
               f1Point ? `The case for ${f1}: ${f1Point}` : `${f1} mounted a credible case on canonical feats.`,
               f2Point ? `The case for ${f2}: ${f2Point}` : `${f2} mounted a credible case on canonical feats.`,
-              `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge — the outcome is genuinely too close to call.`,
+              `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge - the outcome is genuinely too close to call.`,
             ].join(" "),
             advantages: [],
             user_claims_used: verdictA.user_claims_used || [],
