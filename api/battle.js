@@ -40,6 +40,12 @@ const ALLOWED = {
   depth: ["Quick Verdict", "Detailed Analysis", "Deep Dive"],
 };
 
+// Neutral fallbacks used when the model's free-text OUTPUT trips the content
+// filter (M2). The battle is never discarded; the offending text is replaced
+// with these while the structured fields (winner, scores, counts) stay intact.
+const NEUTRAL_ANALYSIS = "A detailed breakdown could not be generated for this matchup. Try adjusting the fighters or feats and running it again.";
+const NEUTRAL_VERDICT_SHORT = "This matchup could not be summarized. Please run it again.";
+
 // ---- Global daily cap (its own Redis client; the cap LOGIC lives here, not in
 // _rateLimit.js, so it can never affect the shared-link read path) ----
 let capRedis = null;
@@ -387,6 +393,46 @@ export default async function handler(req, res) {
     } else {
       // Both calls failed.
       return res.status(502).json({ error: "The analyst is unavailable right now. Try again in a moment." });
+    }
+
+    // --- Screen the model's free-text OUTPUT before saving/returning (M2) ---
+    // Both Anthropic calls have already fired, so a hit never discards the battle:
+    // we neutralize the offending free-text field(s) and keep the structured
+    // fields (winner, scores, counts) intact, then still save + return a valid
+    // verdict. Reuses the same input filter; the offending text is never sent to
+    // the client or persisted. Saving the neutralized verdict keeps the ?b= share
+    // link resolving to clean text.
+    {
+      let outputBlocked = false;
+      if (typeof verdict.verdict_short === "string" && containsBlockedContent([verdict.verdict_short])) {
+        verdict.verdict_short = NEUTRAL_VERDICT_SHORT;
+        outputBlocked = true;
+      }
+      if (typeof verdict.analysis === "string" && containsBlockedContent([verdict.analysis])) {
+        verdict.analysis = NEUTRAL_ANALYSIS;
+        outputBlocked = true;
+      }
+      if (Array.isArray(verdict.advantages)) {
+        const cleaned = verdict.advantages.filter(function(a) {
+          return !(typeof a === "string" && containsBlockedContent([a]));
+        });
+        if (cleaned.length !== verdict.advantages.length) {
+          verdict.advantages = cleaned;
+          outputBlocked = true;
+        }
+      }
+      if (Array.isArray(verdict.user_claims_used)) {
+        const cleaned = verdict.user_claims_used.filter(function(c) {
+          return !(typeof c === "string" && containsBlockedContent([c]));
+        });
+        if (cleaned.length !== verdict.user_claims_used.length) {
+          verdict.user_claims_used = cleaned;
+          outputBlocked = true;
+        }
+      }
+      if (outputBlocked) {
+        console.error("Output content filter neutralized one or more verdict fields before save.");
+      }
     }
 
     // Save to Supabase and generate a share ID (fail-open: a DB error never breaks the verdict).
