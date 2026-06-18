@@ -1,9 +1,10 @@
 import { useState } from "react";
 
 export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDisclaimer }) {
-  // ⬇️ Your real links/handles
+  // Your real links/handles
   const INSTAGRAM_URL = "https://www.instagram.com/jes_diaz01/";
   const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
+  const KOFI_URL = "https://ko-fi.com/versus_arena";
   const CONTACT_EMAIL = "versusarenahq@gmail.com";
 
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -48,6 +49,12 @@ export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDi
               </svg>
               Discord
             </a>
+            <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" className="footer-social">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" />
+              </svg>
+              Support on Ko-fi
+            </a>
           </div>
 
           <div className="footer-col">
@@ -65,7 +72,7 @@ export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDi
       </div>
 
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Versus Arena. All rights reserved.</span>
+        <span>&copy; {new Date().getFullYear()} Versus Arena. All rights reserved.</span>
         <span className="footer-fineprint">Built for fans, by a fan.</span>
       </div>
     </footer>
