@@ -1072,6 +1072,11 @@ export default function BattleArena({
           <button className={`fight-btn ${loading ? "loading" : ""}`} onClick={simulate} disabled={loading}>
             {loading ? "Analyzing..." : "Simulate Battle"}
           </button>
+          <div className="fight-stance">
+            <span>Feat-Driven</span>
+            <span>Unbiased</span>
+            <span>No Favorites</span>
+          </div>
         </div>
 
         {result && (

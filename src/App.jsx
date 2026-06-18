@@ -229,12 +229,6 @@ export default function App() {
         imgAdjusted2={imgAdjusted2} setImgAdjusted2={setImgAdjusted2}
       />
 
-      <div className="stats-strip">
-        <span className="stat-claim">Feat-Driven</span>
-        <span className="stat-claim">Unbiased</span>
-        <span className="stat-claim">No Favorites</span>
-      </div>
-
       <Footer
         onHome={() => setPage("home")}
         onAbout={() => setPage("about")}
