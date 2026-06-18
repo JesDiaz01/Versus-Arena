@@ -213,12 +213,29 @@
   margin: 0 auto;
 }
 
-/* ── Footer ── */
+/* -- Footer -- */
 .sb-footer {
   padding: 1.5rem 2.5rem 2rem;
   border-top: 1px solid var(--line);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Soft gold text link - no border, matches the restrained design system. */
+.sb-discord-link {
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.sb-discord-link:hover {
+  color: var(--gold-bright);
 }
 
 .sb-back-btn {

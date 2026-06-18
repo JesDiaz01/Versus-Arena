@@ -2,6 +2,10 @@ import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
 import "./SharedBattle.css";
 
+// Same invite as the site footer (Footer.jsx). Reused as the identical string
+// here rather than a shared import so the footer itself stays untouched.
+const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
+
 export default function SharedBattle({ battle, onBackToArena }) {
   const bd = battle.battle_data || {};
   const result = battle.result || {};
@@ -141,6 +145,14 @@ export default function SharedBattle({ battle, onBackToArena }) {
           <button className="sb-back-btn" onClick={onBackToArena}>
             Back to the Arena
           </button>
+          <a
+            className="sb-discord-link"
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Join the Discord
+          </a>
         </div>
 
       </div>

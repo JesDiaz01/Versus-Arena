@@ -65,6 +65,8 @@ function BattleClash({ img1Url, img2Url, name1, name2, adjust1, adjust2 }) {
 }
 
 const CLAIM_LIMIT = 100;
+// Same invite as the site footer (Footer.jsx); reused as the identical string.
+const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
 const FANDOM_MAP = {
@@ -1122,6 +1124,15 @@ export default function BattleArena({
                 </button>
               )}
             </div>
+
+            <a
+              className="discord-invite"
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Join the Discord
+            </a>
           </div>
         )}
       </div>
