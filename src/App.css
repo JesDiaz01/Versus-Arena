@@ -943,6 +943,19 @@ body::before {
   gap: 0.4rem;
 }
 
+/* Friendly inline notice for a rejected upload - cream/gold, never a harsh red. */
+.override-msg {
+  background: var(--bg-soft);
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  color: var(--gold);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  font-family: 'Inter', sans-serif;
+}
+
 
 /* === AUTO-EXPANDING CLAIM TEXTAREA === */
 textarea.claim-input {

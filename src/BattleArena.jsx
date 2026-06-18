@@ -377,10 +377,82 @@ function cleanImageUrl(url) {
   return s;
 }
 
+// --- User-upload image limits (cosmetic avatars only; never sent to the API) ---
+// The override is purely a displayed avatar, so we downscale every upload hard and
+// keep it small. Edge cap, a pre-decode guard (so a weak phone never decodes a giant
+// file), and a backstop on the downscaled result.
+const UPLOAD_MAX_EDGE = 512;                      // downscale: cap the longest edge, px
+const UPLOAD_PRE_DECODE_MAX = 25 * 1024 * 1024;   // reject BEFORE decoding (avoid OOM)
+const UPLOAD_STORED_MAX = 1024 * 1024;            // hard backstop on the downscaled result
+
+// Decoded byte size of a data: URL, derived from its base64 payload length.
+function dataUrlBytes(dataUrl) {
+  const comma = dataUrl.indexOf(",");
+  if (comma === -1) return dataUrl.length;
+  const b64 = dataUrl.slice(comma + 1);
+  let padding = 0;
+  if (b64.endsWith("==")) padding = 2;
+  else if (b64.endsWith("=")) padding = 1;
+  return Math.floor(b64.length * 3 / 4) - padding;
+}
+
+// Downscale a user-uploaded image File to a small avatar via an offscreen canvas.
+// Caps the longest edge to UPLOAD_MAX_EDGE, preserves transparency (PNG out if the
+// source has any alpha, smaller JPEG q0.85 otherwise), and resolves to a data: URL
+// string - the exact format the rest of the app already stores for an override, so
+// nothing downstream changes. Browser-native only; rejects on any decode/encode
+// failure. Uses an object URL (not a base64 read) so a large file is never fully
+// buffered as a string just to be decoded.
+function downscaleImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const srcW = img.naturalWidth || img.width;
+        const srcH = img.naturalHeight || img.height;
+        if (!srcW || !srcH) { URL.revokeObjectURL(url); reject(new Error("empty image")); return; }
+        const scale = Math.min(1, UPLOAD_MAX_EDGE / Math.max(srcW, srcH));
+        const w = Math.max(1, Math.round(srcW * scale));
+        const h = Math.max(1, Math.round(srcH * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+
+        // Detect transparency on the downscaled canvas: if any pixel is not fully
+        // opaque, keep alpha with PNG; otherwise use the smaller JPEG encoding.
+        let hasAlpha = false;
+        try {
+          const px = ctx.getImageData(0, 0, w, h).data;
+          for (let i = 3; i < px.length; i += 4) {
+            if (px[i] < 255) { hasAlpha = true; break; }
+          }
+        } catch (_) {
+          hasAlpha = true; // sampling failed - default to lossless PNG, never crash
+        }
+
+        const out = hasAlpha
+          ? canvas.toDataURL("image/png")
+          : canvas.toDataURL("image/jpeg", 0.85);
+        resolve(out);
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        reject(err);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+    img.src = url;
+  });
+}
+
 function ImageOverride({ onSet, hasOverride, onClear }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
   const [urlInput, setUrlInput] = useState("");
+  const [msg, setMsg] = useState("");
   const fileInputRef = useRef(null);
 
   function handleUrlSubmit() {
@@ -393,15 +465,41 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
 
   function handleFile(e) {
     const file = e.target.files?.[0];
+    // Clear the input so picking the SAME file again still fires onChange (lets a
+    // user retry after a rejection).
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Image too large. Max 5MB."); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      onSet(ev.target.result);
-      setOpen(false);
-      setMode(null);
-    };
-    reader.readAsDataURL(file);
+
+    // Must actually be an image before we try to decode it.
+    if (!file.type || !file.type.startsWith("image/")) {
+      setMsg("That file is not an image - please use a PNG, JPG, or WebP.");
+      return;
+    }
+    // Pre-decode guard: reject an absurdly large file BEFORE decoding, so a weak
+    // mobile device never loads a giant image into memory.
+    if (file.size > UPLOAD_PRE_DECODE_MAX) {
+      setMsg("That image file is too large to open - please use one under 25MB.");
+      return;
+    }
+
+    setMsg("");
+    downscaleImage(file)
+      .then((dataUrl) => {
+        // Backstop: if it is STILL too big after downscaling (or not a real image),
+        // reject rather than store it. A rejected upload never calls onSet, so any
+        // existing override is left untouched.
+        if (!dataUrl || dataUrlBytes(dataUrl) > UPLOAD_STORED_MAX) {
+          setMsg("That image is too large - please use one under 1MB.");
+          return;
+        }
+        onSet(dataUrl);
+        setMsg("");
+        setOpen(false);
+        setMode(null);
+      })
+      .catch(() => {
+        setMsg("That image could not be processed - please try a different one.");
+      });
   }
 
   if (hasOverride) {
@@ -414,7 +512,7 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
 
   if (!open) {
     return (
-      <button className="image-override-trigger" onClick={() => setOpen(true)}>
+      <button className="image-override-trigger" onClick={() => { setMsg(""); setOpen(true); }}>
         Use my own image
       </button>
     );
@@ -424,10 +522,11 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
     <div className="image-override-panel">
       {!mode && (
         <>
-          <button className="override-option" onClick={() => setMode("url")}>Paste URL</button>
+          <button className="override-option" onClick={() => { setMsg(""); setMode("url"); }}>Paste URL</button>
           <button className="override-option" onClick={() => fileInputRef.current?.click()}>Upload file</button>
-          <button className="override-cancel" onClick={() => setOpen(false)}>Cancel</button>
+          <button className="override-cancel" onClick={() => { setMsg(""); setOpen(false); }}>Cancel</button>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleFile} style={{ display: "none" }} />
+          {msg && <div className="override-msg">{msg}</div>}
         </>
       )}
       {mode === "url" && (
