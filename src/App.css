@@ -504,23 +504,14 @@ body::before {
   margin-bottom: 0;
   flex-wrap: wrap;
 }
-.stat-item { text-align: center; }
-.stat-num {
+.stat-claim {
   font-family: 'Cinzel', serif;
   font-weight: 900;
   font-size: 2.4rem;
   letter-spacing: 0.05em;
-  color: var(--ink);
-  display: block;
-}
-.stat-label {
-  font-size: 0.65rem;
-  letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: var(--muted);
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  margin-top: 0.3rem;
+  color: var(--ink);
+  text-align: center;
 }
 
 
@@ -2695,9 +2686,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .result-title { font-size: 1.25rem; }
   .share-row { flex-wrap: wrap; }
 
-  /* STATS: smaller gap so they don't force width */
-  .stats-strip { gap: 2.5rem; padding: 2rem 1.25rem; }
-  .stat-num { font-size: 1.9rem; }
+  /* STATS: stack the claims so three big serif lines never overflow on mobile */
+  .stats-strip { flex-direction: column; gap: 1.25rem; padding: 2rem 1.25rem; }
+  .stat-claim { font-size: 1.9rem; }
 
   /* TOOLS / ABOUT / LEADERBOARD containers */
   .tools-container, .about-container { padding: 3rem 1.25rem 4rem; }

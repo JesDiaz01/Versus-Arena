@@ -230,8 +230,9 @@ export default function App() {
       />
 
       <div className="stats-strip">
-        <div className="stat-item"><span className="stat-num">99.9%</span><span className="stat-label">Sourced Verdicts</span></div>
-        <div className="stat-item"><span className="stat-num">100%</span><span className="stat-label">Unbiased</span></div>
+        <span className="stat-claim">Feat-Driven</span>
+        <span className="stat-claim">Unbiased</span>
+        <span className="stat-claim">No Favorites</span>
       </div>
 
       <Footer
