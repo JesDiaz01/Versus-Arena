@@ -3,7 +3,7 @@
    This file is imported only by SharedBattle.jsx.
 */
 
-/* ── Loading screen (used in App.jsx while the battle fetch is in flight) ── */
+/* -- Loading screen (used in App.jsx while the battle fetch is in flight) -- */
 .sb-loading-screen {
   min-height: 100vh;
   background: var(--bg);
@@ -20,7 +20,7 @@
   color: var(--muted);
 }
 
-/* ── Page shell ── */
+/* -- Page shell -- */
 .sb-page {
   min-height: 100vh;
   background: var(--bg);
@@ -38,7 +38,7 @@
   border-radius: 4px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .sb-header {
   position: relative;
   padding: 1.5rem 2.5rem;
@@ -70,7 +70,7 @@
   color: var(--ink);
 }
 
-/* ── Matchup ── */
+/* -- Matchup -- */
 .sb-matchup {
   display: flex;
   align-items: flex-start;
@@ -142,7 +142,7 @@
   align-self: flex-start;
 }
 
-/* ── Settings ── */
+/* -- Settings -- */
 .sb-settings {
   padding: 0.85rem 2.5rem;
   font-size: 0.7rem;
@@ -153,7 +153,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-/* ── Verdict ── */
+/* -- Verdict -- */
 .sb-verdict {
   padding: 2.5rem 2.5rem 2rem;
   text-align: center;
@@ -225,6 +225,9 @@
 
 /* Soft gold text link - no border, matches the restrained design system. */
 .sb-discord-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: "Inter", sans-serif;
   font-size: 0.8rem;
   font-weight: 500;
@@ -257,7 +260,7 @@
   color: var(--gold);
 }
 
-/* ── Responsive ── */
+/* -- Responsive -- */
 @media (max-width: 500px) {
   .sb-page { padding: 1.5rem 1rem 4rem; }
   .sb-header { padding: 1.25rem 1.5rem; }

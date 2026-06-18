@@ -34,7 +34,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
     <div className="sb-page">
       <div className="sb-card">
 
-        {/* ── Header ── */}
+        {/* -- Header -- */}
         <header className="sb-header">
           <svg className="sb-v-logo" viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -76,7 +76,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
           </div>
         </header>
 
-        {/* ── Matchup ── */}
+        {/* -- Matchup -- */}
         <div className="sb-matchup">
           <div className="sb-fighter">
             <div className="sb-fighter-name">{f1}</div>
@@ -107,14 +107,14 @@ export default function SharedBattle({ battle, onBackToArena }) {
           </div>
         </div>
 
-        {/* ── Settings tags ── */}
+        {/* -- Settings tags -- */}
         {settings.length > 0 && (
           <div className="sb-settings">
             {settings.join(" · ")}
           </div>
         )}
 
-        {/* ── Verdict ── */}
+        {/* -- Verdict -- */}
         <div className="sb-verdict">
           <div className="sb-verdict-eyebrow">
             {isDraw ? "VERDICT" : "WINNER"}
@@ -140,7 +140,7 @@ export default function SharedBattle({ battle, onBackToArena }) {
           )}
         </div>
 
-        {/* ── Footer ── */}
+        {/* -- Footer -- */}
         <div className="sb-footer">
           <button className="sb-back-btn" onClick={onBackToArena}>
             Back to the Arena
@@ -151,6 +151,9 @@ export default function SharedBattle({ battle, onBackToArena }) {
             target="_blank"
             rel="noopener noreferrer"
           >
+            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true">
+              <path d="M20.32 4.37A19.79 19.79 0 0016.56 3c-.2.36-.43.85-.59 1.23a18.27 18.27 0 00-5.5 0C10.31 3.85 10.07 3.36 9.87 3a19.74 19.74 0 00-3.76 1.37C2.55 8.06 1.97 11.65 2.27 15.19a19.9 19.9 0 005.99 3.03c.48-.66.91-1.36 1.28-2.1-.7-.27-1.37-.6-2-.98.17-.13.34-.26.5-.4 3.86 1.8 8.04 1.8 11.86 0 .16.14.33.27.5.4-.63.38-1.3.71-2 .98.37.74.8 1.44 1.28 2.1a19.86 19.86 0 005.99-3.03c.36-4.1-.61-7.66-2.55-10.82zM8.84 13.16c-1.18 0-2.15-1.08-2.15-2.4 0-1.32.95-2.41 2.15-2.41 1.2 0 2.17 1.09 2.15 2.41 0 1.32-.95 2.4-2.15 2.4zm6.32 0c-1.18 0-2.15-1.08-2.15-2.4 0-1.32.95-2.41 2.15-2.41 1.2 0 2.17 1.09 2.15 2.41 0 1.32-.95 2.4-2.15 2.4z" />
+            </svg>
             Join the Discord
           </a>
         </div>

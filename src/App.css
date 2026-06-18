@@ -478,7 +478,9 @@ body::before {
 
 /* Soft gold text link - no border, matches the restrained design system. */
 .discord-invite {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin-top: 1rem;
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
