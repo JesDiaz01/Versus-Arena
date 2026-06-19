@@ -204,38 +204,109 @@ export const GOKU = {
   fighting:   "Godly"
 };
 
-// Hand-tunable verdict thresholds.
-const DOMINANT_EDGE_COUNT   = 3;    // categories above Goku needed for a dominant win
-const NARROW_LOSS_CLOSENESS = 0.85; // closeness at or above this is a narrow loss
-const SOLID_LOSS_CLOSENESS  = 0.55; // closeness at or above this is a solid loss
+// ============================================================
+// VERDICT TUNING - edit these tables, not the logic in decideOutcome below.
+// Priority (king -> least): Strength = Durability > Speed = Stamina > Fighting
+// > IQ > Range. Margin matters - crushing a stat counts more than edging it.
+// ============================================================
+
+// --- LAYER 1: dominance shortcut ---
+// Strictly above Goku in BOTH Strength AND Durability guarantees a WIN...
+// ...UNLESS Speed, IQ, and Fighting Skill are ALL simultaneously catastrophic
+// (fighter tier index at or below the line below). If even one of the three
+// clears its line, the win holds. If all three are catastrophic, the win is
+// revoked and becomes a loss. Indices are positions in each ladder (0 = lowest);
+// tier names are shown for clarity.
+const CATASTROPHIC = {
+  speed:    11, // "Hypersonic+" or slower  (Goku: FTL+, index 22)
+  iq:        0, // "Below Average" only     (Goku: Above Average, index 2)
+  fighting:  1  // "Average"/"Bad", an untrained scrub (Goku: Godly, index 8)
+};
+
+// Bucket used when the Layer 1 override fires (physical monster, but catastrophic
+// Speed + IQ + Fighting all at once). Must be one of the loss buckets below.
+const LAYER1_OVERRIDE_BUCKET = "SOLID_LOSS";
+
+// --- LAYER 2: weighted margin score (fighters who do NOT trigger Layer 1) ---
+// Per stat: margin = (fighterIndex - gokuIndex) / (ladderLength - 1), so a long
+// ladder cannot outweigh a short one. NO cap, so crushing Goku scores
+// proportionally higher than edging him (and losing badly scores more negative).
+// stat score = margin * weight; the seven stat scores are summed into one total.
+const WEIGHTS = {
+  strength:   5,
+  durability: 5,
+  speed:      3,
+  stamina:    3,
+  fighting:   2,
+  iq:         1,
+  range:      1
+};
+
+// LAYER 2 total-score thresholds, high -> low. Tune THESE (not the catastrophic
+// lines) on localhost until a strong fighter wins about as often as feels right.
+// For scale, with the default weights: best possible total ~ +5.7, an average
+// random fighter ~ -4.3, worst possible ~ -14.3.
+const SCORE_THRESHOLDS = {
+  DOMINANT_WIN:  1.0, // total >= this
+  NARROW_WIN:    0.5, // total >= this (and < DOMINANT_WIN)
+  DRAW:         -0.5, // total >= this -> DRAW (tie band around zero)
+  NARROW_LOSS:  -2.5, // total >= this -> NARROW_LOSS
+  SOLID_LOSS:   -6.0  // total >= this -> SOLID_LOSS; anything lower -> CRUSHED
+};
 
 export function decideOutcome(results) {
   var shortfalls = [];
   var edges = [];
-  var ratioSum = 0;
+  var idx = {};      // cat.key -> fighter tier index
+  var gokuIdx = {};  // cat.key -> Goku tier index
+  var score = 0;     // Layer 2 weighted total
+
   CATEGORIES.forEach(function(cat) {
     var names = tierNames(cat.items);
-    var fighterIdx = names.indexOf(results[cat.key]);
-    var gokuIdx    = names.indexOf(GOKU[cat.key]);
-    if (fighterIdx < gokuIdx)      shortfalls.push(cat.title);
-    else if (fighterIdx > gokuIdx) edges.push(cat.title);
-    // Closeness is the average per-stat ratio to Goku's index, so each stat
-    // weighs equally even though the tier ladders have different lengths.
-    ratioSum += Math.min(1, fighterIdx / Math.max(1, gokuIdx));
+    var fIdx = names.indexOf(results[cat.key]);
+    var gIdx = names.indexOf(GOKU[cat.key]);
+    idx[cat.key] = fIdx;
+    gokuIdx[cat.key] = gIdx;
+    if (fIdx < gIdx)      shortfalls.push(cat.title);
+    else if (fIdx > gIdx) edges.push(cat.title);
+    // Normalized margin vs Goku, relative to ladder length so ladders compare
+    // fairly. No cap: dominance scales the score up, deficits scale it down.
+    var margin = (fIdx - gIdx) / Math.max(1, names.length - 1);
+    score += margin * (WEIGHTS[cat.key] || 0);
   });
-  var closeness = ratioSum / CATEGORIES.length;
 
-  var bucket;
-  if (shortfalls.length === 0 && edges.length > 0) {
-    bucket = edges.length >= DOMINANT_EDGE_COUNT ? "DOMINANT_WIN" : "NARROW_WIN";
-  } else if (shortfalls.length === 0 && edges.length === 0) {
-    bucket = "DRAW";
-  } else {
-    bucket = closeness >= NARROW_LOSS_CLOSENESS ? "NARROW_LOSS"
-           : closeness >= SOLID_LOSS_CLOSENESS  ? "SOLID_LOSS"
-           : "CRUSHED";
+  // ----- LAYER 1: dominance shortcut -----
+  // Above Goku in BOTH Strength AND Durability is always a WIN unless revoked.
+  // When the win holds, the Layer 2 score only decides DOMINANT vs NARROW - it
+  // is floored at NARROW_WIN, so a thin physical edge still wins, just narrowly.
+  var dominant = idx.strength > gokuIdx.strength && idx.durability > gokuIdx.durability;
+  if (dominant) {
+    var revoked =
+      idx.speed    <= CATASTROPHIC.speed &&
+      idx.iq       <= CATASTROPHIC.iq &&
+      idx.fighting <= CATASTROPHIC.fighting;
+    if (revoked) {
+      return { bucket: LAYER1_OVERRIDE_BUCKET, shortfalls: shortfalls, edges: edges, score: null, layer: 1 };
+    }
+    return {
+      bucket: score >= SCORE_THRESHOLDS.DOMINANT_WIN ? "DOMINANT_WIN" : "NARROW_WIN",
+      shortfalls: shortfalls,
+      edges: edges,
+      score: score,
+      layer: 1
+    };
   }
-  return { bucket: bucket, shortfalls: shortfalls, edges: edges, closeness: closeness };
+
+  // ----- LAYER 2: weighted margin score -----
+  var bucket;
+  if      (score >= SCORE_THRESHOLDS.DOMINANT_WIN) bucket = "DOMINANT_WIN";
+  else if (score >= SCORE_THRESHOLDS.NARROW_WIN)   bucket = "NARROW_WIN";
+  else if (score >= SCORE_THRESHOLDS.DRAW)         bucket = "DRAW";
+  else if (score >= SCORE_THRESHOLDS.NARROW_LOSS)  bucket = "NARROW_LOSS";
+  else if (score >= SCORE_THRESHOLDS.SOLID_LOSS)   bucket = "SOLID_LOSS";
+  else                                             bucket = "CRUSHED";
+
+  return { bucket: bucket, shortfalls: shortfalls, edges: edges, score: score, layer: 2 };
 }
 
 export const FLAVOR_TEXT = {
