@@ -8,6 +8,7 @@ import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
 import PrivacyPolicy from "./PrivacyPolicy";
 import Disclaimer from "./Disclaimer";
+import ComingSoon from "./ComingSoon";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
 
@@ -155,6 +156,76 @@ export default function App() {
     );
   }
 
+  if (page === "signup") {
+    return (
+      <>
+        <ComingSoon
+          tag="Accounts"
+          title={<>Coming <span className="vs-word">Soon</span></>}
+          onBack={() => setPage("home")}
+        >
+          <div className="about-section">
+            <p className="about-lead">Accounts are coming soon.</p>
+            <p>
+              We're building sign-ups so you'll be able to save your battles, track your
+              record, and make the Arena your own. For now, every battle runs free, with
+              no account needed.
+            </p>
+          </div>
+        </ComingSoon>
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
+        />
+      </>
+    );
+  }
+
+  if (page === "categories") {
+    return (
+      <>
+        <ComingSoon
+          tag="Ranked Mode"
+          title={<>Ranked <span className="vs-word">Mode</span></>}
+          onBack={() => setPage("home")}
+        >
+          <div className="about-section">
+            <p className="about-lead">Ranked Mode is coming soon.</p>
+            <p>
+              Battle other users head to head, climb the ranks, and prove your
+              powerscaling. Every win moves you up the ladder; every upset shakes the
+              standings.
+            </p>
+          </div>
+
+          <div className="about-divider" />
+
+          <div className="about-section">
+            <h2 className="about-subtitle">What's Coming</h2>
+            <ul className="leaderboard-list">
+              <li>Head-to-head matches against other users</li>
+              <li>A climbing rank and a global ladder</li>
+              <li>Seasonal resets and placement battles</li>
+            </ul>
+            <p className="about-quiet">
+              Not live yet - we're building it. For now, settle any debate in the Arena.
+            </p>
+          </div>
+        </ComingSoon>
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
+        />
+      </>
+    );
+  }
+
   if (sharedLoading) {
     return (
       <div className="sb-loading-screen">
@@ -194,10 +265,10 @@ export default function App() {
           <li><a href="#">Battles</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("leaderboard"); }}>Leaderboard</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
-          <li><a href="#">Categories</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("categories"); }}>Categories</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
           <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
-          <li><a href="#" className="nav-cta">Sign Up Free</a></li>
+          <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
         </ul>
       </nav>
 
