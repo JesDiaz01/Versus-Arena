@@ -119,18 +119,64 @@ const FANDOM_PAGE_SUFFIX = {
   "leagueoflegends": "/LoL",
 };
 
-async function fetchFandomPageImage(wikiName, pageTitle) {
+// Normalize a name or filename for loose matching: lowercase, then drop anything
+// that is not a letter or digit (spaces, underscores, punctuation, extension dot).
+// So "Thragg.png" -> "thraggpng" and the target "Thragg" -> "thragg".
+function normalizeForMatch(s) {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// Option 1: the page's representative portrait via the PageImages extension. This
+// is the infobox image (the actual subject of the page), not just the first image
+// on it. Returns null if the wiki has PageImages disabled or the page has none.
+async function fetchFandomPortrait(wikiName, pageTitle) {
+  try {
+    const url = `https://${wikiName}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&piprop=original|thumbnail&pithumbsize=400&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const pages = data?.query?.pages;
+    if (!pages) return null;
+    const page = Object.values(pages)[0];
+    return page?.original?.source || page?.thumbnail?.source || null;
+  } catch (e) { return null; }
+}
+
+async function fetchFandomPageImage(wikiName, pageTitle, nameForMatch) {
+  // Option 1: prefer the page's representative portrait (infobox image) first.
+  const portrait = await fetchFandomPortrait(wikiName, pageTitle);
+  if (portrait) return portrait;
+
+  // Fallback: scan the page's full image list (PageImages absent or empty).
   try {
     const url = `https://${wikiName}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images|text&format=json&origin=*`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     const images = data?.parse?.images || [];
-    for (const imgName of images) {
+
+    // Same skip filter as before: drop logos/icons/svg/placeholder art.
+    const acceptable = images.filter(function(imgName) {
       const lower = imgName.toLowerCase();
-      if (lower.includes("logo") || lower.includes("icon") ||
-          lower.includes("symbol") || lower.includes("button") ||
-          lower.endsWith(".svg") || lower.includes("placeholder")) continue;
+      return !(lower.includes("logo") || lower.includes("icon") ||
+               lower.includes("symbol") || lower.includes("button") ||
+               lower.endsWith(".svg") || lower.includes("placeholder"));
+    });
+
+    // Option 2: float filenames that match the subject's name to the front; keep
+    // everything else in its original order so we still return SOME image when
+    // nothing matches (preserving the old "first acceptable image" behavior).
+    let ordered = acceptable;
+    const target = normalizeForMatch(nameForMatch);
+    if (target) {
+      const matches = acceptable.filter(function(n) { return normalizeForMatch(n).includes(target); });
+      if (matches.length > 0) {
+        const rest = acceptable.filter(function(n) { return matches.indexOf(n) === -1; });
+        ordered = matches.concat(rest);
+      }
+    }
+
+    for (const imgName of ordered) {
       const imgUrl = `https://${wikiName}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(imgName)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
       try {
         const imgRes = await fetch(imgUrl);
@@ -145,10 +191,26 @@ async function fetchFandomPageImage(wikiName, pageTitle) {
         }
       } catch (e) { continue; }
     }
+
+    // HTML fallback: prefer an <img> whose filename matches the subject's name,
+    // otherwise the first image in the parsed markup (old behavior).
     const html = data?.parse?.text?.["*"];
     if (html) {
-      const match = html.match(/<img[^>]+src="(https?:\/\/[^"]+\.(?:png|jpg|jpeg|webp|gif))"/i);
-      if (match?.[1]) return cleanImageUrl(match[1]);
+      const urls = [];
+      const re = /<img[^>]+src="(https?:\/\/[^"]+\.(?:png|jpg|jpeg|webp|gif))"/ig;
+      let m;
+      while ((m = re.exec(html)) !== null) urls.push(m[1]);
+      if (urls.length > 0) {
+        let pick = urls[0];
+        if (target) {
+          const hit = urls.find(function(u) {
+            const file = u.split("/").pop() || "";
+            return normalizeForMatch(file).includes(target);
+          });
+          if (hit) pick = hit;
+        }
+        return cleanImageUrl(pick);
+      }
     }
     return null;
   } catch (e) { return null; }
@@ -164,18 +226,21 @@ async function searchFandomPages(wikiName, query, limit = 8) {
   } catch (e) { return []; }
 }
 
-async function fetchFromFandom(wikiName, query) {
+async function fetchFromFandom(wikiName, query, nameForMatch) {
+  // Match candidate filenames against the character name (falls back to the page
+  // query if a caller does not pass one).
+  const matchName = nameForMatch || query;
   const suffix = FANDOM_PAGE_SUFFIX[wikiName];
   if (suffix) {
-    const img = await fetchFandomPageImage(wikiName, query + suffix);
+    const img = await fetchFandomPageImage(wikiName, query + suffix, matchName);
     if (img) return img;
   }
-  const direct = await fetchFandomPageImage(wikiName, query);
+  const direct = await fetchFandomPageImage(wikiName, query, matchName);
   if (direct) return direct;
   const titles = await searchFandomPages(wikiName, query, 8);
   for (const title of titles) {
     if (/^list of /i.test(title)) continue;
-    const img = await fetchFandomPageImage(wikiName, title);
+    const img = await fetchFandomPageImage(wikiName, title, matchName);
     if (img) return img;
   }
   return null;
@@ -312,14 +377,14 @@ async function fetchCharacterImage(name, universe) {
   if (cleanUniverse) {
     const wiki = FANDOM_MAP[cleanUniverse];
     if (wiki) {
-      const url1 = await fetchFromFandom(wiki, cleanName);
+      const url1 = await fetchFromFandom(wiki, cleanName, cleanName);
       if (url1) return url1;
-      const url2 = await fetchFromFandom(wiki, `${cleanName} ${universe}`);
+      const url2 = await fetchFromFandom(wiki, `${cleanName} ${universe}`, cleanName);
       if (url2) return url2;
     } else {
       const guess = cleanUniverse.replace(/[^a-z0-9]/g, "");
       if (guess.length >= 3) {
-        const url = await fetchFromFandom(guess, cleanName);
+        const url = await fetchFromFandom(guess, cleanName, cleanName);
         if (url) return url;
       }
     }
