@@ -88,7 +88,7 @@ const FANDOM_MAP = {
   "hellsing": "hellsing", "berserk": "berserk", "vinland saga": "vinlandsaga",
   "marvel": "marvel", "mcu": "marvelcinematicuniverse", "marvel comics": "marvel",
   "dc": "dc", "dc comics": "dc", "dceu": "dcextendeduniverse",
-  "the boys": "the-boys", "invincible": "invincible-comics",
+  "the boys": "the-boys", "invincible": "amazon-invincible",
   "star wars": "starwars", "harry potter": "harrypotter",
   "lord of the rings": "lotr", "lotr": "lotr",
   "game of thrones": "gameofthrones", "got": "gameofthrones",
@@ -303,23 +303,48 @@ function isExactMatch(userQuery, wikiTitle) {
   return norm(userQuery) === norm(wikiTitle);
 }
 
-async function fetchFromWikipedia(query, biasFictional = false) {
+// True when a Wikipedia result is clearly a WORK (a series/film/franchise) rather
+// than the character itself - used to avoid handing back a comic cover or a season
+// poster in place of the actual fighter. Two signals: the short description names a
+// work, or the resolved title does not contain the subject's name at all (a redirect
+// that landed on the franchise page, e.g. "Thragg" -> "Invincible (comics)").
+function looksLikeWork(details, subjectName) {
+  if (!details) return false;
+  const desc = (details.description || "").toLowerCase();
+  const workSignals = [
+    "comic book series", "comics series", "comic series", "comic book limited series",
+    "manga series", "anime series", "anime television series",
+    "television series", "tv series", "animated series", "animated television series",
+    "web series", "miniseries", "television season", "season of",
+    "film series", "media franchise", "video game series",
+    "novel series", "book series",
+  ];
+  for (const sig of workSignals) {
+    if (desc.includes(sig)) return true;
+  }
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const t = norm(details.title);
+  const n = norm(subjectName);
+  if (n && t.indexOf(n) === -1) return true;
+  return false;
+}
+
+async function fetchFromWikipedia(query, biasFictional = false, subjectName = query) {
   // Try the direct lookup first. If Wikipedia returns a page with the EXACT
-  // same title as what the user typed, TRUST IT — even if it's a real person.
-  // (Mike Tyson → returns "Mike Tyson" page → trust it as real Mike Tyson)
+  // same title as what the user typed, TRUST IT - even if it's a real person.
+  // (Mike Tyson -> returns "Mike Tyson" page -> trust it as real Mike Tyson)
   const direct = await getWikipediaImageDetails(query);
   if (direct && isExactMatch(query, direct.title)) {
     return direct.url;
   }
 
-  // If we got a direct result but the title doesn't match what we asked (e.g.
-  // "Yasuo" redirected to "Yasuo Fukuda"), only accept if not flagged as real person
-  // when biasing fictional. Otherwise accept it.
-  if (direct && !biasFictional) {
-    return direct.url;
-  }
-  if (direct && biasFictional && !looksLikeRealPerson(direct)) {
-    return direct.url;
+  // A non-exact direct hit (e.g. "Yasuo" redirected to "Yasuo Fukuda") is only
+  // trusted when it is NOT a series/franchise work whose title fails to name the
+  // subject - that is what used to hand back a comic cover for "Thragg". Real-person
+  // filtering still applies when biasing fictional.
+  if (direct && !looksLikeWork(direct, subjectName)) {
+    if (!biasFictional) return direct.url;
+    if (!looksLikeRealPerson(direct)) return direct.url;
   }
 
   // No good direct hit. Search with fictional bias.
@@ -344,6 +369,7 @@ async function fetchFromWikipedia(query, biasFictional = false) {
           const details = await getWikipediaImageDetails(item.title);
           if (!details) continue;
           if (looksLikeRealPerson(details)) continue;
+          if (looksLikeWork(details, subjectName)) continue;
           return details.url;
         }
       } catch (e) {}
@@ -351,7 +377,8 @@ async function fetchFromWikipedia(query, biasFictional = false) {
     return null;
   }
 
-  // No fictional bias — accept whatever search returns
+  // No fictional bias - accept a loose search hit only if it actually names the
+  // subject, so a "{series} season N" poster can never stand in for the character.
   try {
     const searchRes = await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " character")}&format=json&origin=*&srlimit=3`
@@ -361,7 +388,7 @@ async function fetchFromWikipedia(query, biasFictional = false) {
       const firstTitle = searchData.query?.search?.[0]?.title;
       if (firstTitle) {
         const d = await getWikipediaImageDetails(firstTitle);
-        if (d) return d.url;
+        if (d && !looksLikeWork(d, subjectName)) return d.url;
       }
     }
   } catch (e) {}
@@ -388,11 +415,17 @@ async function fetchCharacterImage(name, universe) {
         if (url) return url;
       }
     }
-    const wikiPedia = await fetchFromWikipedia(`${cleanName} ${universe}`, false);
+    // Universe Wikipedia attempt. Work-rejection inside fetchFromWikipedia means a
+    // non-matching series/season hit returns null here and we fall through to the
+    // name-only floor below, so adding a universe can never produce a worse result.
+    const wikiPedia = await fetchFromWikipedia(`${cleanName} ${universe}`, false, cleanName);
     if (wikiPedia) return wikiPedia;
   }
 
-  return await fetchFromWikipedia(cleanName, true);
+  // Name-only floor: the guaranteed fallback. A universe lookup only returns above
+  // when it found something confident, so providing a universe can only improve on
+  // this result, never replace it with something worse.
+  return await fetchFromWikipedia(cleanName, true, cleanName);
 }
 
 function useCharacterImage(name, universe, override) {
