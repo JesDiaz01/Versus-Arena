@@ -92,19 +92,39 @@ function useCharacterImage(name, universe, override) {
     let cancelled = false;
     setLoading(true);
     timerRef.current = setTimeout(async () => {
-      // Resolve the avatar URL server-side so wiki 404s/redirects cannot become
-      // browser CORS errors. Returns { url } or { url: null } (null -> silhouette).
-      let url = null;
-      try {
-        const params = new URLSearchParams({ name: name.trim() });
-        if (universe) params.set("universe", universe);
-        const res = await fetch(`/api/character-image?${params.toString()}`);
-        if (res.ok) {
+      // One fetch attempt, hard-capped at 7s via AbortController so a cold serverless
+      // start can't hang the spinner forever. Returns the resolved url, or null on any
+      // failure (!res.ok like a cold 504, an abort when the 7s fires, or a network
+      // error) so the caller can uniformly decide whether to retry, never a throw.
+      async function attempt() {
+        const controller = new AbortController();
+        const abortTimer = setTimeout(() => controller.abort(), 7000);
+        try {
+          const params = new URLSearchParams({ name: name.trim() });
+          if (universe) params.set("universe", universe);
+          const res = await fetch(`/api/character-image?${params.toString()}`, { signal: controller.signal });
+          if (!res.ok) return null;
           const data = await res.json();
-          url = data && data.url ? data.url : null;
+          return data && data.url ? data.url : null;
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(abortTimer);
         }
-      } catch (e) { url = null; }
+      }
+
+      // Retry ONCE on a falsy result (covers a cold 504/timeout that surfaces as
+      // null), waiting ~1.5s first so the function has time to warm up. Capped at one
+      // retry so an intentionally image-less fighter settles on the silhouette instead
+      // of looping.
+      let url = await attempt();
       if (cancelled) return;
+      if (!url) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (cancelled) return;
+        url = await attempt();
+        if (cancelled) return;
+      }
       setImageUrl(url);
       setLoading(false);
     }, 700);

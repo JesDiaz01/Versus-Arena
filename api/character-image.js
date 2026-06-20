@@ -403,7 +403,7 @@ export default async function handler(req, res) {
     if (url) {
       res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=86400");
     } else {
-      res.setHeader("Cache-Control", "public, s-maxage=600");
+      res.setHeader("Cache-Control", "public, s-maxage=30");
     }
     return res.status(200).json({ url: url || null });
   } catch (err) {
