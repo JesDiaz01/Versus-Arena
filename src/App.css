@@ -680,21 +680,74 @@ body::before {
 /*Image styles go here/*
 
 /* === FIGHTER PHOTO === */
+/* ============================================================
+   AVATAR POP ANIMATION - TUNABLES (subtle "Nintendo pop")
+   Tune the feel here without touching the keyframes below:
+     --pop-overshoot-scale : peak scale past 100% on image pop-in
+     --pop-in-duration     : image entrance length
+     --pop-out-duration    : silhouette exit length
+   Subtle for now. For a bigger bounce later, raise
+   --pop-overshoot-scale toward 1.10-1.15 and bump the durations.
+   ============================================================ */
+.fighter-avatar {
+  --pop-overshoot-scale: 1.05;
+  --pop-in-duration: 300ms;
+  --pop-out-duration: 220ms;
+  --pop-in-ease: ease-out;
+  --pop-out-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .fighter-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
-  animation: photoFade 0.4s ease;
+  /* Pop-IN: fade up from under 100%, overshoot, settle to 100%. Fires when the
+     <img> mounts - i.e. a real image arrived and replaced the silhouette. */
+  animation: photoPopIn var(--pop-in-duration) var(--pop-in-ease);
 }
 
-@keyframes photoFade {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes photoPopIn {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(var(--pop-overshoot-scale)); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .fighter-avatar.loading {
   position: relative;
+}
+
+/* Pop-OUT: when loading starts the silhouette scales down + fades out with a
+   springy ease, leaving the centered gold spinner alone. `forwards` holds it
+   gone for the whole load; if no image arrives it eases back via the base
+   .fighter-avatar svg transition when loading ends. */
+.fighter-avatar.loading svg {
+  animation: silhouettePopOut var(--pop-out-duration) var(--pop-out-ease) forwards;
+}
+
+@keyframes silhouettePopOut {
+  from { opacity: 0.85; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.8); }
+}
+
+/* Reduced-motion: plain opacity fades, no scale/overshoot. */
+@keyframes popFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes popFadeOut {
+  from { opacity: 0.85; }
+  to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fighter-photo {
+    animation: popFadeIn var(--pop-in-duration) ease;
+  }
+  .fighter-avatar.loading svg {
+    animation: popFadeOut var(--pop-out-duration) ease forwards;
+  }
 }
 
 /* === IMAGE ADJUSTMENT CONTROLS === */
@@ -832,8 +885,8 @@ body::before {
   animation: spin 0.8s linear infinite;
 }
 
-/* Soften the silhouette/photo while loading so the gold ring reads cleanly. */
-.fighter-avatar.loading svg,
+/* Soften a stale photo while a re-fetch loads so the gold ring reads cleanly.
+   (The silhouette now pops out entirely via the avatar pop animation above.) */
 .fighter-avatar.loading .fighter-photo {
   opacity: 0.55;
   transition: opacity 0.2s;
