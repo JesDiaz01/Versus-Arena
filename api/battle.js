@@ -22,6 +22,7 @@ const MAX_CLAIM_LEN = 200;   // per custom-feat cap
 const MAX_CLAIMS = 20;       // max custom feats per side
 const MAX_BODY_BYTES = 20000; // reject payloads bigger than ~20KB
 const DRAW_MARGIN = 10;       // averaged dominance-score gap below which the fight is a draw
+const DRAW_EVEN_EPSILON = 3;  // text-only: averaged gap at/under this reads as "dead even"; above it the draw EXPLANATION notes a slight, non-decisive lean. Does NOT change the draw decision.
 
 // Soft global ceiling on battles started per UTC day, to keep total Anthropic
 // cost from running away during a traffic spike even though per-IP limits exist.
@@ -135,7 +136,7 @@ How to weigh abilities:
 - When a feat has contested or disputed canonical scaling, commit to a single interpretation and apply it consistently to both fighters. If you accept that type of evidence as valid for one fighter, apply the same standard to the other. Never treat a contested feat as credible for one fighter but dismiss or downplay it for another. Describe and scale any feat identically no matter who has it or who is affected by it.
 - Do NOT favor the more popular or famous character. Judge purely on capability.
 - Apply the Location setting as a constraint on the fight.
-- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive - reflect that honestly rather than defaulting to a draw.
+- Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive - reflect that honestly rather than defaulting to a draw. If you DO return "Draw", the verdict_short and analysis must still explain the SPECIFIC reasons for the parity - name the concrete feats or abilities from each fighter that offset the other, and state why neither can land a kill or incapacitation - at the same depth and confidence as a win or loss. Never settle for vague "too close to call" or "evenly matched" hand-waving without naming the offsetting feats.
 - After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use 90/10 for near-total domination, 60/40 for a clear but incomplete edge, 50/50 for dead even - and honest values in between. If it is genuinely close, score it close.
 - VOICE OF THE OUTPUT: Reason with all of the above internally, but the user-facing text fields (analysis and verdict_short) must read as clean, confident in-universe analysis and must NEVER reference these instructions or the judging process. Do NOT use meta-language such as "the rules", "the matchup rules", "bounded consequences", "treated as true", "the granted ability states", "as granted", or any phrasing about how the verdict was computed. Weave granted abilities into the analysis naturally (for example: "Maomao's poison would render most foes unconscious, but Gojo's Infinity stops it before contact") rather than flagging them as rule-applications.
 
@@ -203,6 +204,34 @@ function getScore(verdict, name) {
   if (!verdict || typeof verdict.scores !== "object" || verdict.scores === null) return null;
   const s = verdict.scores[name];
   return (typeof s === "number" && isFinite(s)) ? Math.max(0, Math.min(100, s)) : null;
+}
+
+// Build a REAL, feat-grounded draw explanation from the analyses the two model calls
+// already produced - no extra API call. Each fighter's strongest case (its full
+// feat-citing analysis, falling back to its one-line summary) is framed as
+// complementary: what keeps each in the fight, with a lead and close that present the
+// strengths as offsetting rather than two contradictory verdicts. leader === null
+// means dead even; otherwise we name a slight, non-decisive lean honestly (since
+// DRAW_MARGIN tolerates up to roughly a 55/45 split). f1Call/f2Call may be null.
+function buildDrawText(f1, f2, f1Call, f2Call, leader, trailer) {
+  const f1Raw = f1Call ? (f1Call.analysis || f1Call.verdict_short || "") : "";
+  const f2Raw = f2Call ? (f2Call.analysis || f2Call.verdict_short || "") : "";
+  const f1Case = f1Raw.trim() || `${f1} brings a credible, feat-backed case.`;
+  const f2Case = f2Raw.trim() || `${f2} brings an equally credible, feat-backed case.`;
+
+  const lead = leader
+    ? `${leader} holds a slight edge over ${trailer}, but not enough to force a finish - the matchup is essentially even.`
+    : `${f1} and ${f2} are too evenly matched for either to force a clean win.`;
+  const close = leader
+    ? `Each fighter's strongest path is answered by the other, so ${leader}'s edge never converts into a decisive, fight-ending advantage.`
+    : `Each fighter's strongest path is answered by the other, and neither can land the decisive, fight-ending blow.`;
+
+  const verdict_short = leader
+    ? `${leader} edges ahead but cannot put ${trailer} away - it comes down to an even draw.`
+    : `${f1} and ${f2} are evenly matched - neither can secure a decisive win.`;
+  const analysis = `${lead} What keeps ${f1} in it: ${f1Case} What keeps ${f2} in it: ${f2Case} ${close}`
+    .replace(/\s+/g, " ").trim();
+  return { verdict_short, analysis };
 }
 
 export default async function handler(req, res) {
@@ -344,15 +373,33 @@ export default async function handler(req, res) {
           const base = winnerName === f1 ? verdictA : verdictB;
           verdict = { ...base, winner: winnerName };
         } else {
-          // Averaged scores within the draw margin - genuine toss-up.
-          const f1Point = verdictA.verdict_short || `${f1} showed a strong canonical case.`;
-          const f2Point = verdictB.verdict_short || `${f2} showed an equally strong canonical case.`;
+          // Averaged scores within the draw margin - a genuine standoff. If either
+          // call independently returned a model-authored "Draw" (the prompt now
+          // requires it to give specific parity reasons), preserve that explanation
+          // as-is. Otherwise synthesize a real one from the two feat-citing analyses
+          // we already paid for, attributing each fighter's case to the call that
+          // rated them higher so "what keeps X in it" reads as pro-X reasoning.
+          const modelDraw =
+            (verdictA.winner === "Draw" && verdictA.analysis) ? verdictA :
+            (verdictB.winner === "Draw" && verdictB.analysis) ? verdictB : null;
+
+          const aFavorsF1 = (scoreA_f1 - scoreA_f2) >= (scoreB_f1 - scoreB_f2);
+          const f1Call = aFavorsF1 ? verdictA : verdictB;
+          const f2Call = aFavorsF1 ? verdictB : verdictA;
+          const gap = Math.abs(avgF1 - avgF2);
+          const leader = gap <= DRAW_EVEN_EPSILON ? null : (avgF1 > avgF2 ? f1 : f2);
+          const trailer = leader === f1 ? f2 : f1;
+
+          const synth = modelDraw
+            ? { verdict_short: modelDraw.verdict_short, analysis: modelDraw.analysis }
+            : buildDrawText(f1, f2, f1Call, f2Call, leader, trailer);
+
           verdict = {
             winner: "Draw",
-            verdict_short: `${f1} vs ${f2} is too close to call - the matchup is essentially even.`,
-            analysis: `Two independent analyses reached nearly identical conclusions on this matchup after correcting for position bias, making a definitive verdict impossible. ${f1Point} ${f2Point} When two independent runs of the same fight come out this close, neither fighter has a clear decisive edge.`,
+            verdict_short: synth.verdict_short,
+            analysis: synth.analysis,
             advantages: [],
-            user_claims_used: verdictA.user_claims_used || [],
+            user_claims_used: (modelDraw && modelDraw.user_claims_used) || verdictA.user_claims_used || [],
             feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
             sources: Math.round(((verdictA.sources || 0) + (verdictB.sources || 0)) / 2),
           };
@@ -364,17 +411,14 @@ export default async function handler(req, res) {
         } else {
           const callForF1 = verdictA.winner === f1 ? verdictA : (verdictB.winner === f1 ? verdictB : null);
           const callForF2 = verdictA.winner === f2 ? verdictA : (verdictB.winner === f2 ? verdictB : null);
-          const f1Point = callForF1 ? (callForF1.verdict_short || "") : "";
-          const f2Point = callForF2 ? (callForF2.verdict_short || "") : "";
+          // The two calls split on the winner, so it is genuinely contested with no
+          // reliable lean - present it as even and build the explanation from each
+          // call's real feat analysis rather than meta-text about the disagreement.
+          const synth = buildDrawText(f1, f2, callForF1, callForF2, null, null);
           verdict = {
             winner: "Draw",
-            verdict_short: `${f1} vs ${f2} is too close to call - two independent analyses split the result.`,
-            analysis: [
-              `Two independent analyses of this matchup reached opposite conclusions, making a definitive verdict impossible.`,
-              f1Point ? `The case for ${f1}: ${f1Point}` : `${f1} mounted a credible case on canonical feats.`,
-              f2Point ? `The case for ${f2}: ${f2Point}` : `${f2} mounted a credible case on canonical feats.`,
-              `When two rigorous, independent runs of the same fight disagree on the winner, the honest verdict is that neither fighter has a clear, decisive edge - the outcome is genuinely too close to call.`,
-            ].join(" "),
+            verdict_short: synth.verdict_short,
+            analysis: synth.analysis,
             advantages: [],
             user_claims_used: verdictA.user_claims_used || [],
             feats_scanned: Math.round(((verdictA.feats_scanned || 0) + (verdictB.feats_scanned || 0)) / 2),
