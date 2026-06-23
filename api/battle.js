@@ -11,7 +11,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { Redis } from "@upstash/redis";
-import { getClientIp, checkBattleLimit } from "./_rateLimit.js";
+import { getClientIp, checkBattleLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
 import { containsBlockedContent } from "./_contentFilter.js";
 
 const MODEL = "claude-sonnet-4-6";
@@ -235,7 +235,10 @@ function buildDrawText(f1, f2, f1Call, f2Call, leader, trailer) {
 }
 
 export default async function handler(req, res) {
+  const ip = getClientIp(req);
+
   if (req.method !== "POST") {
+    await recordOffense(ip, 2); // wrong method on a POST-only endpoint = a probe
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -244,10 +247,20 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Server not configured. Missing API key." });
   }
 
+  // --- Escalating abuse block (FIRST: before the rate limit, the daily cap, and any
+  // Anthropic call, so a blocked IP costs nothing). Fails open. ---
+  const ab = await checkAbuseBlock(ip);
+  if (ab.blocked) {
+    res.setHeader("Retry-After", String(ab.retryAfter));
+    return res.status(429).json({ error: "Temporarily blocked due to repeated abuse. Try again later." });
+  }
+
   // --- Rate limit ---
-  const ip = getClientIp(req);
   const rl = await checkBattleLimit(ip);
   if (rl.limited) {
+    // Only the HOURLY-scope limit counts as an offense: a minute-limit hit is an eager
+    // user; ignoring the hourly limit is deliberate spam.
+    if (rl.scope === "hour") await recordOffense(ip, 1);
     res.setHeader("Retry-After", rl.scope === "minute" ? "60" : "3600");
     return res.status(429).json({
       error: rl.scope === "minute"
@@ -260,6 +273,7 @@ export default async function handler(req, res) {
     // --- Reject oversized payloads ---
     const raw = JSON.stringify(req.body || {});
     if (raw.length > MAX_BODY_BYTES) {
+      await recordOffense(ip, 2); // a >20KB body cannot come from the real UI = a probe
       return res.status(413).json({ error: "Request too large." });
     }
 
@@ -285,6 +299,7 @@ export default async function handler(req, res) {
     // Only user free-text fields; dropdowns are already allowlisted. Runs before
     // any Anthropic call so a blocked battle costs nothing.
     if (containsBlockedContent([f1, f2, u1, u2, ...claims1, ...claims2])) {
+      await recordOffense(ip, 1); // one trip is a fat-finger; repeated trips escalate
       return res.status(400).json({ error: "Please remove inappropriate content and try again." });
     }
 

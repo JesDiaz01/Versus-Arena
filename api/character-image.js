@@ -6,7 +6,7 @@
 // is just a 404 instead of being mislabeled as a CORS error. The resolution logic is
 // moved nearly verbatim from BattleArena.jsx; only the transport changed.
 
-import { getClientIp, checkReadLimit } from "./_rateLimit.js";
+import { getClientIp, checkReadLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
 
 const FANDOM_MAP = {
   "persona": "megamitensei", "persona 3": "megamitensei", "persona 4": "megamitensei",
@@ -375,12 +375,22 @@ async function fetchCharacterImage(name, universe) {
 }
 
 export default async function handler(req, res) {
+  const ip = getClientIp(req);
+
   if (req.method !== "GET") {
+    await recordOffense(ip, 2); // wrong method on a GET-only endpoint = a probe
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Escalating abuse block (before the rate limit and any wiki fetch). Fails open.
+  const ab = await checkAbuseBlock(ip);
+  if (ab.blocked) {
+    res.setHeader("Retry-After", String(ab.retryAfter));
+    return res.status(429).json({ error: "Temporarily blocked due to repeated abuse. Try again later." });
+  }
+
   // Rate limit (shared read-path limiter, Redis-backed; fails open).
-  const rl = await checkReadLimit(getClientIp(req));
+  const rl = await checkReadLimit(ip);
   if (rl.limited) {
     res.setHeader("Retry-After", "60");
     return res.status(429).json({ error: "Too many requests. Please slow down and try again shortly." });
