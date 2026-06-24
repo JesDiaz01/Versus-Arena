@@ -4,8 +4,8 @@
 // (leetspeak, symbol substitution, inserted spaces/punctuation, unicode
 // look-alikes) provided by obscenity's recommended transformer pipeline.
 //
-// Used only by api/battle.js. Never imported by any frontend file, and never
-// logs the offending text or any user data.
+// Used by api/battle.js and api/character-image.js (both server-side). Never
+// imported by any frontend file, and never logs the offending text or any user data.
 
 import {
   RegExpMatcher,

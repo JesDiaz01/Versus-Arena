@@ -7,6 +7,7 @@
 // moved nearly verbatim from BattleArena.jsx; only the transport changed.
 
 import { getClientIp, checkReadLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
+import { containsBlockedContent } from "./_contentFilter.js";
 
 const FANDOM_MAP = {
   "persona": "megamitensei", "persona 3": "megamitensei", "persona 4": "megamitensei",
@@ -404,6 +405,16 @@ export default async function handler(req, res) {
   }
   if (rawUniverse.length > 80) {
     return res.status(400).json({ error: "Invalid universe." });
+  }
+
+  // Defense in depth: never fire a real wiki search for a slur/blocked name or
+  // universe. Reuses the same in-memory filter (and CUSTOM_ALLOWED whitelist) as
+  // api/battle.js, so this is a microsecond check with no network cost and cannot
+  // false-positive a legitimate character. A hit silhouettes (url: null), exactly
+  // like a not-found; clean input proceeds unchanged.
+  if (containsBlockedContent([rawName, rawUniverse])) {
+    res.setHeader("Cache-Control", "public, s-maxage=30");
+    return res.status(200).json({ url: null });
   }
 
   try {

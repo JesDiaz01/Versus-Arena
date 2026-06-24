@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
+import { checkClientBlocked } from "./clientBlocklist";
 
 function FighterSilhouette() {
   return (
@@ -69,6 +70,11 @@ const CLAIM_LIMIT = 100;
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
+// Small muted inline note, reused for the "couldn't load image" hint and the
+// "please use appropriate wording" name/universe notes so they share one look.
+const MUTED_NOTE_STYLE = { fontSize: "0.72rem", color: "var(--muted)", textAlign: "center", margin: "0.3rem 0 0.5rem" };
+const BLOCKED_WORDING_NOTE = "Please use appropriate wording.";
+
 // Character-image resolution moved to api/character-image.js (server-side, where wiki
 // 404s and redirects cannot surface as browser CORS failures). The override short-
 // circuit, debounce, cancellation, and silhouette fallback stay client-side here.
@@ -85,6 +91,15 @@ function useCharacterImage(name, universe, override) {
     }
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!name || name.trim().length < 2) {
+      setImageUrl(null);
+      setLoading(false);
+      return;
+    }
+    // Early-catch a blocked word client-side: never fire an image fetch for an
+    // obvious slur. Show the silhouette (null url) instead. Clean input falls
+    // straight through and fetches exactly as before. The server filter on
+    // /api/character-image is the real backstop (see api/character-image.js).
+    if (checkClientBlocked(name) || checkClientBlocked(universe)) {
       setImageUrl(null);
       setLoading(false);
       return;
@@ -490,6 +505,13 @@ export default function BattleArena({
   const img1 = useCharacterImage(f1, u1, override1);
   const img2 = useCharacterImage(f2, u2, override2);
 
+  // Per-field early-catch flags, used to show a polite inline note under the
+  // offending input. Cheap, in-memory; the server filter is the real backstop.
+  const f1Blocked = checkClientBlocked(f1);
+  const u1Blocked = checkClientBlocked(u1);
+  const f2Blocked = checkClientBlocked(f2);
+  const u2Blocked = checkClientBlocked(u2);
+
   useEffect(() => { setImgError1(false); }, [img1.imageUrl]);
   useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
   // Reset framing when the user changes a fighter (name, universe, or override),
@@ -543,6 +565,12 @@ export default function BattleArena({
 
   async function simulate() {
     if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
+    // Early-catch an obvious slur so it never round-trips. The server filter in
+    // api/battle.js stays as the authoritative backstop.
+    if (checkClientBlocked(f1) || checkClientBlocked(f2) || checkClientBlocked(u1) || checkClientBlocked(u2)) {
+      setError("Please use appropriate wording and try again.");
+      return;
+    }
     setError(""); setLoading(true); setResult(null);
     cancelledRef.current = false;
 
@@ -716,7 +744,9 @@ export default function BattleArena({
             {renderAvatar(1)}
             <ImageOverride onSet={setOverride1} hasOverride={!!override1} onClear={() => setOverride1(null)} />
             <input className="fighter-name-input" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
+            {f1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <input className="universe-input" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
+            {u1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
               <div className="claims-label">Custom Feats / Lore <span className="claims-hint">(optional)</span></div>
@@ -753,7 +783,9 @@ export default function BattleArena({
             {renderAvatar(2)}
             <ImageOverride onSet={setOverride2} hasOverride={!!override2} onClear={() => setOverride2(null)} />
             <input className="fighter-name-input" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
+            {f2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <input className="universe-input" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
+            {u2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
               <div className="claims-label">Custom Feats / Lore <span className="claims-hint">(optional)</span></div>
