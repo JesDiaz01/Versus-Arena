@@ -12,7 +12,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { Redis } from "@upstash/redis";
 import { getClientIp, checkBattleLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
-import { containsBlockedContent } from "./_contentFilter.js";
+import { containsBlockedContent, containsBlockedOutput } from "./_contentFilter.js";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -458,22 +458,24 @@ export default async function handler(req, res) {
     // Both Anthropic calls have already fired, so a hit never discards the battle:
     // we neutralize the offending free-text field(s) and keep the structured
     // fields (winner, scores, counts) intact, then still save + return a valid
-    // verdict. Reuses the same input filter; the offending text is never sent to
-    // the client or persisted. Saving the neutralized verdict keeps the ?b= share
-    // link resolving to clean text.
+    // verdict. Uses the OUTPUT-mode filter (containsBlockedOutput: boundary-respecting
+    // matcher only, NO space-collapsing pass) -- the model writes normal prose, so the
+    // anti-evasion collapse used on user input would false-positive on legit words like
+    // "analysis". The offending text is never sent to the client or persisted. Saving
+    // the neutralized verdict keeps the ?b= share link resolving to clean text.
     {
       let outputBlocked = false;
-      if (typeof verdict.verdict_short === "string" && containsBlockedContent([verdict.verdict_short])) {
+      if (typeof verdict.verdict_short === "string" && containsBlockedOutput([verdict.verdict_short])) {
         verdict.verdict_short = NEUTRAL_VERDICT_SHORT;
         outputBlocked = true;
       }
-      if (typeof verdict.analysis === "string" && containsBlockedContent([verdict.analysis])) {
+      if (typeof verdict.analysis === "string" && containsBlockedOutput([verdict.analysis])) {
         verdict.analysis = NEUTRAL_ANALYSIS;
         outputBlocked = true;
       }
       if (Array.isArray(verdict.advantages)) {
         const cleaned = verdict.advantages.filter(function(a) {
-          return !(typeof a === "string" && containsBlockedContent([a]));
+          return !(typeof a === "string" && containsBlockedOutput([a]));
         });
         if (cleaned.length !== verdict.advantages.length) {
           verdict.advantages = cleaned;
@@ -482,7 +484,7 @@ export default async function handler(req, res) {
       }
       if (Array.isArray(verdict.user_claims_used)) {
         const cleaned = verdict.user_claims_used.filter(function(c) {
-          return !(typeof c === "string" && containsBlockedContent([c]));
+          return !(typeof c === "string" && containsBlockedOutput([c]));
         });
         if (cleaned.length !== verdict.user_claims_used.length) {
           verdict.user_claims_used = cleaned;

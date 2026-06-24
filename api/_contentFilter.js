@@ -45,6 +45,15 @@ const CUSTOM_ALLOWED = [
   "stannis",
   "ass-kicking",
   "asskicking",
+  // "anal" family: model-generated verdict prose uses these constantly ("analysis",
+  // "analyze"...). Belt-and-suspenders alongside the OUTPUT-mode matcher below; this
+  // whitelist alone is not sufficient (a collapsed "<word>analysis" hit starts BEFORE
+  // the whitelisted span, so containment does not discard it), which is why model
+  // output uses containsBlockedOutput (mNormal only) rather than the collapsed pass.
+  "analysis",
+  "analyze",
+  "analytical",
+  "analyst",
 ];
 
 // Build the dataset ONCE at module load (dataset terms + any CUSTOM_BLOCKED).
@@ -83,16 +92,36 @@ const mCollapsed = new RegExpMatcher({
   whitelistMatcherTransformers: englishRecommendedTransformers.whitelistMatcherTransformers,
 });
 
-// Returns true if ANY supplied field contains blocked content. Each field is
-// checked independently so matches cannot span across separate inputs, and is
-// run through both matchers so embedded words and separator-evasion are caught.
-export function containsBlockedContent(fields) {
+// Core check: returns true if ANY field matches under the supplied matcher list.
+// Each field is checked independently so matches cannot span across separate inputs.
+function anyFieldMatches(fields, matchers) {
   if (!Array.isArray(fields)) return false;
   for (const field of fields) {
     if (typeof field === "string" && field.length &&
-        (mNormal.hasMatch(field) || mCollapsed.hasMatch(field))) {
+        matchers.some((m) => m.hasMatch(field))) {
       return true;
     }
   }
   return false;
+}
+
+// STRICT mode -- for USER INPUT (fighter names, universes, custom feats). Runs BOTH
+// matchers so embedded words AND separator-evasion ("a s s", "f u c k") are caught,
+// because a user MIGHT be trying to slip something past the filter. This is the
+// original behavior; it is what api/battle.js's input gate and api/character-image.js
+// rely on, and it must not be weakened.
+export function containsBlockedContent(fields) {
+  return anyFieldMatches(fields, [mNormal, mCollapsed]);
+}
+
+// OUTPUT mode -- for MODEL-GENERATED prose (verdict.analysis / verdict_short / labels).
+// Runs ONLY the boundary-respecting matcher, NOT the collapsed/space-stripping pass.
+// The model writes normal English and is not evading anything, so the anti-evasion
+// collapse is pure downside here: it glues adjacent words into one token and reads a
+// banned substring spanning the join (e.g. "his analysis" -> "hisanalysis" -> the
+// "anal" family's "sanal"), neutralizing a perfectly clean verdict. A REAL slur in
+// normal prose keeps its word boundaries intact, so mNormal still blocks it -- only the
+// space-collapsing false positives on legit words are dropped.
+export function containsBlockedOutput(fields) {
+  return anyFieldMatches(fields, [mNormal]);
 }
