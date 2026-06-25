@@ -56,12 +56,14 @@ export default function FAQ({ onBack }) {
   return (
     <div className="about-page">
       <nav className="navbar">
-        <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
-          VERSUS<span> ARENA</span>
-        </a>
-        <ul className="nav-links">
-          <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
-        </ul>
+        <div className="nav-inner">
+          <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
+            VERSUS<span> ARENA</span>
+          </a>
+          <ul className="nav-links">
+            <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
+          </ul>
+        </div>
       </nav>
 
       <div className="about-container">

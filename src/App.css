@@ -41,17 +41,30 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* Full-bleed sticky bar, but align the inner content (logo + nav-cta) to the same
-     1000px column as .arena on wide screens so the CTA does not poke past the content
-     edge. max() keeps the prior 3rem inset up to ~1048px; the mobile (<=768px) media
-     query overrides this padding, so the stacked mobile nav is unaffected. */
-  padding: 1.2rem max(3rem, calc((100% - 1000px) / 2 + 1.5rem));
+  /* Full-bleed sticky bar: background/border span the frame edge-to-edge, while the
+     inner content is constrained by .nav-inner (same 1000px column as .arena) so the
+     logo and nav-cta line up exactly with the page content. */
+  padding: 1.2rem 0;
   border-bottom: 1px solid var(--line);
   background: rgba(245,242,236,0.85);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+/* Inner row that aligns the nav contents to the same 1000px column as .arena (identical
+   max-width / margin / padding), guaranteeing the logo and nav-cta line up with the
+   page content. The mobile (<=768px) block restacks .navbar; .nav-inner stays full
+   width there and simply wraps. */
+.nav-inner {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .logo {
@@ -2818,11 +2831,16 @@ textarea.claim-input {
 html, body { max-width: 100%; overflow-x: hidden; }
 
 @media (max-width: 768px) {
-  /* NAV: shrink padding, let links wrap, center them */
+  /* NAV: stack logo over the wrapped links inside the inner row; shrink padding. The
+     column/stacking now lives on .nav-inner (the flex parent of logo + links), since
+     .navbar's only child is .nav-inner. */
   .navbar {
+    padding: 1rem 0;
+  }
+  .nav-inner {
     flex-direction: column;
-    padding: 1rem 1rem;
     gap: 0.75rem;
+    padding: 0 1rem;
   }
   .nav-links {
     gap: 0.9rem 1.1rem;

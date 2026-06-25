@@ -284,17 +284,19 @@ export default function App() {
   return (
     <div className="page">
       <nav className="navbar">
-        <a className="logo" href="#">VERSUS<span> ARENA</span></a>
-        <ul className="nav-links">
-          <li><a href="#">Battles</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("leaderboard"); }}>Leaderboard</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("categories"); }}>Categories</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
-          <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
-          <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
-        </ul>
+        <div className="nav-inner">
+          <a className="logo" href="#">VERSUS<span> ARENA</span></a>
+          <ul className="nav-links">
+            <li><a href="#">Battles</a></li>
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("leaderboard"); }}>Leaderboard</a></li>
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("categories"); }}>Categories</a></li>
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
+            <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
+            <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
+          </ul>
+        </div>
       </nav>
 
       <div className="hero">
