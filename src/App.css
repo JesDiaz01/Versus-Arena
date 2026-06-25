@@ -1144,6 +1144,122 @@ textarea.claim-input {
   display: inline-block;
 }
 
+/* === FAQ PAGE (collapsible Q&A; reuses the about-* shell + design tokens) === */
+.faq-list {
+  margin-bottom: 1rem;
+}
+.faq-item {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.faq-item:first-child {
+  padding-top: 0;
+}
+
+/* Question row: a full-width button so it is keyboard-focusable and screen-reader sane.
+   The whole row is clickable; the chevron is just an affordance. */
+.faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--ink);
+  transition: color 0.2s;
+}
+.faq-q:hover {
+  color: var(--gold);
+}
+.faq-q:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.faq-q-text {
+  flex: 1;
+}
+.faq-chevron {
+  flex-shrink: 0;
+  color: var(--gold);
+  transition: transform 0.3s ease;
+}
+.faq-q[aria-expanded="true"] .faq-chevron {
+  transform: rotate(180deg);
+}
+
+/* Smooth expand without measuring height: animate a 0fr -> 1fr grid row while the inner
+   wrapper is clipped (overflow hidden + min-height 0). box-sizing: border-box is global,
+   so the inner padding collapses to nothing when the row is 0fr. */
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+.faq-answer.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.faq-answer-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding-top: 0.9rem;
+}
+
+.faq-a {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  font-weight: 300;
+  margin: 0;
+}
+.faq-a strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.faq-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1rem;
+}
+.faq-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--gold);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s, color 0.2s;
+}
+.faq-link:hover {
+  border-bottom-color: var(--gold);
+}
+.faq-icon {
+  flex-shrink: 0;
+}
+
+/* Honor reduced-motion: expand/collapse and chevron are instant, no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .faq-answer,
+  .faq-chevron {
+    transition: none;
+  }
+}
+
 
 /* === FOOTER DISCORD BUTTON (matches link styling) === */
 .footer-social-btn {

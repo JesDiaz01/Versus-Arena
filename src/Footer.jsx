@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDisclaimer }) {
+export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDisclaimer, onFaq }) {
   // Your real links/handles
   const INSTAGRAM_URL = "https://www.instagram.com/jes_diaz01/";
   const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
@@ -31,6 +31,7 @@ export default function Footer({ onHome, onAbout, onLeaderboard, onPrivacy, onDi
             <a href="#" onClick={(e) => { e.preventDefault(); if (onHome) onHome(); }}>Battles</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onLeaderboard) onLeaderboard(); }}>Leaderboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onAbout) onAbout(); }}>About</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); if (onFaq) onFaq(); }}>FAQ</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onPrivacy) onPrivacy(); }}>Privacy Policy</a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (onDisclaimer) onDisclaimer(); }}>Disclaimer</a>
           </div>

@@ -3,6 +3,7 @@ import SplashScreen from "./SplashScreen";
 import BattleArena, { DEFAULT_ADJUST } from "./BattleArena";
 import SharedBattle from "./SharedBattle";
 import About from "./About";
+import FAQ from "./FAQ";
 import Tools from "./Tools";
 import Leaderboard from "./Leaderboard";
 import Footer from "./Footer";
@@ -91,6 +92,23 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
+        />
+      </>
+    );
+  }
+
+  if (page === "faq") {
+    return (
+      <>
+        <FAQ onBack={() => setPage("home")} />
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -106,6 +124,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -121,6 +140,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -136,6 +156,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -151,6 +172,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -179,6 +201,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -221,6 +244,7 @@ export default function App() {
           onLeaderboard={() => setPage("leaderboard")}
           onPrivacy={() => setPage("privacy")}
           onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
         />
       </>
     );
@@ -267,6 +291,7 @@ export default function App() {
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("categories"); }}>Categories</a></li>
           <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
           <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
           <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
         </ul>
@@ -306,6 +331,7 @@ export default function App() {
         onLeaderboard={() => setPage("leaderboard")}
         onPrivacy={() => setPage("privacy")}
         onDisclaimer={() => setPage("disclaimer")}
+        onFaq={() => setPage("faq")}
       />
     </div>
   );
