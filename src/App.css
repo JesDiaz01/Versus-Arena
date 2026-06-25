@@ -241,8 +241,8 @@ body::before {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .fighter-name-input:focus {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(26,26,26,0.05);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184,134,11,0.15); /* soft gold focus glow (matches .universe-input + .claim-input) */
 }
 .fighter-name-input::placeholder { color: var(--muted); font-weight: 300; }
 
@@ -258,9 +258,12 @@ body::before {
   font-size: 0.8rem;
   text-align: center;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.universe-input:focus { border-color: var(--ink-soft); }
+.universe-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184,134,11,0.15); /* soft gold focus glow (matches .fighter-name-input + .claim-input) */
+}
 .universe-input::placeholder { color: var(--muted); font-size: 0.78rem; }
 
 /* VS */
@@ -604,10 +607,13 @@ body::before {
   font-family: 'Inter', sans-serif;
   font-size: 0.78rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.claim-input:focus { border-color: var(--gold); }
+.claim-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184,134,11,0.15); /* soft gold focus glow (matches .fighter-name-input + .universe-input) */
+}
 .claim-input::placeholder { color: var(--muted); font-style: italic; }
 
 .claim-add-btn {
