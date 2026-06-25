@@ -41,7 +41,11 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.2rem 3rem;
+  /* Full-bleed sticky bar, but align the inner content (logo + nav-cta) to the same
+     1000px column as .arena on wide screens so the CTA does not poke past the content
+     edge. max() keeps the prior 3rem inset up to ~1048px; the mobile (<=768px) media
+     query overrides this padding, so the stacked mobile nav is unaffected. */
+  padding: 1.2rem max(3rem, calc((100% - 1000px) / 2 + 1.5rem));
   border-bottom: 1px solid var(--line);
   background: rgba(245,242,236,0.85);
   backdrop-filter: blur(12px);
