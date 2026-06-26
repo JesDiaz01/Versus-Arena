@@ -16,12 +16,14 @@ export default function Disclaimer({ onBack }) {
   return (
     <div className="privacy-page">
       <nav className="navbar">
-        <a className="logo" href="#" onClick={goBack}>
-          VERSUS<span> ARENA</span>
-        </a>
-        <ul className="nav-links">
-          <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
-        </ul>
+        <div className="nav-inner">
+          <a className="logo" href="#" onClick={goBack}>
+            VERSUS<span> ARENA</span>
+          </a>
+          <ul className="nav-links">
+            <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
+          </ul>
+        </div>
       </nav>
 
       <div className="pp-wrap">
