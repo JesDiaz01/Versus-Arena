@@ -15,6 +15,18 @@
   --line-strong: rgba(26,26,26,0.2);
   --gold: #B8860B;
   --gold-bright: #D4A017;
+
+  /* Root typography relocated from index.css (Stage 3a) so it survives the index.css
+     :root cleanup in 3b. Same values as before: 18px base (stepping to 16px at <=1024px,
+     see the @media below), line-height 145% (kept as a percentage to match the original
+     font shorthand exactly), letter-spacing 0.18px. font-family stays Inter via body. */
+  font-size: 18px;
+  line-height: 145%;
+  letter-spacing: 0.18px;
+}
+
+@media (max-width: 1024px) {
+  :root { font-size: 16px; }
 }
 
 body {

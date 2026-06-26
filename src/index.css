@@ -7,27 +7,23 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  /* Font-size, line-height and letter-spacing were relocated to App.css in Stage 3a.
+     color/background were redundant (body governs text color; body's background
+     propagates to the canvas). Font-rendering quality hints stay here. */
   color-scheme: light;
-  color: var(--text);
-  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
+  /* Frame removed in Stage 3b: width:1126px / max-width / margin:0 auto / border-inline
+     (the centered bordered frame + side border lines) are gone, so the app is full-width.
+     Content columns (.arena 1000px, .about-container 760px, .hero-sub 520px) stay centered
+     via their own max-widths. Layout props below are kept (footer-at-bottom relies on
+     the flex column + min-height). text-align:center is removed separately in 3c. */
   text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
