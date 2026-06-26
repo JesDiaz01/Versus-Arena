@@ -494,6 +494,13 @@ export default function BattleArena({
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // "Disagree with the outcome" feedback control (purely additive; never blocks the
+  // verdict). Resets to collapsed/unsubmitted whenever a new verdict arrives.
+  const [disagreeOpen, setDisagreeOpen] = useState(false);
+  const [disagreeChoice, setDisagreeChoice] = useState(null);
+  const [disagreeNote, setDisagreeNote] = useState("");
+  const [disagreeStatus, setDisagreeStatus] = useState("idle"); // idle | submitting | done | error
+
   const [imgError1, setImgError1] = useState(false);
   const [imgError2, setImgError2] = useState(false);
 
@@ -514,6 +521,13 @@ export default function BattleArena({
 
   useEffect(() => { setImgError1(false); }, [img1.imageUrl]);
   useEffect(() => { setImgError2(false); }, [img2.imageUrl]);
+  // A fresh verdict gets a fresh disagree control (collapsed, unsubmitted).
+  useEffect(() => {
+    setDisagreeOpen(false);
+    setDisagreeChoice(null);
+    setDisagreeNote("");
+    setDisagreeStatus("idle");
+  }, [result]);
   // Reset framing when the user changes a fighter (name, universe, or override),
   // so a new image starts in the adjustable (un-done) state instead of inheriting
   // the prior image's framing. Keyed on the lifted INPUTS (not img.imageUrl) and
@@ -645,9 +659,54 @@ export default function BattleArena({
     }).catch(() => {});
   }
 
+  // POST the disagreement to our serverless endpoint. Purely additive: a failure shows a
+  // quiet inline error and allows retry; it never affects the verdict already on screen.
+  async function submitDisagreement() {
+    if (!disagreeChoice || disagreeStatus === "submitting" || disagreeStatus === "done") return;
+    setDisagreeStatus("submitting");
+    // Use the two fighter names exactly as the verdict scored them; fall back to the
+    // entered names only when scores is missing/empty (e.g. a draw carries no scores).
+    const scoreKeys = (result.scores && typeof result.scores === "object") ? Object.keys(result.scores) : [];
+    const char_a = scoreKeys[0] || f1;
+    const char_b = scoreKeys[1] || f2;
+    try {
+      const res = await fetch("/api/disagreement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          battle_id: result.id || null,
+          char_a,
+          char_b,
+          winner: result.winner,
+          disagreed_with: disagreeChoice,
+          note: disagreeNote.trim() || "",
+        }),
+      });
+      if (!res.ok) { setDisagreeStatus("error"); return; }
+      setDisagreeStatus("done");
+    } catch (e) {
+      setDisagreeStatus("error");
+    }
+  }
+
   const isWinner1 = result && result.winner.toLowerCase().includes(f1.toLowerCase());
   const isDraw = result && result.winner === "Draw";
   const diffLabel = result ? verdictDiffLabel(result) : null;
+
+  // Up to 5 disagreement choices from THIS verdict's own data, in priority order:
+  // the outcome itself, then each advantage label, then a granted-ability catch-all.
+  const disagreeChoices = [];
+  if (result) {
+    if (isDraw) disagreeChoices.push("This shouldn't have been a draw");
+    else if (result.winner) disagreeChoices.push(result.winner + " shouldn't have won");
+    for (const a of (result.advantages || [])) {
+      if (disagreeChoices.length >= 5) break;
+      if (typeof a === "string" && a.trim()) disagreeChoices.push("Disagree: " + a);
+    }
+    if (disagreeChoices.length < 5 && result.user_claims_used && result.user_claims_used.length > 0) {
+      disagreeChoices.push("Disagree with a granted ability call");
+    }
+  }
 
   function renderAvatar(side) {
     const img = side === 1 ? img1 : img2;
@@ -948,6 +1007,55 @@ export default function BattleArena({
               </svg>
               Join the Discord
             </a>
+
+            {/* Disagree with the outcome - additive post-verdict feedback; never blocks
+                the verdict, share row, or Discord link above. */}
+            <div className="disagree">
+              {disagreeStatus === "done" ? (
+                <p className="disagree-thanks">Thanks - noted.</p>
+              ) : !disagreeOpen ? (
+                <button className="disagree-toggle" onClick={() => setDisagreeOpen(true)}>
+                  Disagree with the outcome?
+                </button>
+              ) : (
+                <div className="disagree-panel">
+                  <div className="disagree-prompt">What do you disagree with?</div>
+                  <div className="disagree-choices">
+                    {disagreeChoices.map((choice, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className={"chip disagree-choice" + (disagreeChoice === choice ? " selected" : "")}
+                        onClick={() => setDisagreeChoice(choice)}
+                      >
+                        {choice}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    className="disagree-note"
+                    value={disagreeNote}
+                    onChange={(e) => setDisagreeNote(e.target.value.slice(0, 500))}
+                    maxLength={500}
+                    rows={2}
+                    placeholder="Optional: tell us why"
+                  />
+                  {disagreeStatus === "error" && (
+                    <p className="disagree-error">Couldn't submit that - please try again.</p>
+                  )}
+                  <div className="disagree-actions">
+                    <button className="share-btn" onClick={() => setDisagreeOpen(false)}>Cancel</button>
+                    <button
+                      className="rematch-btn"
+                      onClick={submitDisagreement}
+                      disabled={!disagreeChoice || disagreeStatus === "submitting"}
+                    >
+                      {disagreeStatus === "submitting" ? "Sending..." : "Submit"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

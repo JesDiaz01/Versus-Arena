@@ -540,6 +540,90 @@ body::before {
 }
 .discord-invite:hover { color: var(--gold-bright); }
 
+/* === DISAGREE WITH OUTCOME (post-verdict feedback; additive, on-brand) === */
+.disagree {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.disagree-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+.disagree-toggle:hover { color: var(--gold); }
+.disagree-prompt {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.8rem;
+}
+.disagree-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.disagree-choice {
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  transition: all 0.2s;
+}
+.disagree-choice:hover { border-color: var(--gold); color: var(--ink); }
+.disagree-choice.selected {
+  border-color: var(--gold);
+  color: var(--ink);
+  background: rgba(184,134,11,0.08);
+}
+.disagree-note {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.9rem;
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.disagree-note:focus { border-color: var(--gold); }
+.disagree-note::placeholder { color: var(--muted); }
+.disagree-error {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.8rem;
+}
+.disagree-thanks {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+}
+.disagree-actions { display: flex; gap: 0.75rem; }
+
 /* === CUSTOM FEATS / CLAIMS === */
 .claims-section {
   width: 100%;
