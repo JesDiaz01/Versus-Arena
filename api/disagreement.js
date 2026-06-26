@@ -62,9 +62,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
-  // Screen ONLY the free-text note with the strict input filter (same as battle.js).
-  // Structured fields come from our own verdict, so they are not collapse-screened.
-  if (note && containsBlockedContent([note])) {
+  // Screen ALL user-controlled text with the strict input filter (same as battle.js).
+  // At the API boundary these fields are attacker-controllable - not guaranteed to come
+  // from our own verdict - so the structured fields get screened too, not just the note.
+  // containsBlockedContent takes an array and treats empty strings as no-ops.
+  if (containsBlockedContent([char_a, char_b, winner, disagreed_with, note])) {
     await recordOffense(ip, 1); // one trip is a fat-finger; repeated trips escalate
     return res.status(400).json({ error: "Please remove inappropriate content and try again." });
   }
@@ -90,6 +92,11 @@ export default async function handler(req, res) {
       console.error("Supabase insert error (disagreement):", dbError);
       return res.status(500).json({ error: "Couldn't save that. Try again in a moment." });
     }
+    // Count one light offense per successful post so a bot hammering this endpoint accrues
+    // offenses and trips the existing escalating abuse block; one offense per verdict is
+    // negligible for a normal user. recordOffense is already fail-open, but it runs inside
+    // this try, so wrap it too - a throw here must never turn a saved row into an error.
+    try { await recordOffense(ip, 1); } catch (e) { /* never break a successful save */ }
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("disagreement handler error:", err);
