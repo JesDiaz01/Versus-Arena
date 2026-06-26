@@ -2912,6 +2912,22 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .calc-grid { grid-template-columns: 1fr; gap: 1.25rem; }
   .calc-card { padding: 1.5rem; }
 
+  /* Stack the number input above the unit selector so the row has no un-shrinkable
+     horizontal min-content (fixes calc cards overflowing past a ~390px viewport and the
+     unit <select> ending up off-screen). Mobile only; desktop stays side-by-side. */
+  .calc-card:not(.calc-card-wide) .calc-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .calc-card:not(.calc-card-wide) .calc-input-group .calc-input {
+    min-width: 0;
+    width: 100%;
+  }
+  .calc-card:not(.calc-card-wide) .calc-input-group .calc-unit {
+    min-width: 0;
+    width: 100%;
+  }
+
   /* FOOTER: stack columns */
   .footer-inner { flex-direction: column; gap: 2rem; padding: 2.5rem 1.25rem 2rem; }
   .footer-links { gap: 2rem; }
