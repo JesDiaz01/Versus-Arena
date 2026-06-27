@@ -697,6 +697,9 @@ export default function BattleArena({
   // its error flag for the winning side (isWinner1). No new fetch, no new matching logic.
   const winnerImageUrl = isWinner1 ? img1.imageUrl : img2.imageUrl;
   const winnerImageError = isWinner1 ? imgError1 : imgError2;
+  // Frame the winner portrait like its card: reuse the winning side's existing imgAdjust
+  // (object-position + zoom) so the head is not cropped. Same objects renderAvatar uses.
+  const winnerAdjust = isWinner1 ? imgAdjust1 : imgAdjust2;
 
   // Up to 5 disagreement choices from THIS verdict's own data, in priority order:
   // the outcome itself, then each advantage label, then a granted-ability catch-all.
@@ -966,6 +969,11 @@ export default function BattleArena({
                   src={winnerImageUrl}
                   onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
                   alt=""
+                  style={{
+                    objectPosition: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
+                    transform: `scale(${winnerAdjust.zoom})`,
+                    transformOrigin: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
+                  }}
                 />
               ) : (
                 <span className="winner-avatar winner-avatar-fallback">
