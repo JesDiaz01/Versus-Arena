@@ -71,6 +71,56 @@ const CLAIM_LIMIT = 100;
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
 
+// Preset matchups (Phase A: mechanism + one placeholder). Each entry carries a STORED
+// verdict + winner snapshot so tapping a card shows a result instantly via loadPreset -
+// no /api/battle call, no Anthropic cost. Real images/verdict text arrive in a later phase.
+const PRESETS = [
+  {
+    id: "gojo-vs-sukuna-15f",
+    label: "Gojo vs Sukuna (15F)",
+    image1: "/presets/gojo.png",
+    image2: "/presets/sukuna.png",
+    verdict: {
+      winner: "Gojo",
+      verdict_short: "PLACEHOLDER short verdict.",
+      analysis: "PLACEHOLDER analysis text for the preset.",
+      advantages: ["Placeholder advantage one", "Placeholder advantage two"],
+      user_claims_used: [],
+      feats_scanned: 30,
+      sources: 8,
+      scores: { "Gojo": 90, "Sukuna": 70 },
+    },
+    snapshot: {
+      f1: "Gojo", f2: "Sukuna",
+      winnerImageUrl: "/presets/gojo.png",
+      winnerImageError: false,
+      winnerAdjust: { x: 50, y: 50, zoom: 1 },
+    },
+  },
+];
+
+// One fighter image inside a preset card. Falls back to the silhouette if the art is
+// missing (expected in Phase A while /presets/*.png do not exist yet) so a 404 never
+// breaks the card layout.
+function PresetImg({ src, side }) {
+  const [err, setErr] = useState(false);
+  if (err) {
+    return (
+      <span className={"preset-img preset-img-fallback " + side}>
+        <FighterSilhouette />
+      </span>
+    );
+  }
+  return (
+    <img
+      className={"preset-img " + side}
+      src={src}
+      alt=""
+      onError={() => setErr(true)}
+    />
+  );
+}
+
 // Small muted inline note, reused for the "couldn't load image" hint and the
 // "please use appropriate wording" name/universe notes so they share one look.
 const MUTED_NOTE_STYLE = { fontSize: "0.72rem", color: "var(--muted)", textAlign: "center", margin: "0.3rem 0 0.5rem" };
@@ -665,6 +715,15 @@ export default function BattleArena({
     }
   }
 
+  // Phase A: show a STORED preset verdict instantly. The result panel renders fully from
+  // result + battleSnapshot, so no fetch and no loading state are needed (and the dim/
+  // clash overlay + body-scroll-lock, both gated on `loading`, stay off).
+  function loadPreset(preset) {
+    setError("");
+    setBattleSnapshot(preset.snapshot);
+    setResult(preset.verdict);
+  }
+
   function shareBattle() {
     if (!result || !result.id) return;
     const url = window.location.origin + "/?b=" + result.id;
@@ -819,6 +878,30 @@ export default function BattleArena({
         <div className="arena-header">
           <h2>The Arena</h2>
           <span className="universe-badge">Any Universe</span>
+        </div>
+
+        {/* Preset matchups carousel (Phase A): tap a card to show a STORED verdict
+            instantly via loadPreset - no fetch, no Anthropic cost. The track duplicates
+            PRESETS so the marquee loops seamlessly once there are several entries. */}
+        <div className="preset-carousel">
+          <div className="preset-track">
+            {PRESETS.concat(PRESETS).map((preset, i) => (
+              <button
+                key={preset.id + "-" + i}
+                type="button"
+                className="preset-card"
+                onClick={() => loadPreset(preset)}
+                aria-label={"Show preset verdict: " + preset.label}
+              >
+                <div className="preset-versus">
+                  <PresetImg src={preset.image1} side="left" />
+                  <span className="preset-vs">VS</span>
+                  <PresetImg src={preset.image2} side="right" />
+                </div>
+                <div className="preset-label">{preset.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="fighters-grid">
