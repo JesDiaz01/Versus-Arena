@@ -433,6 +433,37 @@ body::before {
   font-size: 1.8rem;
   filter: sepia(0.6) saturate(1.4);
 }
+
+/* Winner portrait beside the verdict title. Reuses the existing photoPopIn fade-in and a
+   scaled-down version of the .fighter-avatar.winner gold ring. Does NOT modify the card
+   avatar styles. */
+.winner-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+  border: 1px solid var(--gold);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 4px rgba(184,134,11,0.12);
+  animation: photoPopIn 300ms ease-out;
+}
+/* Silhouette fallback: same 52px circle so the layout never jumps; center and gold-tint
+   the inline SVG like the winner card does. */
+.winner-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.winner-avatar-fallback svg {
+  width: 66%;
+  height: 66%;
+  color: var(--gold);
+}
+@media (max-width: 380px) {
+  .winner-avatar { width: 44px; height: 44px; }
+}
 .result-title {
   font-family: 'Cinzel', serif;
   font-weight: 900;

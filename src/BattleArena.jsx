@@ -693,6 +693,11 @@ export default function BattleArena({
   const isDraw = result && result.winner === "Draw";
   const diffLabel = result ? verdictDiffLabel(result) : null;
 
+  // Winner-side portrait for the verdict header: reuse the already-fetched card image and
+  // its error flag for the winning side (isWinner1). No new fetch, no new matching logic.
+  const winnerImageUrl = isWinner1 ? img1.imageUrl : img2.imageUrl;
+  const winnerImageError = isWinner1 ? imgError1 : imgError2;
+
   // Up to 5 disagreement choices from THIS verdict's own data, in priority order:
   // the outcome itself, then each advantage label, then a granted-ability catch-all.
   const disagreeChoices = [];
@@ -953,7 +958,20 @@ export default function BattleArena({
               </div>
             )}
             <div className="result-header">
-              <span className="winner-crown">{isDraw ? "⚖" : "🏆"}</span>
+              {isDraw ? (
+                <span className="winner-crown">⚖</span>
+              ) : winnerImageUrl && !winnerImageError ? (
+                <img
+                  className="winner-avatar"
+                  src={winnerImageUrl}
+                  onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
+                  alt=""
+                />
+              ) : (
+                <span className="winner-avatar winner-avatar-fallback">
+                  <FighterSilhouette />
+                </span>
+              )}
               <div>
                 <div className="result-title">
                   {isDraw ? "It's a Draw" : `Winner: ${result.winner}`}
