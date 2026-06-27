@@ -492,6 +492,10 @@ export default function BattleArena({
   // the transient UI state below stay local and clear normally on unmount.
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(initialBattle?.result || null);
+  // Battle-time snapshot of the winner's portrait (image url + error flag + framing) plus
+  // the fought names, captured when the verdict arrives. The verdict avatar reads this
+  // instead of live f1/f2/img1/img2 so editing an input after a verdict cannot flip it.
+  const [battleSnapshot, setBattleSnapshot] = useState(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -611,6 +615,16 @@ export default function BattleArena({
 
       const verdict = await res.json();
       if (cancelledRef.current) return;
+      // Snapshot the winning side's portrait + framing from the CURRENT live state, which
+      // still reflects the matchup just fought. Computed once from the fresh verdict's
+      // winner so the verdict avatar stays frozen even if the user later edits an input.
+      const won1 = verdict.winner && verdict.winner.toLowerCase().includes(f1.toLowerCase());
+      setBattleSnapshot({
+        f1, f2,
+        winnerImageUrl: won1 ? img1.imageUrl : img2.imageUrl,
+        winnerImageError: won1 ? imgError1 : imgError2,
+        winnerAdjust: won1 ? imgAdjust1 : imgAdjust2,
+      });
       setResult(verdict);
     } catch (e) {
       if (cancelledRef.current) return;
@@ -694,13 +708,13 @@ export default function BattleArena({
   const isDraw = result && result.winner === "Draw";
   const diffLabel = result ? verdictDiffLabel(result) : null;
 
-  // Winner-side portrait for the verdict header: reuse the already-fetched card image and
-  // its error flag for the winning side (isWinner1). No new fetch, no new matching logic.
-  const winnerImageUrl = isWinner1 ? img1.imageUrl : img2.imageUrl;
-  const winnerImageError = isWinner1 ? imgError1 : imgError2;
-  // Frame the winner portrait like its card: reuse the winning side's existing imgAdjust
-  // (object-position + zoom) so the head is not cropped. Same objects renderAvatar uses.
-  const winnerAdjust = isWinner1 ? imgAdjust1 : imgAdjust2;
+  // Winner portrait for the verdict header: read the battle-time SNAPSHOT (set when the
+  // verdict arrived) so it reflects the fought winner's image/framing and never flips when
+  // the user edits an input afterward. Before any battle (snapshot null) fall back to live
+  // state. isWinner1 stays as-is for its other uses; only these three switch to the snapshot.
+  const winnerImageUrl = battleSnapshot ? battleSnapshot.winnerImageUrl : (isWinner1 ? img1.imageUrl : img2.imageUrl);
+  const winnerImageError = battleSnapshot ? battleSnapshot.winnerImageError : (isWinner1 ? imgError1 : imgError2);
+  const winnerAdjust = battleSnapshot ? battleSnapshot.winnerAdjust : (isWinner1 ? imgAdjust1 : imgAdjust2);
 
   // Up to 5 disagreement choices from THIS verdict's own data, in priority order:
   // the outcome itself, then each advantage label, then a granted-ability catch-all.
@@ -969,7 +983,7 @@ export default function BattleArena({
                 <img
                   className="winner-avatar"
                   src={winnerImageUrl}
-                  onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
+                  onError={() => setBattleSnapshot(s => s ? { ...s, winnerImageError: true } : s)}
                   alt=""
                   referrerPolicy="no-referrer"
                   style={{
