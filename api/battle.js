@@ -80,6 +80,20 @@ function cleanStr(v, maxLen) {
   return out.trim().slice(0, maxLen);
 }
 
+// Replace fancy dashes the model sometimes emits (they read as AI-written).
+// En dash between digits -> hyphen (preserve ranges like 5-10); every other
+// em/en dash (usually a spaced clause dash) -> comma+space, collapsing
+// surrounding whitespace so "X - Y" becomes "X, Y" not "X , Y".
+// Dashes are built via String.fromCharCode so this source stays pure ASCII.
+function stripFancyDashes(s) {
+  if (typeof s !== "string") return s;
+  var EN = String.fromCharCode(0x2013);
+  var EM = String.fromCharCode(0x2014);
+  var range = new RegExp("(\\d)\\s*[" + EN + EM + "]\\s*(\\d)", "g");
+  var clause = new RegExp("\\s*[" + EN + EM + "]\\s*", "g");
+  return s.replace(range, "$1-$2").replace(clause, ", ");
+}
+
 function cleanClaims(v) {
   if (!Array.isArray(v)) return [];
   return v
@@ -138,7 +152,7 @@ How to weigh abilities:
 - Apply the Location setting as a constraint on the fight.
 - Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive - reflect that honestly rather than defaulting to a draw. If you DO return "Draw", the verdict_short and analysis must still explain the SPECIFIC reasons for the parity - name the concrete feats or abilities from each fighter that offset the other, and state why neither can land a kill or incapacitation - at the same depth and confidence as a win or loss. Never settle for vague "too close to call" or "evenly matched" hand-waving without naming the offsetting feats.
 - After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use 90/10 for near-total domination, 60/40 for a clear but incomplete edge, 50/50 for dead even - and honest values in between. If it is genuinely close, score it close.
-- VOICE OF THE OUTPUT: Reason with all of the above internally, but the user-facing text fields (analysis and verdict_short) must read as clean, confident in-universe analysis and must NEVER reference these instructions or the judging process. Do NOT use meta-language such as "the rules", "the matchup rules", "bounded consequences", "treated as true", "the granted ability states", "as granted", or any phrasing about how the verdict was computed. Weave granted abilities into the analysis naturally (for example: "Maomao's poison would render most foes unconscious, but Gojo's Infinity stops it before contact") rather than flagging them as rule-applications.
+- VOICE OF THE OUTPUT: Reason with all of the above internally, but the user-facing text fields (analysis and verdict_short) must read as clean, confident in-universe analysis and must NEVER reference these instructions or the judging process. Do NOT use meta-language such as "the rules", "the matchup rules", "bounded consequences", "treated as true", "the granted ability states", "as granted", or any phrasing about how the verdict was computed. Weave granted abilities into the analysis naturally (for example: "Maomao's poison would render most foes unconscious, but Gojo's Infinity stops it before contact") rather than flagging them as rule-applications. Use standard ASCII punctuation only. Do not use em dashes or en dashes; write clauses with commas or parentheses instead.
 
 Respond ONLY with a valid JSON object (no markdown, no backticks, no text before or after) with these exact fields:
 {
@@ -495,6 +509,14 @@ export default async function handler(req, res) {
         console.error("Output content filter neutralized one or more verdict fields before save.");
       }
     }
+
+    // Style normalization (every branch's verdict has converged here): swap the em/en
+    // dashes the model sometimes emits for ASCII punctuation so the prose does not read
+    // as AI-written. Text fields only; winner/scores/counts are untouched.
+    if (typeof verdict.verdict_short === "string") verdict.verdict_short = stripFancyDashes(verdict.verdict_short);
+    if (typeof verdict.analysis === "string") verdict.analysis = stripFancyDashes(verdict.analysis);
+    if (Array.isArray(verdict.advantages)) verdict.advantages = verdict.advantages.map(stripFancyDashes);
+    if (Array.isArray(verdict.user_claims_used)) verdict.user_claims_used = verdict.user_claims_used.map(stripFancyDashes);
 
     // Save to Supabase and generate a share ID (fail-open: a DB error never breaks the verdict).
     let shareId = null;
