@@ -958,20 +958,7 @@ export default function BattleArena({
               </div>
             )}
             <div className="result-header">
-              {isDraw ? (
-                <span className="winner-crown">⚖</span>
-              ) : winnerImageUrl && !winnerImageError ? (
-                <img
-                  className="winner-avatar"
-                  src={winnerImageUrl}
-                  onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
-                  alt=""
-                />
-              ) : (
-                <span className="winner-avatar winner-avatar-fallback">
-                  <FighterSilhouette />
-                </span>
-              )}
+              <span className="winner-crown">{isDraw ? "⚖" : "🏆"}</span>
               <div>
                 <div className="result-title">
                   {isDraw ? "It's a Draw" : `Winner: ${result.winner}`}
@@ -981,6 +968,20 @@ export default function BattleArena({
                   Analyzed {result.feats_scanned} feats · {result.sources} sources
                 </div>
               </div>
+              {!isDraw && (
+                winnerImageUrl && !winnerImageError ? (
+                  <img
+                    className="winner-avatar"
+                    src={winnerImageUrl}
+                    onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
+                    alt=""
+                  />
+                ) : (
+                  <span className="winner-avatar winner-avatar-fallback">
+                    <FighterSilhouette />
+                  </span>
+                )
+              )}
             </div>
 
             <div className="verdict-chips">
