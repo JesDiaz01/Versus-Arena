@@ -3182,57 +3182,80 @@ padding: 2.75rem 0 0;
   50%      { opacity: 1; }
 }
 
-/* === PRESET MATCHUPS CAROUSEL (Phase A: auto-sliding stored-verdict cards) === */
-/* The wrapper clips the marquee track so the PAGE never gets a horizontal scrollbar,
-   and fades the left/right edges. New classes only; no existing styles touched. */
-.preset-carousel {
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-}
-.preset-track {
+/* === MATCHUP SPOTLIGHT (hero rotator: one preset at a time; plain styling for now) === */
+.spotlight {
   display: flex;
-  gap: 1rem;
-  width: max-content;
-  animation: presetMarquee 30s linear infinite;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  max-width: 440px;
+  margin: 1.5rem auto 0;
+  padding: 0 1rem;
 }
-.preset-carousel:hover .preset-track { animation-play-state: paused; }
-@keyframes presetMarquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.preset-card {
+.spotlight-arrow {
   flex: 0 0 auto;
-  width: 230px;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 50%;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink);
+  transition: border-color 0.2s, color 0.2s;
+}
+.spotlight-arrow:hover { border-color: var(--gold); color: var(--gold); }
+.spotlight-card {
+  flex: 1 1 auto;
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 0.75rem 0.9rem 0.6rem;
+  padding: 0.75rem 0.9rem;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.preset-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--gold);
-  box-shadow: 0 8px 20px rgba(184,134,11,0.12);
-}
-.preset-card:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
-}
-.preset-versus {
+.spotlight-card:hover { border-color: var(--gold); box-shadow: 0 6px 18px rgba(184,134,11,0.12); }
+.spotlight-versus {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 84px;
+  height: 96px;
 }
+.spotlight-vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: var(--gold);
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+.spotlight-label {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+/* Per-fighter images inside a preset (used by PresetImg in src/presets.js). */
 .preset-img {
   width: 46%;
-  height: 84px;
+  height: 96px;
   object-fit: cover;
   border-radius: 3px;
   background: var(--surface-2);
@@ -3253,38 +3276,6 @@ padding: 2.75rem 0 0;
   overflow: hidden;
 }
 .preset-img-fallback svg { width: 60%; height: 60%; }
-.preset-vs {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cinzel', serif;
-  font-weight: 900;
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
-  color: var(--gold);
-  background: var(--surface);
-  border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-.preset-label {
-  margin-top: 0.5rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .preset-track { animation: none; }
-}
-@media (max-width: 480px) {
-  .preset-card { width: 200px; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .clash-fighter.left  { animation: none; transform: translateX(-30px); }

@@ -2,26 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
 import { checkClientBlocked } from "./clientBlocklist";
-
-function FighterSilhouette() {
-  return (
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M50 12 C42 12, 36 18, 36 27 C36 33, 38 38, 41 41 L41 46 L59 46 L59 41 C62 38, 64 33, 64 27 C64 18, 58 12, 50 12 Z"
-        fill="currentColor"
-      />
-      <rect x="40" y="28" width="20" height="2.5" fill="rgba(255,255,255,0.4)" />
-      <path
-        d="M30 50 L70 50 L74 58 L78 90 L62 90 L60 65 L40 65 L38 90 L22 90 L26 58 Z"
-        fill="currentColor"
-      />
-      <path
-        d="M47 52 L53 52 L52 62 L50 65 L48 62 Z"
-        fill="rgba(255,255,255,0.25)"
-      />
-    </svg>
-  );
-}
+import FighterSilhouette from "./FighterSilhouette";
 
 // Presentation only: a single charging portrait for the loading clash.
 // Falls back to the silhouette if the image is missing or fails to load.
@@ -70,56 +51,6 @@ const CLAIM_LIMIT = 100;
 // Same invite as the site footer (Footer.jsx); reused as the identical string.
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
-
-// Preset matchups (Phase A: mechanism + one placeholder). Each entry carries a STORED
-// verdict + winner snapshot so tapping a card shows a result instantly via loadPreset -
-// no /api/battle call, no Anthropic cost. Real images/verdict text arrive in a later phase.
-const PRESETS = [
-  {
-    id: "gojo-vs-sukuna-15f",
-    label: "Gojo vs Sukuna (15F)",
-    image1: "/presets/gojo.png",
-    image2: "/presets/sukuna.png",
-    verdict: {
-      winner: "Gojo",
-      verdict_short: "PLACEHOLDER short verdict.",
-      analysis: "PLACEHOLDER analysis text for the preset.",
-      advantages: ["Placeholder advantage one", "Placeholder advantage two"],
-      user_claims_used: [],
-      feats_scanned: 30,
-      sources: 8,
-      scores: { "Gojo": 90, "Sukuna": 70 },
-    },
-    snapshot: {
-      f1: "Gojo", f2: "Sukuna",
-      winnerImageUrl: "/presets/gojo.png",
-      winnerImageError: false,
-      winnerAdjust: { x: 50, y: 50, zoom: 1 },
-    },
-  },
-];
-
-// One fighter image inside a preset card. Falls back to the silhouette if the art is
-// missing (expected in Phase A while /presets/*.png do not exist yet) so a 404 never
-// breaks the card layout.
-function PresetImg({ src, side }) {
-  const [err, setErr] = useState(false);
-  if (err) {
-    return (
-      <span className={"preset-img preset-img-fallback " + side}>
-        <FighterSilhouette />
-      </span>
-    );
-  }
-  return (
-    <img
-      className={"preset-img " + side}
-      src={src}
-      alt=""
-      onError={() => setErr(true)}
-    />
-  );
-}
 
 // Small muted inline note, reused for the "couldn't load image" hint and the
 // "please use appropriate wording" name/universe notes so they share one look.
@@ -535,6 +466,7 @@ export default function BattleArena({
   battleType, setBattleType, location, setLocation, power, setPower, depth, setDepth,
   imgAdjust1, setImgAdjust1, imgAdjust2, setImgAdjust2,
   imgAdjusted1, setImgAdjusted1, imgAdjusted2, setImgAdjusted2,
+  loadPresetRef,
 }) {
   // Battle INPUTS (names, universes, feats, drafts, dropdowns, image overrides,
   // and framing) are lifted to App.jsx so they survive in-site navigation; this
@@ -548,6 +480,10 @@ export default function BattleArena({
   const [battleSnapshot, setBattleSnapshot] = useState(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  // Result-panel anchor + a one-shot flag so a PRESET tap (not a normal battle) can scroll
+  // the verdict into view once it commits.
+  const resultPanelRef = useRef(null);
+  const scrollOnResultRef = useRef(false);
 
   // "Disagree with the outcome" feedback control (purely additive; never blocks the
   // verdict). Resets to collapsed/unsubmitted whenever a new verdict arrives.
@@ -582,6 +518,17 @@ export default function BattleArena({
     setDisagreeChoice(null);
     setDisagreeNote("");
     setDisagreeStatus("idle");
+  }, [result]);
+  // After a PRESET tap commits its verdict, scroll the result panel into view (presets live
+  // in the hero, so the verdict renders below the fold). Normal battles never set the flag,
+  // so they do not scroll. One-shot: the flag is cleared after firing.
+  useEffect(() => {
+    if (result && scrollOnResultRef.current) {
+      scrollOnResultRef.current = false;
+      if (resultPanelRef.current) {
+        resultPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
   }, [result]);
   // Reset framing when the user changes a fighter (name, universe, or override),
   // so a new image starts in the adjustable (un-done) state instead of inheriting
@@ -720,9 +667,14 @@ export default function BattleArena({
   // clash overlay + body-scroll-lock, both gated on `loading`, stay off).
   function loadPreset(preset) {
     setError("");
+    scrollOnResultRef.current = true; // preset taps scroll the verdict into view (battles do not)
     setBattleSnapshot(preset.snapshot);
     setResult(preset.verdict);
   }
+
+  // Expose loadPreset to the parent hero rotator without lifting result/snapshot state.
+  // Reassigned each render so the ref always points at the current closure.
+  if (loadPresetRef) loadPresetRef.current = loadPreset;
 
   function shareBattle() {
     if (!result || !result.id) return;
@@ -880,30 +832,6 @@ export default function BattleArena({
           <span className="universe-badge">Any Universe</span>
         </div>
 
-        {/* Preset matchups carousel (Phase A): tap a card to show a STORED verdict
-            instantly via loadPreset - no fetch, no Anthropic cost. The track duplicates
-            PRESETS so the marquee loops seamlessly once there are several entries. */}
-        <div className="preset-carousel">
-          <div className="preset-track">
-            {PRESETS.concat(PRESETS).map((preset, i) => (
-              <button
-                key={preset.id + "-" + i}
-                type="button"
-                className="preset-card"
-                onClick={() => loadPreset(preset)}
-                aria-label={"Show preset verdict: " + preset.label}
-              >
-                <div className="preset-versus">
-                  <PresetImg src={preset.image1} side="left" />
-                  <span className="preset-vs">VS</span>
-                  <PresetImg src={preset.image2} side="right" />
-                </div>
-                <div className="preset-label">{preset.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="fighters-grid">
           <div className="fighter-slot">
             <div className="fighter-label">Fighter One</div>
@@ -1053,7 +981,7 @@ export default function BattleArena({
         </div>
 
         {result && (
-          <div className="result-panel">
+          <div className="result-panel" ref={resultPanelRef}>
             {result.demo && (
               <div className="demo-banner">
                 <strong>Demo verdict.</strong> Real AI analysis isn't connected yet; the winner here is illustrative only, to show how results will look.

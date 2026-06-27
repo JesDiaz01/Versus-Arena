@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import SplashScreen from "./SplashScreen";
 import BattleArena, { DEFAULT_ADJUST } from "./BattleArena";
 import SharedBattle from "./SharedBattle";
@@ -12,6 +12,7 @@ import Disclaimer from "./Disclaimer";
 import ComingSoon from "./ComingSoon";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
+import { PRESETS, PresetImg } from "./presets";
 
 export default function App() {
   const [entered, setEntered] = useState(false);
@@ -42,6 +43,23 @@ export default function App() {
   const [imgAdjust2, setImgAdjust2] = useState(DEFAULT_ADJUST);
   const [imgAdjusted1, setImgAdjusted1] = useState(false);
   const [imgAdjusted2, setImgAdjusted2] = useState(false);
+
+  // Hero "matchup spotlight" rotator. loadPresetRef is handed to BattleArena, which
+  // registers its loadPreset into .current, so tapping a spotlight shows that preset's
+  // STORED verdict (no fetch). One preset shown at a time, auto-advancing every 5s.
+  const loadPresetRef = useRef(null);
+  const [presetIndex, setPresetIndex] = useState(0);
+  const [presetPaused, setPresetPaused] = useState(false);
+  const prevPreset = () => setPresetIndex(i => (i - 1 + PRESETS.length) % PRESETS.length);
+  const nextPreset = () => setPresetIndex(i => (i + 1) % PRESETS.length);
+  // Auto-advance every 5s; pause on hover; reset on any change (presetIndex in deps);
+  // disabled under prefers-reduced-motion and skipped when there is only one preset.
+  useEffect(() => {
+    if (presetPaused || PRESETS.length <= 1) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setPresetIndex(i => (i + 1) % PRESETS.length), 5000);
+    return () => clearInterval(t);
+  }, [presetPaused, presetIndex]);
 
   // When you switch pages, jump back to the top so you land at the start of the
   // new page (e.g. the arena on home) instead of staying scrolled down where the
@@ -306,6 +324,31 @@ export default function App() {
           Pick any two fictional characters from any universe.
           Every verdict is weighed against feats, powerscaling, and lore.
         </p>
+
+        {/* Matchup spotlight: one preset at a time, < > to change, auto-advances every 5s.
+            Tapping the matchup shows its STORED verdict via the loadPreset BattleArena
+            registered on loadPresetRef. Plain styling for now; polish in a later pass. */}
+        <div
+          className="spotlight"
+          onMouseEnter={() => setPresetPaused(true)}
+          onMouseLeave={() => setPresetPaused(false)}
+        >
+          <button type="button" className="spotlight-arrow" onClick={prevPreset} aria-label="Previous matchup">{"<"}</button>
+          <button
+            type="button"
+            className="spotlight-card"
+            onClick={() => { const p = PRESETS[presetIndex]; if (loadPresetRef.current) loadPresetRef.current(p); }}
+            aria-label={"Show verdict: " + PRESETS[presetIndex].label}
+          >
+            <div className="spotlight-versus">
+              <PresetImg src={PRESETS[presetIndex].image1} side="left" />
+              <span className="spotlight-vs">VS</span>
+              <PresetImg src={PRESETS[presetIndex].image2} side="right" />
+            </div>
+            <div className="spotlight-label">{PRESETS[presetIndex].label}</div>
+          </button>
+          <button type="button" className="spotlight-arrow" onClick={nextPreset} aria-label="Next matchup">{">"}</button>
+        </div>
       </div>
 
       <BattleArena
@@ -325,6 +368,7 @@ export default function App() {
         imgAdjust2={imgAdjust2} setImgAdjust2={setImgAdjust2}
         imgAdjusted1={imgAdjusted1} setImgAdjusted1={setImgAdjusted1}
         imgAdjusted2={imgAdjusted2} setImgAdjusted2={setImgAdjusted2}
+        loadPresetRef={loadPresetRef}
       />
 
       <Footer
