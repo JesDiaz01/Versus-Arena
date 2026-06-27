@@ -35,6 +35,7 @@ function ClashFighter({ url, name, side, adjust }) {
           src={url}
           alt={name || ""}
           onError={() => setErr(true)}
+          referrerPolicy="no-referrer"
           style={{
             objectPosition: `${a.x}% ${a.y}%`,
             transform: `scale(${a.zoom})`,
@@ -739,6 +740,7 @@ export default function BattleArena({
               alt={fighter}
               className="fighter-photo"
               onError={() => setImgError(true)}
+              referrerPolicy="no-referrer"
               style={{
                 objectPosition: `${adjust.x}% ${adjust.y}%`,
                 transform: `scale(${adjust.zoom})`,
@@ -969,6 +971,7 @@ export default function BattleArena({
                   src={winnerImageUrl}
                   onError={() => (isWinner1 ? setImgError1(true) : setImgError2(true))}
                   alt=""
+                  referrerPolicy="no-referrer"
                   style={{
                     objectPosition: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
                     transform: `scale(${winnerAdjust.zoom})`,
