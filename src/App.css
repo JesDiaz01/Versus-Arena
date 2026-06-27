@@ -441,14 +441,12 @@ body::before {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
-  margin-left: auto; /* float to the right edge of .result-header; trophy + title stay left */
   border-radius: 50%;
   object-fit: cover;
   overflow: hidden;
   border: 1px solid var(--gold);
   background: var(--surface-2);
   box-shadow: 0 0 0 4px rgba(184,134,11,0.12);
-  opacity: 0.9; /* subtle right-side accent, not loud */
   animation: photoPopIn 300ms ease-out;
 }
 /* Silhouette fallback: same 52px circle so the layout never jumps; center and gold-tint
@@ -464,9 +462,6 @@ body::before {
   color: var(--gold);
 }
 @media (max-width: 380px) {
-  /* If trophy + title + avatar get tight, let the header wrap so the avatar drops below
-     (margin-left: auto keeps it right-aligned) instead of overflowing. */
-  .result-header { flex-wrap: wrap; }
   .winner-avatar { width: 44px; height: 44px; }
 }
 .result-title {
