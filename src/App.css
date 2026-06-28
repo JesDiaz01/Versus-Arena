@@ -3281,7 +3281,7 @@ padding: 2.75rem 0 0;
 .preset-img {
   position: absolute;
   top: 0;
-  width: 52%;
+  width: 40%;
   height: 100%;
   object-fit: cover;
   object-position: center top;   /* keep heads/upper bodies in frame */
@@ -3293,8 +3293,8 @@ padding: 2.75rem 0 0;
 }
 .preset-img.right {
   right: 0;
-  width: 60%;                      /* Sukuna a touch larger to match Gojo's prominence */
-  object-position: center 18%;     /* lift his head up toward Gojo's head level */
+  width: 40%;
+  object-position: center top;
   -webkit-mask-image: linear-gradient(to left, #000 42%, transparent 92%);
   mask-image: linear-gradient(to left, #000 42%, transparent 92%);
 }
