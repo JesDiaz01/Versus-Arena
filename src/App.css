@@ -3284,7 +3284,7 @@ padding: 2.75rem 0 0;
   width: 40%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;   /* keep heads/upper bodies in frame */
+  object-position: center 13%;   /* keep heads/upper bodies in frame */
 }
 .preset-img.left {
   left: 0;
@@ -3294,7 +3294,7 @@ padding: 2.75rem 0 0;
 .preset-img.right {
   right: 0;
   width: 40%;
-  object-position: center top;
+  object-position: center 25%;
   -webkit-mask-image: linear-gradient(to left, #000 42%, transparent 92%);
   mask-image: linear-gradient(to left, #000 42%, transparent 92%);
 }
