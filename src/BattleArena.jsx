@@ -988,7 +988,14 @@ export default function BattleArena({
               </div>
             )}
             <div className="result-header">
-              {isDraw ? (
+              {battleSnapshot && battleSnapshot.image1 && battleSnapshot.image2 ? (
+                <img
+                  className="verdict-matchup-img left"
+                  src={battleSnapshot.image1}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+              ) : isDraw ? (
                 <span className="winner-crown">⚖</span>
               ) : winnerImageUrl && !winnerImageError ? (
                 <img
@@ -1017,6 +1024,14 @@ export default function BattleArena({
                   Analyzed {result.feats_scanned} feats · {result.sources} sources
                 </div>
               </div>
+              {battleSnapshot && battleSnapshot.image1 && battleSnapshot.image2 && (
+                <img
+                  className="verdict-matchup-img right"
+                  src={battleSnapshot.image2}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+              )}
             </div>
 
             <div className="verdict-chips">

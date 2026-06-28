@@ -325,29 +325,30 @@ export default function App() {
           Every verdict is weighed against feats, powerscaling, and lore.
         </p>
 
-        {/* Matchup spotlight: one preset at a time, < > to change, auto-advances every 5s.
-            Tapping the matchup shows its STORED verdict via the loadPreset BattleArena
-            registered on loadPresetRef. Plain styling for now; polish in a later pass. */}
+        {/* Matchup spotlight: a wide cinematic band below the hero title. < > change the
+            matchup; tapping the band shows its STORED verdict via the loadPreset BattleArena
+            registered on loadPresetRef. Auto-advances every 5s (paused on hover). */}
         <div
           className="spotlight"
           onMouseEnter={() => setPresetPaused(true)}
           onMouseLeave={() => setPresetPaused(false)}
         >
-          <button type="button" className="spotlight-arrow" onClick={prevPreset} aria-label="Previous matchup">{"<"}</button>
+          <button type="button" className="spotlight-arrow left" onClick={prevPreset} aria-label="Previous matchup">{"<"}</button>
           <button
             type="button"
-            className="spotlight-card"
+            className="spotlight-band"
             onClick={() => { const p = PRESETS[presetIndex]; if (loadPresetRef.current) loadPresetRef.current(p); }}
             aria-label={"Show verdict: " + PRESETS[presetIndex].label}
           >
-            <div className="spotlight-versus">
-              <PresetImg src={PRESETS[presetIndex].image1} side="left" />
-              <span className="spotlight-vs">VS</span>
-              <PresetImg src={PRESETS[presetIndex].image2} side="right" />
+            <PresetImg src={PRESETS[presetIndex].image1} side="left" />
+            <PresetImg src={PRESETS[presetIndex].image2} side="right" />
+            <span className="spotlight-vs">VS</span>
+            <div className="spotlight-caption">
+              <span className="spotlight-title">{PRESETS[presetIndex].label}</span>
+              <span className="spotlight-hint">Tap to see the verdict</span>
             </div>
-            <div className="spotlight-label">{PRESETS[presetIndex].label}</div>
           </button>
-          <button type="button" className="spotlight-arrow" onClick={nextPreset} aria-label="Next matchup">{">"}</button>
+          <button type="button" className="spotlight-arrow right" onClick={nextPreset} aria-label="Next matchup">{">"}</button>
         </div>
       </div>
 

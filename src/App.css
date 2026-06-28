@@ -124,7 +124,7 @@ body::before {
 /* HERO */
 .hero {
   text-align: center;
-  padding: 6rem 2rem 4rem;
+  padding: 6rem 2rem 3rem;
 }
 .hero-tag {
   display: inline-block;
@@ -151,7 +151,7 @@ body::before {
   font-size: 1rem;
   color: var(--ink-soft);
   max-width: 520px;
-  margin: 0 auto 3rem;
+  margin: 0 auto 1.75rem;
   line-height: 1.75;
   font-weight: 300;
 }
@@ -449,6 +449,21 @@ body::before {
   box-shadow: 0 0 0 4px rgba(184,134,11,0.12);
   animation: photoPopIn 300ms ease-out;
 }
+/* Preset-only verdict header: both fighters, one per side, flanking the WINNER title.
+   New classes; does NOT touch .winner-avatar. Normal battles keep the single avatar. */
+.verdict-matchup-img {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid var(--gold);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 4px rgba(184,134,11,0.12);
+  animation: photoPopIn 300ms ease-out;
+}
+.verdict-matchup-img.right { margin-left: auto; object-position: center 18%; }
 /* Silhouette fallback: same 52px circle so the layout never jumps; center and gold-tint
    the inline SVG like the winner card does. */
 .winner-avatar-fallback {
@@ -3182,100 +3197,205 @@ padding: 2.75rem 0 0;
   50%      { opacity: 1; }
 }
 
-/* === MATCHUP SPOTLIGHT (hero rotator: one preset at a time; plain styling for now) === */
+/* === MATCHUP SPOTLIGHT (hero rotator: a wide cinematic band, ~1000px content column) === */
 .spotlight {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  max-width: 440px;
-  margin: 1.5rem auto 0;
-  padding: 0 1rem;
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0.5rem auto 0;
+  padding: 0 1.5rem;       /* matches .arena horizontal padding; keeps the band in-column */
 }
-.spotlight-arrow {
-  flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 50%;
+/* The tappable band. Transparent character cut-outs sit ON a soft cream/gold surface and
+   fade toward the center, facing off at the VS. Light backdrop (NOT dark) per the art. */
+.spotlight-band {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+  padding: 0;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 1rem;
-  line-height: 1;
-  color: var(--ink);
-  transition: border-color 0.2s, color 0.2s;
-}
-.spotlight-arrow:hover { border-color: var(--gold); color: var(--gold); }
-.spotlight-card {
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0.75rem 0.9rem;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  text-align: center;
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 95% at 50% 18%, rgba(184,134,11,0.12), rgba(184,134,11,0) 62%),
+    linear-gradient(180deg, var(--surface) 0%, var(--bg-soft) 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 18px 40px rgba(0,0,0,0.06);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.spotlight-card:hover { border-color: var(--gold); box-shadow: 0 6px 18px rgba(184,134,11,0.12); }
-.spotlight-versus {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 96px;
+.spotlight-band:hover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05), 0 22px 50px rgba(184,134,11,0.14);
+  animation: spotlightAura 1.9s ease-in-out infinite;
 }
-.spotlight-vs {
+.spotlight-band:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* Gold energy hover aura (CSS-only; NOT the loading-gated .clash-* effect). The outer
+   halo pulses via box-shadow on :hover; ::before is a flickering inner gold edge, ::after
+   a faint diagonal gold sheen. All paint-only - no layout shift and no page overflow. */
+.spotlight-band::before,
+.spotlight-band::after {
+  content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cinzel', serif;
-  font-weight: 900;
-  font-size: 0.95rem;
-  color: var(--gold);
-  background: var(--surface);
-  border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
 }
-.spotlight-label {
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--ink);
+.spotlight-band::before {
+  box-shadow: inset 0 0 0 1px rgba(212,160,23,0.6), inset 0 0 16px rgba(212,160,23,0.28);
 }
-/* Per-fighter images inside a preset (used by PresetImg in src/presets.js). */
+.spotlight-band::after {
+  background: linear-gradient(115deg, transparent 32%, rgba(212,160,23,0.10) 48%, transparent 56%, transparent 72%, rgba(212,160,23,0.08) 84%, transparent 92%);
+}
+.spotlight-band:hover::before { animation: spotlightFlicker 1.9s steps(1, end) infinite; }
+.spotlight-band:hover::after  { animation: spotlightStreak 1.9s ease-in-out infinite; }
+
+@keyframes spotlightAura {
+  0%, 100% { box-shadow: 0 4px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(184,134,11,0.25), 0 0 22px 2px rgba(212,160,23,0.28); }
+  50%      { box-shadow: 0 4px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(212,160,23,0.50), 0 0 40px 6px rgba(212,160,23,0.50); }
+}
+@keyframes spotlightFlicker {
+  0%, 100% { opacity: 0.35; }
+  12% { opacity: 0.9; }
+  18% { opacity: 0.45; }
+  30% { opacity: 0.82; }
+  50% { opacity: 0.3; }
+  68% { opacity: 0.85; }
+  82% { opacity: 0.4; }
+}
+@keyframes spotlightStreak {
+  0%, 100% { opacity: 0; }
+  42% { opacity: 1; }
+  62% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-band:hover { animation: none; }
+  .spotlight-band:hover::before,
+  .spotlight-band:hover::after { animation: none; opacity: 0; }
+}
+
+/* Each fighter cut-out fills half the band and fades at its INNER (center) edge so the two
+   blend toward the VS rather than hard-cutting. (Used by PresetImg in presets.jsx.) */
 .preset-img {
-  width: 46%;
-  height: 96px;
+  position: absolute;
+  top: 0;
+  width: 52%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 3px;
-  background: var(--surface-2);
+  object-position: center top;   /* keep heads/upper bodies in frame */
 }
 .preset-img.left {
-  -webkit-mask-image: linear-gradient(to right, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 55%, transparent 100%);
+  left: 0;
+  -webkit-mask-image: linear-gradient(to right, #000 42%, transparent 92%);
+  mask-image: linear-gradient(to right, #000 42%, transparent 92%);
 }
 .preset-img.right {
-  -webkit-mask-image: linear-gradient(to left, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to left, #000 55%, transparent 100%);
+  right: 0;
+  width: 60%;                      /* Sukuna a touch larger to match Gojo's prominence */
+  object-position: center 18%;     /* lift his head up toward Gojo's head level */
+  -webkit-mask-image: linear-gradient(to left, #000 42%, transparent 92%);
+  mask-image: linear-gradient(to left, #000 42%, transparent 92%);
 }
+/* 404 fallback: the silhouette, centered in the same half (also carries .preset-img). */
 .preset-img-fallback {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   color: var(--muted);
   overflow: hidden;
 }
-.preset-img-fallback svg { width: 60%; height: 60%; }
+.preset-img-fallback svg { width: 44%; height: 72%; opacity: 0.5; }
+
+.spotlight-vs {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 2.6rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(245,242,236,0.9), 0 2px 3px rgba(245,242,236,0.9);
+}
+.spotlight-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 1.6rem 1rem 0.8rem;
+  text-align: center;
+  background: linear-gradient(to top, rgba(245,242,236,0.92) 30%, rgba(245,242,236,0));
+}
+.spotlight-title {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.spotlight-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.spotlight-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(184,134,11,0.35);
+  border-radius: 50%;
+  background: rgba(250,248,243,0.85);   /* soft cream disc */
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--gold);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255,255,255,0.6);
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.spotlight-arrow:hover {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px rgba(184,134,11,0.35);
+  transform: translateY(-50%) scale(1.06);
+}
+.spotlight-arrow:active { transform: translateY(-50%) scale(0.97); }
+.spotlight-arrow:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.spotlight-arrow.left { left: 1.9rem; }
+.spotlight-arrow.right { right: 1.9rem; }
+
+@media (max-width: 600px) {
+  .spotlight { padding: 0 1rem; }
+  .spotlight-band { height: 184px; }
+  .preset-img { width: 56%; }
+  .spotlight-vs { font-size: 1.9rem; }
+  .spotlight-caption { padding: 1.1rem 0.75rem 0.6rem; }
+  .spotlight-title { font-size: 0.92rem; }
+  .spotlight-hint { font-size: 0.6rem; letter-spacing: 0.14em; }
+  .spotlight-arrow { width: 2rem; height: 2rem; font-size: 1rem; }
+  .spotlight-arrow.left { left: 1.4rem; }
+  .spotlight-arrow.right { right: 1.4rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .clash-fighter.left  { animation: none; transform: translateX(-30px); }

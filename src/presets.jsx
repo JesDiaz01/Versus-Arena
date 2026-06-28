@@ -29,6 +29,10 @@ export const PRESETS = [
       winnerImageUrl: "/presets/gojo.png",
       winnerImageError: false,
       winnerAdjust: { x: 50, y: 50, zoom: 1 },
+      // Both fighter images so the verdict header can show a preset matchup (both sides),
+      // not just the single winner avatar. Presence of image1/image2 is the preset flag.
+      image1: "/presets/gojo.png",
+      image2: "/presets/sukuna.png",
     },
   },
 ];
