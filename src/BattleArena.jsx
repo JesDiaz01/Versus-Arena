@@ -3,6 +3,7 @@ import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
 import { checkClientBlocked } from "./clientBlocklist";
 import FighterSilhouette from "./FighterSilhouette";
+import PresetCard from "./PresetCard";
 
 // Presentation only: a single charging portrait for the loading clash.
 // Falls back to the silhouette if the image is missing or fails to load.
@@ -980,7 +981,18 @@ export default function BattleArena({
           </div>
         </div>
 
-        {result && (
+        {/* PRESET ONLY: a preset tap sets snapshot.image1/image2, which swaps the normal
+            result panel for the cinematic PresetCard. Normal battles (no snapshot images)
+            fall through to the existing panel below, completely unchanged. The scroll-to-
+            verdict ref moves to whichever renders, so the tap still scrolls the card in. */}
+        {result && (battleSnapshot && battleSnapshot.image1 && battleSnapshot.image2 ? (
+          <PresetCard
+            ref={resultPanelRef}
+            result={result}
+            snapshot={battleSnapshot}
+            onNewBattle={reset}
+          />
+        ) : (
           <div className="result-panel" ref={resultPanelRef}>
             {result.demo && (
               <div className="demo-banner">
@@ -1126,7 +1138,7 @@ export default function BattleArena({
               )}
             </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

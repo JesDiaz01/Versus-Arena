@@ -3475,3 +3475,185 @@ padding: 2.75rem 0 0;
 @media (prefers-reduced-motion: reduce) {
   .battle-dim { transition: none; }
 }
+
+/* ============================================================================
+   PRESET CINEMATIC CARD (PresetCard.jsx) - shown for PRESET taps only, in place
+   of the normal .result-panel. Three columns: big fighter PNGs flank the sides
+   (winner vivid, loser grayscale/dim) with the verdict content in the middle.
+   Every class here is new and .preset-card-* scoped; nothing in this block
+   touches the existing result-panel, spotlight, or winner-avatar styles.
+   ============================================================================ */
+.preset-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  margin-top: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 90% at 50% 12%, rgba(184,134,11,0.10), rgba(184,134,11,0) 60%),
+    linear-gradient(180deg, var(--surface) 0%, var(--bg-soft) 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 18px 44px rgba(0,0,0,0.07);
+  /* Phase 1 entrance: a simple fade + rise + settle. (The expand-from-band morph
+     is a later phase.) */
+  animation: presetCardIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes presetCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preset-card { animation: none; }
+}
+
+/* Flanking fighter PNGs: ABSOLUTELY POSITIONED side strips, mirroring the hero spotlight
+   band's proven .preset-img pattern (position:absolute, ~1/3 width, object-fit cover,
+   inner-edge mask fade toward center). Being out of flow they cannot squeeze or fight the
+   text the way flex columns did. They anchor to the TOP and are CAPPED in height (they do
+   NOT stretch the full tall card), so they frame the verdict area as a controlled-size
+   standing presence and the long analysis simply continues, text-only, below them. */
+.preset-card-img {
+  position: absolute;
+  top: 0;                        /* anchored to the TOP of the card */
+  /* CAPPED height (was 100%). A ~36% x 420px box is close to the PNG's own portrait aspect,
+     so object-fit:cover upscales far less than the full-height strip did -> sharper. On a
+     tall card the lower portion is just centered text with no image beside it (expected). */
+  height: 420px;
+  width: 36%;
+  object-fit: cover;
+  object-position: center 12%;   /* frame head-to-torso near the top - standing presence */
+  z-index: 1;
+  user-select: none;
+}
+/* The wider 36% strips reach toward the 28% body padding, so the masks fade each strip to
+   FULLY transparent by ~27.7% of the card width (0.77 x 36%) - just inside the text edge -
+   so the centered text still never overlaps a fighter. Body padding logic is untouched. */
+/* Each strip composites TWO mask layers with mask-composite:intersect, so a pixel shows only
+   where BOTH are opaque: the inner-edge horizontal fade (toward the center/VS) AND a shared
+   bottom fade that takes the lower ~30% to transparent - which softens the capped-height
+   bottom edge so the coat/legs no longer hard-cut. (Default 'add' would UNION the alphas and
+   keep the bottom-outer corner fully visible, defeating the bottom fade.) The legacy WebKit
+   equivalent of intersect is -webkit-mask-composite: source-in, kept for Safari. */
+.preset-card-img.left {
+  left: 0;
+  -webkit-mask-image:
+    linear-gradient(to right, #000 26%, transparent 77%),
+    linear-gradient(to bottom, #000 70%, transparent 100%);
+  mask-image:
+    linear-gradient(to right, #000 26%, transparent 77%),
+    linear-gradient(to bottom, #000 70%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.preset-card-img.right {
+  right: 0;
+  object-position: center 16%;
+  -webkit-mask-image:
+    linear-gradient(to left, #000 26%, transparent 77%),
+    linear-gradient(to bottom, #000 70%, transparent 100%);
+  mask-image:
+    linear-gradient(to left, #000 26%, transparent 77%),
+    linear-gradient(to bottom, #000 70%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* Loser treatment: dramatic grayscale + dim so the winner clearly reads as victor. */
+.preset-card-img.dimmed {
+  filter: grayscale(1) brightness(0.6) contrast(1.05);
+}
+/* Silhouette fallback fills the same column so a missing PNG never collapses the layout. */
+.preset-card-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+.preset-card-img-fallback svg { width: 52%; height: 64%; opacity: 0.5; }
+
+/* Middle column: the verdict content, centered, painted above the side images. */
+.preset-card-body {
+  position: relative;
+  z-index: 2;                /* text sits ABOVE the absolute side images */
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* Generous left/right padding clears the 30% absolute image strips (which the mask fades
+     out by ~28% of card width), so the centered text never overlaps a fighter. The body is
+     normal flow and is the element that defines the card height. */
+  padding: 2.5rem 28%;
+}
+.preset-card-eyebrow {
+  font-size: 0.62rem;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+.preset-card-winner {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.preset-card-subtitle {
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.preset-card-chips {
+  justify-content: center;
+  margin-top: 1.3rem;
+  margin-bottom: 0;
+}
+.preset-card-text {
+  margin-top: 1.4rem;
+  margin-bottom: 0;
+  max-width: 540px;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  white-space: pre-line;       /* render the analysis's blank-line paragraph breaks */
+  overflow-wrap: anywhere;
+}
+.preset-card-actions { margin-top: 1.8rem; }
+
+/* Mobile restack (the side-strip layout cannot fit a narrow screen): the two PNGs leave
+   their absolute side positions, return to normal flow, and become a side-by-side top band
+   with the verdict full-width beneath. flex-wrap + order reflow the DOM order (left img,
+   body, right img) without any markup change. Percentage widths only -> never wider than
+   the card, so the page never gains horizontal overflow. */
+@media (max-width: 640px) {
+  .preset-card { flex-wrap: wrap; }
+  .preset-card-img {
+    position: static;        /* undo the desktop absolute strip - back into flex flow */
+    width: auto;
+    flex: 0 0 50%;
+    height: 188px;
+    object-position: center 12%;
+  }
+  .preset-card-img.left {
+    order: 1;
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+  }
+  .preset-card-img.right {
+    order: 2;
+    object-position: center 12%;
+    -webkit-mask-image: linear-gradient(to left, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to left, #000 82%, transparent 100%);
+  }
+  .preset-card-body { order: 3; flex: 1 1 100%; padding: 1.75rem 1.25rem; }
+}
+@media (max-width: 380px) {
+  .preset-card-img { height: 150px; }
+  .preset-card-body { padding: 1.5rem 1rem; }
+}
