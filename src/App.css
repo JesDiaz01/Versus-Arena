@@ -3285,6 +3285,15 @@ padding: 2.75rem 0 0;
   height: 100%;
   object-fit: cover;
   object-position: center 13%;   /* keep heads/upper bodies in frame */
+  /* Stop the native image-drag ghost. The band's click target is the parent <button>, not
+     these decorative imgs, so pointer-events:none keeps the tap (and hover) working. */
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 .preset-img.left {
   left: 0;
@@ -3525,6 +3534,15 @@ padding: 2.75rem 0 0;
   object-position: center 12%;   /* frame head-to-torso near the top - standing presence */
   z-index: 1;
   user-select: none;
+  /* Stop the native image-drag ghost. pointer-events:none is the reliable cross-browser
+     killer and is safe here: nothing needs the decorative img's own clicks (the card's
+     buttons sit above it at z-index 2). The user-drag set is belt-and-suspenders for WebKit. */
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 /* The wider 36% strips reach toward the 28% body padding, so the masks fade each strip to
    FULLY transparent by ~27.7% of the card width (0.77 x 36%) - just inside the text edge -
@@ -3581,10 +3599,13 @@ padding: 2.75rem 0 0;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  /* Generous left/right padding clears the 30% absolute image strips (which the mask fades
-     out by ~28% of card width), so the centered text never overlaps a fighter. The body is
-     normal flow and is the element that defines the card height. */
-  padding: 2.5rem 28%;
+  /* The images now CAP near the top, so the body no longer needs full-length side clearance.
+     A modest 12% side padding lets the long analysis use most of the card width (wider, shorter
+     column) instead of a thin center ribbon. The short centered heading elements stay centered
+     and never reach the edge strips; the bold verdict_short lead - which sits up beside the
+     capped images - is constrained separately below so it still clears them. Body is normal
+     flow and defines the card height. */
+  padding: 2.5rem 12%;
 }
 .preset-card-eyebrow {
   font-size: 0.62rem;
@@ -3610,6 +3631,14 @@ padding: 2.75rem 0 0;
   margin-top: 0.5rem;
 }
 .preset-card-chips {
+  /* Stack the advantage chips in a single centered column so no chip row is ever wide enough to
+     reach the capped top images. max-width keeps the stack inside the clear center channel
+     (between the two image strips); a longer label wraps within that width instead of spilling
+     toward a fighter. Scoped to the preset card - the normal panel's .verdict-chips row layout
+     and the global .chip style are untouched. */
+  flex-direction: column;
+  align-items: center;
+  max-width: 360px;
   justify-content: center;
   margin-top: 1.3rem;
   margin-bottom: 0;
@@ -3617,12 +3646,22 @@ padding: 2.75rem 0 0;
 .preset-card-text {
   margin-top: 1.4rem;
   margin-bottom: 0;
-  max-width: 540px;
+  max-width: 760px;            /* wider block (was 540) so the analysis reads wide, not a ribbon */
   font-size: 0.95rem;
   line-height: 1.8;
   color: var(--ink-soft);
   white-space: pre-line;       /* render the analysis's blank-line paragraph breaks */
   overflow-wrap: anywhere;
+}
+/* The bold verdict_short lead is the first line of the text block and sits UP beside the capped
+   top images, so keep it narrow + centered (it still clears the strips). The analysis below it
+   uses the full wide block; its first line or two pass beside the already-fading lower edge of
+   the capped images, which is fine. Scoped under .preset-card-text so the shared .verdict-short
+   used by the normal panel / SharedBattle is NOT affected. */
+.preset-card-text .verdict-short {
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .preset-card-actions { margin-top: 1.8rem; }
 
@@ -3652,6 +3691,8 @@ padding: 2.75rem 0 0;
     mask-image: linear-gradient(to left, #000 82%, transparent 100%);
   }
   .preset-card-body { order: 3; flex: 1 1 100%; padding: 1.75rem 1.25rem; }
+  /* No side images beside the text on mobile (they are a top band), so the lead can be full width. */
+  .preset-card-text .verdict-short { max-width: none; }
 }
 @media (max-width: 380px) {
   .preset-card-img { height: 150px; }
