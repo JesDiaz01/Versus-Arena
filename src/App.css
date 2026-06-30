@@ -3681,14 +3681,26 @@ padding: 2.75rem 0 0;
   }
   .preset-card-img.left {
     order: 1;
-    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent 100%);
-    mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to right, #000 82%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    mask-image:
+      linear-gradient(to right, #000 82%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
   }
   .preset-card-img.right {
     order: 2;
     object-position: center 12%;
-    -webkit-mask-image: linear-gradient(to left, #000 82%, transparent 100%);
-    mask-image: linear-gradient(to left, #000 82%, transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to left, #000 82%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    mask-image:
+      linear-gradient(to left, #000 82%, transparent 100%),
+      linear-gradient(to bottom, #000 70%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
   }
   .preset-card-body { order: 3; flex: 1 1 100%; padding: 1.75rem 1.25rem; }
   /* No side images beside the text on mobile (they are a top band), so the lead can be full width. */
