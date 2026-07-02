@@ -9,12 +9,16 @@
 //   Top-tier:     "claude-opus-4-7"
 
 import { createClient } from "@supabase/supabase-js";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { Redis } from "@upstash/redis";
 import { getClientIp, checkBattleLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
 import { containsBlockedContent, containsBlockedOutput } from "./_contentFilter.js";
 
 const MODEL = "claude-sonnet-4-6";
+
+// Read-through cache: identical battle inputs return the stored verdict instead of
+// re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
+const CACHE_VERSION = "v1";
 
 // ---- Limits (cost + abuse protection) ----
 const MAX_NAME_LEN = 80;     // fighter name / universe cap
@@ -104,6 +108,14 @@ function cleanClaims(v) {
 
 function pickAllowed(v, list) {
   return list.includes(v) ? v : list[0];
+}
+
+// Deterministic read-through-cache key for a matchup: hash the already-sanitized inputs in a
+// FIXED key order using Node's built-in crypto. This version does NOT lowercase, trim, sort,
+// or reorder anything (no fighter-order or case normalization). Bump CACHE_VERSION to invalidate.
+function computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2) {
+  const obj = { v: CACHE_VERSION, f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2 };
+  return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
 // ---- Prompt builder ----
@@ -308,6 +320,10 @@ export default async function handler(req, res) {
     const depth = pickAllowed(body.depth, ALLOWED.depth);
     const claims1 = cleanClaims(body.claims1);
     const claims2 = cleanClaims(body.claims2);
+    // Computed in the cache-check block below and reused by the insert; db is the Supabase
+    // client, hoisted there so one client serves both the cache lookup and the save.
+    let inputHash = null;
+    let db = null;
 
     if (!f1 || !f2) {
       return res.status(400).json({ error: "Both fighter names are required." });
@@ -319,6 +335,31 @@ export default async function handler(req, res) {
     if (containsBlockedContent([f1, f2, u1, u2, ...claims1, ...claims2])) {
       await recordOffense(ip, 1); // one trip is a fat-finger; repeated trips escalate
       return res.status(400).json({ error: "Please remove inappropriate content and try again." });
+    }
+
+    // --- Read-through cache (runs AFTER the content filter, BEFORE the daily-cap increment) ---
+    // Identical inputs return the stored verdict, skipping BOTH Anthropic calls and the cap
+    // burn. The Supabase client is HOISTED here (env read + createClient) so one client serves
+    // both this lookup and the later insert. Fail-open: any error logs and falls through to
+    // normal generation. inputHash is reused by the insert below and never recomputed.
+    inputHash = computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2);
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && supabaseKey) {
+      db = createClient(supabaseUrl, supabaseKey);
+      try {
+        const { data, error } = await db
+          .from("battles")
+          .select("id, result")
+          .eq("input_hash", inputHash)
+          .limit(1);
+        if (!error && data && data[0] && data[0].result) {
+          // Cache HIT: return the SAME flat shape as a fresh battle ({ ...verdict, id }).
+          return res.status(200).json({ ...data[0].result, id: data[0].id });
+        }
+      } catch (err) {
+        console.error("cache check failed, falling through to generation:", err);
+      }
     }
 
     // --- Global daily cap (LAST gate before the Anthropic call) ---
@@ -523,15 +564,15 @@ export default async function handler(req, res) {
     if (Array.isArray(verdict.user_claims_used)) verdict.user_claims_used = verdict.user_claims_used.map(stripFancyDashes);
 
     // Save to Supabase and generate a share ID (fail-open: a DB error never breaks the verdict).
+    // Reuses the Supabase client HOISTED at the cache-check above (db is non-null only when both
+    // env vars were present), so no second client is created.
     let shareId = null;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (supabaseUrl && supabaseKey) {
+    if (db) {
       try {
         shareId = randomBytes(6).toString("base64url");
-        const db = createClient(supabaseUrl, supabaseKey);
         const { error: dbError } = await db.from("battles").insert({
           id: shareId,
+          input_hash: inputHash,
           battle_data: { f1, f2, u1, u2, battleType, location, power, depth, claims1, claims2 },
           result: verdict,
         });
