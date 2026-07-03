@@ -20,6 +20,10 @@ const MODEL = "claude-sonnet-4-6";
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
 const CACHE_VERSION = "v1";
 
+// Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
+// dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.
+const AUTHORED_VERSION = "v1";
+
 // ---- Limits (cost + abuse protection) ----
 const MAX_NAME_LEN = 80;     // fighter name / universe cap
 const MAX_CLAIM_LEN = 200;   // per custom-feat cap
@@ -115,6 +119,19 @@ function pickAllowed(v, list) {
 // or reorder anything (no fighter-order or case normalization). Bump CACHE_VERSION to invalidate.
 function computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2) {
   const obj = { v: CACHE_VERSION, f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2 };
+  return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
+}
+
+// Order-INDEPENDENT authored-verdict key: normalize each fighter + universe to a lowercase,
+// trimmed "name|universe" pair, sort the two pairs so fighter order does not matter, and hash
+// with the dropdown settings. Claims are deliberately EXCLUDED - authored verdicts serve only
+// empty-granted-abilities requests. Bump AUTHORED_VERSION to invalidate.
+function computeAuthoredKey(f1, u1, f2, u2, battleType, location, power, depth) {
+  const norm = (s) => (s || "").toLowerCase().trim();
+  const pairA = norm(f1) + "|" + norm(u1);
+  const pairB = norm(f2) + "|" + norm(u2);
+  const sortedPairs = [pairA, pairB].sort();
+  const obj = { v: AUTHORED_VERSION, pair1: sortedPairs[0], pair2: sortedPairs[1], battleType, location, power, depth };
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
@@ -337,16 +354,52 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Please remove inappropriate content and try again." });
     }
 
-    // --- Read-through cache (runs AFTER the content filter, BEFORE the daily-cap increment) ---
-    // Identical inputs return the stored verdict, skipping BOTH Anthropic calls and the cap
-    // burn. The Supabase client is HOISTED here (env read + createClient) so one client serves
-    // both this lookup and the later insert. Fail-open: any error logs and falls through to
-    // normal generation. inputHash is reused by the insert below and never recomputed.
-    inputHash = computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2);
+    // --- Authored-verdict lookup (runs BEFORE the input_hash cache) ---
+    // Serves a hand-written verdict for a marquee matchup at matching dropdowns with EMPTY
+    // granted-abilities, regardless of fighter order. The Supabase client is HOISTED to the top
+    // of this block so the SAME `db` serves the authored lookup, the input_hash lookup, AND the
+    // save (created once here, never re-created below). Fail-open: any error logs and falls
+    // through to the input_hash cache.
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (supabaseUrl && supabaseKey) {
       db = createClient(supabaseUrl, supabaseKey);
+    }
+    // Only empty-granted-abilities requests are eligible for an authored verdict; any granted
+    // ability skips the entire authored block and falls through to the input_hash cache.
+    if (db && claims1.length === 0 && claims2.length === 0) {
+      try {
+        const authoredKey = computeAuthoredKey(f1, u1, f2, u2, battleType, location, power, depth);
+        const { data, error } = await db
+          .from("battles")
+          .select("id, result")
+          .eq("authored_key", authoredKey)
+          .limit(1);
+        if (!error && data && data[0] && data[0].result) {
+          // SAFETY NET: only serve if the authored winner is "Draw" or actually names one of the
+          // two typed fighters, so a stale/mismatched authored row can never render the wrong
+          // side. Otherwise log and fall through to real generation.
+          const w = (data[0].result && data[0].result.winner) || "";
+          const servable =
+            w === "Draw" ||
+            w.toLowerCase().includes(f1.toLowerCase()) ||
+            w.toLowerCase().includes(f2.toLowerCase());
+          if (servable) {
+            return res.status(200).json({ ...data[0].result, id: data[0].id });
+          }
+          console.error("authored verdict winner matched neither fighter, skipping:", w);
+        }
+      } catch (err) {
+        console.error("authored lookup failed, falling through:", err);
+      }
+    }
+
+    // --- Read-through cache (runs AFTER the content filter, BEFORE the daily-cap increment) ---
+    // Identical inputs return the stored verdict, skipping BOTH Anthropic calls and the cap
+    // burn. Reuses the `db` client hoisted in the authored block above (never re-created).
+    // Fail-open. inputHash is reused by the insert below and never recomputed.
+    inputHash = computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2);
+    if (db) {
       try {
         const { data, error } = await db
           .from("battles")
