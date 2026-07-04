@@ -481,6 +481,8 @@ export default function BattleArena({
   const [battleSnapshot, setBattleSnapshot] = useState(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  // Toggle for the "POWERSCALER APPROVED" badge tooltip (hover on desktop, tap on mobile).
+  const [showAuthoredInfo, setShowAuthoredInfo] = useState(false);
   // Result-panel anchor + a one-shot flag so a PRESET tap (not a normal battle) can scroll
   // the verdict into view once it commits.
   const resultPanelRef = useRef(null);
@@ -1032,6 +1034,30 @@ export default function BattleArena({
                   {isDraw ? "It's a Draw" : `Winner: ${result.winner}`}
                 </div>
                 {diffLabel && <div className="verdict-diff">{diffLabel}</div>}
+                {result.authored && (
+                  <div
+                    className="verdict-badge"
+                    onMouseEnter={() => setShowAuthoredInfo(true)}
+                    onMouseLeave={() => setShowAuthoredInfo(false)}
+                    onClick={() => setShowAuthoredInfo(v => !v)}
+                  >
+                    POWERSCALER APPROVED
+                    <span className="verdict-badge-shield" aria-label="What does this mean?">
+                      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                        <path d="M12 2 L20 5 V11 C20 16 16.5 20 12 22 C7.5 20 4 16 4 11 V5 Z"
+                              fill="rgba(184,134,11,0.12)" stroke="currentColor" strokeWidth="2"
+                              strokeLinejoin="round" strokeLinecap="round" />
+                        <line x1="12" y1="3" x2="12" y2="21.2" stroke="currentColor"
+                              strokeWidth="1.1" strokeLinecap="round" opacity="0.75" />
+                      </svg>
+                    </span>
+                    {showAuthoredInfo && (
+                      <span className="verdict-badge-tip" role="tooltip">
+                        Written and fact-checked by a human powerscaler.
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="result-subtitle">
                   Analyzed {result.feats_scanned} feats · {result.sources} sources
                 </div>

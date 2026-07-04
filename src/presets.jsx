@@ -16,6 +16,7 @@ export const PRESETS = [
     image2: "/presets/sukuna.png",
     verdict: {
       winner: "Gojo",
+      authored: true,
       verdict_short:
         "Gojo takes it. At 20 fingers Sukuna only managed to tie him in a domain clash. At 15, he is missing the cursed energy and refinement to repeat that, and outside the domain Gojo's edge in hand-to-hand and speed decides it.",
       analysis:

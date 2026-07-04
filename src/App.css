@@ -505,6 +505,72 @@ body::before {
   padding: 0.2rem 0.7rem;
 }
 
+/* Authenticity mark for hand-authored verdicts (result.authored === true). Echoes the
+   .verdict-diff pill but filled with a gold tint so it reads as an approval stamp, not a
+   tier. New class - does NOT modify .verdict-diff. */
+.verdict-badge {
+  display: inline-block;
+  margin: 0.35rem 0 0.15rem 0.4rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(184, 134, 11, 0.10);
+  border: 1px solid rgba(184, 134, 11, 0.45);
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+  position: relative;   /* anchor for the hover/tap tooltip */
+  cursor: default;      /* signals the badge is interactive (the shield toggles the tip) */
+}
+/* Subtle gold hover glow, reusing the spotlight/preset aura hue (rgba(212,160,23)) at LOW
+   intensity: a 10px blur (vs the aura's 22-40px) and 0.28 alpha (the aura's rest-state alpha)
+   so it echoes the preset-card glow without overpowering a small badge. Hover-only, so touch
+   devices get no glow (correct). */
+.verdict-badge:hover {
+  box-shadow: 0 0 10px rgba(212, 160, 23, 0.28);
+  border-color: rgba(184, 134, 11, 0.6);
+}
+
+/* Shield affordance inside the badge - hover (desktop) or tap (mobile) toggles the tip. The
+   inline SVG shield inherits the badge gold via currentColor; line-height:0 centers it. */
+.verdict-badge-shield {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.45rem;
+  color: var(--gold);
+  line-height: 0;
+  cursor: pointer;
+  /* Center the shield on the text instead of sitting its bottom on the baseline (default
+     baseline alignment made a 14px shield tower over the ~9px caps and read too high). */
+  vertical-align: middle;
+}
+.verdict-badge-tip {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 220px;
+  background: rgba(20, 18, 16, 0.62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--bg, #F5F2EC);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  line-height: 1.35;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  z-index: 20;
+  pointer-events: none;
+}
+
 .verdict-chips {
   display: flex;
   gap: 0.6rem;
