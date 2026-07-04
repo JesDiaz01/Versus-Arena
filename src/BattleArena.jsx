@@ -1058,9 +1058,6 @@ export default function BattleArena({
                     )}
                   </div>
                 )}
-                <div className="result-subtitle">
-                  Analyzed {result.feats_scanned} feats · {result.sources} sources
-                </div>
               </div>
               {battleSnapshot && battleSnapshot.image1 && battleSnapshot.image2 && (
                 <img
