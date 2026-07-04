@@ -18,7 +18,7 @@ const MODEL = "claude-sonnet-4-6";
 
 // Read-through cache: identical battle inputs return the stored verdict instead of
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 
 // Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
 // dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.
@@ -115,10 +115,13 @@ function pickAllowed(v, list) {
 }
 
 // Deterministic read-through-cache key for a matchup: hash the already-sanitized inputs in a
-// FIXED key order using Node's built-in crypto. This version does NOT lowercase, trim, sort,
-// or reorder anything (no fighter-order or case normalization). Bump CACHE_VERSION to invalidate.
+// FIXED key order using Node's built-in crypto. The four identity fields (f1/u1/f2/u2) are
+// lowercased + trimmed so casing does not fragment the cache ("Poppy" and "poppy" collide),
+// matching computeAuthoredKey's norm(). It does NOT sort or reorder fighters, so "A vs B" and
+// "B vs A" remain separate cache rows. Bump CACHE_VERSION to invalidate.
 function computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2) {
-  const obj = { v: CACHE_VERSION, f1, u1, f2, u2, battleType, location, power, depth, claims1, claims2 };
+  const norm = (s) => (s || "").toLowerCase().trim();
+  const obj = { v: CACHE_VERSION, f1: norm(f1), u1: norm(u1), f2: norm(f2), u2: norm(u2), battleType, location, power, depth, claims1, claims2 };
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
