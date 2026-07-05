@@ -22,7 +22,7 @@ const CACHE_VERSION = "v2";
 
 // Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
 // dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.
-const AUTHORED_VERSION = "v1";
+const AUTHORED_VERSION = "v2";
 
 // ---- Limits (cost + abuse protection) ----
 const MAX_NAME_LEN = 80;     // fighter name / universe cap
@@ -125,16 +125,17 @@ function computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, cl
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
-// Order-INDEPENDENT authored-verdict key: normalize each fighter + universe to a lowercase,
-// trimmed "name|universe" pair, sort the two pairs so fighter order does not matter, and hash
-// with the dropdown settings. Claims are deliberately EXCLUDED - authored verdicts serve only
-// empty-granted-abilities requests. Bump AUTHORED_VERSION to invalidate.
+// Order-INDEPENDENT, universe-AGNOSTIC authored-verdict key: normalize each fighter name to a
+// lowercase, trimmed string, sort the two names so fighter order does not matter, and hash with
+// the dropdown settings. Universe (u1/u2) is deliberately EXCLUDED so an authored verdict matches
+// regardless of how the user spells the universe (JJK / jjk / kaisen / empty all hit); u1/u2 stay
+// in the signature (the call site is unchanged) but are unused here and still reach buildPrompt
+// separately. Claims are also EXCLUDED - authored verdicts serve only empty-granted-abilities
+// requests. Bump AUTHORED_VERSION to invalidate.
 function computeAuthoredKey(f1, u1, f2, u2, battleType, location, power, depth) {
   const norm = (s) => (s || "").toLowerCase().trim();
-  const pairA = norm(f1) + "|" + norm(u1);
-  const pairB = norm(f2) + "|" + norm(u2);
-  const sortedPairs = [pairA, pairB].sort();
-  const obj = { v: AUTHORED_VERSION, pair1: sortedPairs[0], pair2: sortedPairs[1], battleType, location, power, depth };
+  const names = [norm(f1), norm(f2)].sort();
+  const obj = { v: AUTHORED_VERSION, n1: names[0], n2: names[1], battleType, location, power, depth };
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
