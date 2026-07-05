@@ -88,6 +88,12 @@ function useCharacterImage(name, universe, override) {
       return;
     }
     let cancelled = false;
+    // Clear the previously resolved image the instant a new fetch starts, so an
+    // in-place name change never leaves the OLD fighter's portrait on screen (or
+    // frozen into a Simulate snapshot) during the 700ms debounce + async fetch.
+    // Only reached for a valid name >= 2 chars; the override branch above returns
+    // first, so an uploaded override image is never cleared here.
+    setImageUrl(null);
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       // One fetch attempt, hard-capped at 7s via AbortController so a cold serverless
@@ -619,10 +625,15 @@ export default function BattleArena({
       // still reflects the matchup just fought. Computed once from the fresh verdict's
       // winner so the verdict avatar stays frozen even if the user later edits an input.
       const won1 = verdict.winner && verdict.winner.toLowerCase().includes(f1.toLowerCase());
+      // Never freeze a still-resolving portrait: if the winner's slot image is mid-fetch
+      // (loading) or has no URL yet, store null so the verdict avatar renders the silhouette
+      // instead of the PREVIOUS fighter's stale image. won1 matching is unchanged.
+      const winnerImg = won1 ? img1 : img2;
+      const frozenWinnerUrl = (winnerImg.loading || !winnerImg.imageUrl) ? null : winnerImg.imageUrl;
       setBattleSnapshot({
         f1, f2,
-        winnerImageUrl: won1 ? img1.imageUrl : img2.imageUrl,
-        winnerImageError: won1 ? imgError1 : imgError2,
+        winnerImageUrl: frozenWinnerUrl,
+        winnerImageError: frozenWinnerUrl === null ? true : (won1 ? imgError1 : imgError2),
         winnerAdjust: won1 ? imgAdjust1 : imgAdjust2,
       });
       setResult(verdict);
@@ -1058,9 +1069,6 @@ export default function BattleArena({
                     )}
                   </div>
                 )}
-                <div className="result-subtitle">
-                  Analyzed {result.feats_scanned} feats · {result.sources} sources
-                </div>
               </div>
               {battleSnapshot && battleSnapshot.image1 && battleSnapshot.image2 && (
                 <img

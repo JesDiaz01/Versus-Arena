@@ -90,9 +90,6 @@ const PresetCard = forwardRef(function PresetCard({ result, snapshot, onNewBattl
             )}
           </div>
         )}
-        <div className="preset-card-subtitle">
-          Analyzed {result.feats_scanned} feats {String.fromCharCode(183)} {result.sources} sources
-        </div>
 
         {advantages.length > 0 && (
           <div className="verdict-chips preset-card-chips">
