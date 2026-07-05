@@ -48,6 +48,35 @@ export const PRESETS = [
       image2: "/presets/sukuna.png",
     },
   },
+  {
+    id: "yuji-modulo-vs-denji",
+    label: "Yuji (Modulo) vs Denji",
+    image1: "/presets/yuji-modulo.png",
+    image2: "/presets/denji.png",
+    verdict: {
+      winner: "Yuji",
+      authored: true,
+      verdict_short:
+        "Closer than a stomp, but it lands on Yuji, and the reasoning comes down to one thing Denji cannot regrow: his healing runs on drinking blood that here is poison, and his power is a bond to Pochita that canon has already shown can be severed.",
+      analysis:
+        "Modulo Yuji beats Denji, and the reasoning comes down to one thing Denji cannot regrow. Start with who Yuji is now. Sixty-eight years past the Culling Game, he has stopped aging and reads to inhuman senses as a curse rather than a man; the story stopped treating him as human. He carries both of Sukuna's old techniques: Blood Manipulation from the Death Paintings he consumed, and Shrine, the Cleave and Dismantle engraved into him as Sukuna's vessel. His blood is a weapon in two directions: Piercing Blood fires at the speed of sound, and the blood itself is a poison that once incapacitated an entire building of humans and Simurians. He lands Black Flash at a rate no one else in the verse approaches, and even if you refuse to grant it at will, a fighter this blessed by the black spark hits more of them in a single fight than anyone Denji has faced, and every one sharpens him mid-fight. He also heals in record time, his blood making even limb reattachment more efficient than a normal sorcerer's. Now Denji. The trap against Denji is trying to out-damage him, and that trap is real: he drinks blood and regrows, pulls the cord and comes back, and walks off mutilation that ends anyone else. If this were a damage race, Denji wins it. So it cannot be a damage race, and two things make sure it is not. First, Denji's healing runs on drinking blood, and the blood flooding this fight is Yuji's, which is poison; his primary sustain engine is a trap here, and the more he heals off the field the more he incapacitates himself. Second, and this is the actual win condition: Denji's power is not his body, it is a bond. Pochita is his heart, a contract between a boy and a devil, and that bond is not theoretical to sever, because canon already severed it. Denji separated Pochita from himself to ambush Makima; the two can come apart. That is the whole fight, because Yuji spent seventy years mastering exactly the kind of attack that comes a bond apart. His Shrine and his soul perception, sharpened since Mahito, cut what a thing is rather than what it is made of, and his Domain's sure-hit is literally soul Untying. Denji's verse cannot no-sell that, because it is a verse where the metaphysical is the physics: the Chainsaw Devil erased nuclear weapons and an entire world war out of history by eating the concept, and Pochita ended the story by consuming his own heart and deleting Chainsaw Man from reality. A world that runs on concept-erasure has no grounds to shrug off a soul-cut. So Yuji does not need to out-heal Denji or out-last him. He needs to land the soul-directed cut that pries Pochita loose, and unlike flesh, that separation does not grow back with blood. The moment it lands, Denji is a boy and a heart in two places, and the fight is over. It stays close, because Denji only needs the damage race to run long enough, but the sever only needs to succeed once.",
+      advantages: [
+        "Black Flash at Will",
+        "Poison Blood Cuts the Heal Loop",
+        "Severs the Denji-Pochita Bond",
+      ],
+      user_claims_used: [],
+      scores: { "Yuji": 54, "Denji": 46 },
+    },
+    snapshot: {
+      f1: "Yuji", f2: "Denji",
+      winnerImageUrl: "/presets/yuji-modulo.png",
+      winnerImageError: false,
+      winnerAdjust: { x: 50, y: 50, zoom: 1 },
+      image1: "/presets/yuji-modulo.png",
+      image2: "/presets/denji.png",
+    },
+  },
 ];
 
 // One fighter image inside a preset spotlight. Falls back to the silhouette if the art is
