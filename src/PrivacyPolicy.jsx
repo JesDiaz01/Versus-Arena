@@ -106,15 +106,17 @@ export default function PrivacyPolicy({ onBack }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: June 5, 2026</p>
+          <p className="pp-updated">Last updated: July 4, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
             <p style={{ margin: 0 }}>
               We don't make you create an account, we don't track you across the web,
-              and we don't sell your data. The text you type into a battle is sent to
-              our AI provider to generate a verdict, and any image you upload stays on
-              your own device. That is basically it.
+              and we don't sell your data. But you should know two things: the battles
+              you run are saved to our database (so they load fast and can be shared by
+              link), and any battle can be opened by anyone who has its share link. Any
+              image you upload stays on your own device. Please don't type anything
+              private into a battle.
             </p>
           </div>
 
@@ -130,10 +132,16 @@ export default function PrivacyPolicy({ onBack }) {
             <li>
               <strong>Battle inputs.</strong> The fighter names, universes, settings,
               and any granted abilities you enter are sent to our AI provider,
-              Anthropic, so it can generate a verdict. Please don't put personal or
-              sensitive information into these fields, since they're meant for fictional
-              matchups. We don't save your battle inputs on our own servers after the
-              verdict is generated.
+              Anthropic, to generate a verdict, and are saved to our database along
+              with the verdict. Each saved battle gets a share link that anyone can
+              open. Please don't put personal or sensitive information into these
+              fields, since saved battles are stored and can be shared publicly.
+            </li>
+            <li>
+              <strong>Saved battles.</strong> We keep saved battles indefinitely,
+              because they power two things: instant results when a matchup has been
+              run before, and shareable battle links. We do not attach your name,
+              email, or any account to a saved battle - there are no accounts yet.
             </li>
             <li>
               <strong>Images you upload.</strong> If you upload your own image for a
@@ -142,11 +150,12 @@ export default function PrivacyPolicy({ onBack }) {
             </li>
             <li>
               <strong>Technical information.</strong> Like almost every website, our
-              hosting provider (Vercel) automatically records standard request
-              information, including your IP address, in operational logs. We use this
-              only to keep the site running and secure, and to power basic rate limiting
-              (which stops any one visitor from overloading the site). We don't use it to
-              build a profile of you.
+              hosting provider (Vercel) records standard request information, including
+              your IP address, in operational logs. We also store your IP briefly in our
+              rate-limiting system (Upstash) to count requests and block abuse; those
+              records expire automatically after a short time. We use this only to keep
+              the site running and secure, and we don't use it to build a profile of you
+              or attach it to your saved battles.
             </li>
             <li>
               <strong>Accounts.</strong> We don't have accounts or logins yet, so we
@@ -170,6 +179,15 @@ export default function PrivacyPolicy({ onBack }) {
             in touch.
           </p>
 
+          <h2>Shared battle links</h2>
+          <p>
+            When you share a battle, we create a public link (like
+            versus-arena.vercel.app/?b=... ) that shows that battle's characters,
+            settings, and verdict to anyone who opens it. There is no password on these
+            links. Because of this, treat anything you type into a battle as potentially
+            public, and don't enter private information.
+          </p>
+
           <h2>Who we share information with</h2>
           <ul>
             <li>
@@ -177,8 +195,21 @@ export default function PrivacyPolicy({ onBack }) {
               inputs to create verdicts under its own terms and privacy policy.
             </li>
             <li>
+              <strong>Supabase</strong>, our database provider, which stores your saved
+              battles and verdicts.
+            </li>
+            <li>
+              <strong>Upstash</strong>, which handles rate limiting and abuse prevention
+              and briefly stores IP addresses.
+            </li>
+            <li>
               <strong>Vercel</strong>, our hosting provider, which serves the site and
               keeps the standard logs described above.
+            </li>
+            <li>
+              <strong>Fandom and Wikipedia.</strong> When the site looks up a character
+              image, it may send the character name and universe you typed to these
+              sites to find a match.
             </li>
           </ul>
           <p>
@@ -204,18 +235,21 @@ export default function PrivacyPolicy({ onBack }) {
 
           <h2>Your choices</h2>
           <p>
-            Because we store so little, there usually isn't much personal data of yours
-            for us to hand over or erase. Still, if you'd like to know what we have, or
-            ask us to delete something (such as an email you've sent us), just reach out
-            and we'll help. Depending on where you live, you may have rights under laws
-            like the GDPR or CCPA, and we'll honor reasonable requests.
+            If you'd like a specific saved battle removed, email us at
+            versusarenahq@gmail.com with its share link and we'll delete it. Because we
+            don't attach identities to battles, we may not be able to locate all of your
+            data without the specific links. If you'd like to know what we have, or ask
+            us to delete something like an email you've sent us, just reach out.
+            Depending on where you live, you may have rights under laws like the GDPR or
+            CCPA, and we'll honor reasonable requests.
           </p>
 
           <h2>Changes to this policy</h2>
           <p>
-            We may update this policy as the site grows (for example, when we add
-            accounts or save battle history). When we do, we'll change the "last updated"
-            date at the top of this page.
+            We may update this policy as the site grows, for example if we add user
+            accounts. Battle saving and sharing, which this policy previously listed as
+            future features, are now live and described above. When we make changes,
+            we'll update the "last updated" date at the top of this page.
           </p>
 
           <h2>Contact</h2>
