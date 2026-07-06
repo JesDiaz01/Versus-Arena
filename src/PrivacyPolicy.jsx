@@ -163,8 +163,10 @@ export default function PrivacyPolicy({ onBack }) {
               this policy first.
             </li>
             <li>
-              <strong>Analytics and cookies.</strong> Our own code includes no analytics
-              or tracking tools, and we don't use tracking cookies.
+              <strong>Analytics and cookies.</strong> We use Vercel Web Analytics, a
+              privacy-friendly, cookieless analytics tool, to count visits and page views
+              so we can understand how the site is used. It does not use tracking cookies
+              and does not track you across other websites.
             </li>
             <li>
               <strong>Email.</strong> If you email us, we'll have whatever you choose to
