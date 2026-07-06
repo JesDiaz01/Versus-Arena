@@ -16,7 +16,7 @@ import FighterSilhouette from "./FighterSilhouette";
 // One flanking fighter image. Falls back to the silhouette if the PNG 404s (the same guard
 // the hero spotlight's PresetImg uses) so missing art never breaks the card. `dimmed`
 // triggers the loser's grayscale/dim treatment via CSS.
-function CardFighter({ src, name, side, dimmed }) {
+function CardFighter({ src, name, side, dimmed, pos }) {
   const [err, setErr] = useState(false);
   const cls = "preset-card-img " + side + (dimmed ? " dimmed" : "");
   if (err || !src) {
@@ -31,6 +31,7 @@ function CardFighter({ src, name, side, dimmed }) {
       className={cls}
       src={src}
       alt={name || ""}
+      style={{ objectPosition: pos || "center" }}
       referrerPolicy="no-referrer"
       onError={() => setErr(true)}
     />
@@ -59,7 +60,7 @@ const PresetCard = forwardRef(function PresetCard({ result, snapshot, onNewBattl
   return (
     <div className="preset-card" ref={ref}>
       {/* LEFT: fighter one. Dimmed when fighter two won. */}
-      <CardFighter src={snapshot.image1} name={f1} side="left" dimmed={f2Won} />
+      <CardFighter src={snapshot.image1} name={f1} side="left" dimmed={f2Won} pos={snapshot.image1Pos} />
 
       {/* MIDDLE: the verdict content. */}
       <div className="preset-card-body">
@@ -112,7 +113,7 @@ const PresetCard = forwardRef(function PresetCard({ result, snapshot, onNewBattl
       </div>
 
       {/* RIGHT: fighter two. Dimmed when fighter one won. */}
-      <CardFighter src={snapshot.image2} name={f2} side="right" dimmed={f1Won} />
+      <CardFighter src={snapshot.image2} name={f2} side="right" dimmed={f1Won} pos={snapshot.image2Pos} />
     </div>
   );
 });

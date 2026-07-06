@@ -53,6 +53,7 @@ export const PRESETS = [
     label: "Yuji (Modulo) vs Denji",
     image1: "/presets/yuji-modulo.png",
     image2: "/presets/denji.png",
+    image2Pos: "100% 20",
     verdict: {
       winner: "Yuji",
       authored: true,
