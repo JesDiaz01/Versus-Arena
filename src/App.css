@@ -295,6 +295,71 @@ body::before {
 }
 .universe-input::placeholder { color: var(--muted); font-size: 0.78rem; }
 
+/* "Universe" field label + info "i". Mirrors the .verdict-badge tooltip POSITIONING
+   (absolute tip anchored above, translateX(-50%), blurred dark bg) but styled neutrally
+   for a form field - muted text and a small circled "i", NOT the gold badge fill. The
+   wrapper is position:relative to anchor .universe-tip. Does NOT touch .verdict-badge. */
+.universe-hint {
+  position: relative;   /* anchor for the hover/tap tooltip */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.35rem;
+  cursor: default;
+}
+.universe-hint-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+}
+.universe-hint-i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+}
+.universe-hint:hover .universe-hint-i {
+  border-color: var(--muted);
+  color: var(--ink-soft);
+}
+.universe-tip {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  background: rgba(20, 18, 16, 0.62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--bg, #F5F2EC);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  line-height: 1.35;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  z-index: 20;
+  pointer-events: none;
+}
+
 /* VS */
 .vs-divider {
   display: flex;

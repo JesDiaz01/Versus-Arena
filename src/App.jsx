@@ -61,6 +61,16 @@ export default function App() {
     return () => clearInterval(t);
   }, [presetPaused, presetIndex]);
 
+  // Warm the browser cache with every preset image once on mount, so that when the
+  // rotator swaps to the next matchup the new src is already decoded and paints
+  // instantly instead of lingering on the previous card's image for a beat.
+  useEffect(() => {
+    PRESETS.forEach(p => {
+      if (p.image1) { const a = new Image(); a.src = p.image1; }
+      if (p.image2) { const b = new Image(); b.src = p.image2; }
+    });
+  }, []);
+
   // When you switch pages, jump back to the top so you land at the start of the
   // new page (e.g. the arena on home) instead of staying scrolled down where the
   // footer was. Runs every time `page` changes.
@@ -340,8 +350,8 @@ export default function App() {
             onClick={() => { const p = PRESETS[presetIndex]; if (loadPresetRef.current) loadPresetRef.current(p); }}
             aria-label={"Show verdict: " + PRESETS[presetIndex].label}
           >
-            <PresetImg src={PRESETS[presetIndex].image1} side="left" />
-            <PresetImg src={PRESETS[presetIndex].image2} side="right" />
+            <PresetImg key={PRESETS[presetIndex].id + "-1"} src={PRESETS[presetIndex].image1} side="left" />
+            <PresetImg key={PRESETS[presetIndex].id + "-2"} src={PRESETS[presetIndex].image2} side="right" />
             <span className="spotlight-vs">VS</span>
             <div className="spotlight-caption">
               <span className="spotlight-title">{PRESETS[presetIndex].label}</span>

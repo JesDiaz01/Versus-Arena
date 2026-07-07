@@ -464,6 +464,30 @@ function generateMockVerdict({ f1, f2, u1, u2, battleType, location, power, dept
   };
 }
 
+// Small "Universe" field label with an info "i" affordance. Mirrors the POWERSCALER
+// APPROVED badge tooltip pattern (hover on desktop, tap on mobile) but styled neutrally
+// for a form field, not as a gold badge. Holds its own state so each fighter's hint
+// toggles independently.
+function UniverseHint() {
+  const [showInfo, setShowInfo] = useState(false);
+  return (
+    <div
+      className="universe-hint"
+      onMouseEnter={() => setShowInfo(true)}
+      onMouseLeave={() => setShowInfo(false)}
+      onClick={() => setShowInfo(v => !v)}
+    >
+      <span className="universe-hint-label">Universe</span>
+      <span className="universe-hint-i" aria-label="What is this?">i</span>
+      {showInfo && (
+        <span className="universe-tip" role="tooltip">
+          Optional, but adding the universe helps identify the right character (e.g. Poppy from League, not the flower).
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function BattleArena({
   initialBattle = null,
   f1, setF1, f2, setF2, u1, setU1, u2, setU2,
@@ -853,6 +877,7 @@ export default function BattleArena({
             <ImageOverride onSet={setOverride1} hasOverride={!!override1} onClear={() => setOverride1(null)} />
             <input className="fighter-name-input" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
             {f1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
+            <UniverseHint />
             <input className="universe-input" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
             {u1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
@@ -892,6 +917,7 @@ export default function BattleArena({
             <ImageOverride onSet={setOverride2} hasOverride={!!override2} onClear={() => setOverride2(null)} />
             <input className="fighter-name-input" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
             {f2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
+            <UniverseHint />
             <input className="universe-input" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
             {u2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
