@@ -543,6 +543,7 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  animation: photoPopIn 300ms ease-out;
 }
 .winner-avatar-fallback svg {
   width: 66%;
