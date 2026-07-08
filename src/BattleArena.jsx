@@ -1049,20 +1049,22 @@ export default function BattleArena({
               ) : isDraw ? (
                 <span className="winner-crown">⚖</span>
               ) : winnerImageUrl && !winnerImageError ? (
-                <img
-                  className="winner-avatar"
-                  src={winnerImageUrl}
-                  onError={() => setBattleSnapshot(s => s ? { ...s, winnerImageError: true } : s)}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  style={{
-                    objectPosition: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
-                    transform: `scale(${winnerAdjust.zoom})`,
-                    transformOrigin: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
-                  }}
-                />
+                <div className="winner-avatar-frame">
+                  <img
+                    className="winner-avatar-photo"
+                    src={winnerImageUrl}
+                    onError={() => setBattleSnapshot(s => s ? { ...s, winnerImageError: true } : s)}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    style={{
+                      objectPosition: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
+                      transform: `scale(${winnerAdjust.zoom})`,
+                      transformOrigin: `${winnerAdjust.x}% ${winnerAdjust.y}%`,
+                    }}
+                  />
+                </div>
               ) : (
-                <span className="winner-avatar winner-avatar-fallback">
+                <span className="winner-avatar-frame winner-avatar-fallback">
                   <FighterSilhouette />
                 </span>
               )}

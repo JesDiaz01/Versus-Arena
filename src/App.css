@@ -499,23 +499,31 @@ body::before {
   filter: sepia(0.6) saturate(1.4);
 }
 
-/* Winner portrait beside the verdict title. Reuses the existing photoPopIn fade-in and a
-   scaled-down version of the .fighter-avatar.winner gold ring. Does NOT modify the card
-   avatar styles. */
-.winner-avatar {
+/* Winner portrait beside the verdict title. A fixed-size frame (.winner-avatar-frame) holds
+   the gold ring and clips; the inner .winner-avatar-photo carries object-position and the
+   snapshotted zoom, so scale() crops WITHIN the circle instead of enlarging the whole ring.
+   Mirrors the .fighter-avatar / .fighter-photo pattern. Does NOT modify the card avatar styles. */
+.winner-avatar-frame {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
   border-radius: 50%;
-  object-fit: cover;
   overflow: hidden;
+  position: relative;
   border: 1px solid var(--gold);
   background: var(--surface-2);
   box-shadow: 0 0 0 4px rgba(184,134,11,0.12);
+}
+.winner-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
   animation: photoPopIn 300ms ease-out;
 }
 /* Preset-only verdict header: both fighters, one per side, flanking the WINNER title.
-   New classes; does NOT touch .winner-avatar. Normal battles keep the single avatar. */
+   New classes; does NOT touch .winner-avatar-frame. Normal battles keep the single avatar. */
 .verdict-matchup-img {
   width: 56px;
   height: 56px;
@@ -542,7 +550,7 @@ body::before {
   color: var(--gold);
 }
 @media (max-width: 380px) {
-  .winner-avatar { width: 44px; height: 44px; }
+  .winner-avatar-frame { width: 44px; height: 44px; }
 }
 .result-title {
   font-family: 'Cinzel', serif;
