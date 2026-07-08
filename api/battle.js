@@ -44,7 +44,7 @@ const CAP_KEY_TTL_SECONDS = 172800; // 48h: cleanup only, correctness comes from
 // Allowlists for the dropdown settings - anything else falls back to the default (first item).
 const ALLOWED = {
   battleType: ["Standard Fight", "In-Character", "Out of Character", "Battle of Wits", "Speed Blitz"],
-  location: ["Neutral Terrain", "Urban City", "Space", "Their Home Universe", "Random"],
+  location: ["Neutral Terrain", "Urban City", "Space", "Their Home Universe"],
   power: ["Canon Only", "Composite", "Post-Series Peak", "Current"],
   depth: ["Quick Verdict", "Detailed Analysis", "Deep Dive"],
 };

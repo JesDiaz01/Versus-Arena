@@ -964,7 +964,6 @@ export default function BattleArena({
               <option>Urban City</option>
               <option>Space</option>
               <option>Their Home Universe</option>
-              <option>Random</option>
             </select>
           </div>
           <div className="setting-group">
