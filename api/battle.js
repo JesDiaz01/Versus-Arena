@@ -18,7 +18,7 @@ const MODEL = "claude-sonnet-4-6";
 
 // Read-through cache: identical battle inputs return the stored verdict instead of
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 
 // Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
 // dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.
@@ -171,6 +171,7 @@ How to weigh abilities:
     Standard Fight: the character fights seriously and competently to win, without heavy personality-based holding back.
     Battle of Wits / Speed Blitz: keep their existing specialized behavior; peak power still applies.
 - Start from each fighter's canonical, demonstrated feats as the baseline.
+- A character's established, widely-known resistances, immunities, and defensive traits are part of their canonical baseline and should be applied even when not explicitly listed - but ONLY when you are genuinely confident they are real and canon, held to the exact same standard as any other feat (see the factual-accuracy rule below). Apply this equally to both fighters; do not surface a shaky or obscure resistance to justify an outcome, and do not let a canonical resistance override an explicitly granted ability.
 - ${hasClaims
   ? `CRITICAL: Any "GRANTED ABILITIES" listed above are TRUE for this battle. Treat them as hard fact, exactly as written, even if they contradict the character's real canon. If a fighter is granted FTL speed, they genuinely move at FTL here. If granted universal durability, they genuinely have it. Do NOT dismiss, downgrade, or question granted abilities for lacking canon support - the user has explicitly set these as the rules of this matchup. Layer the granted abilities ON TOP of the character's canon feats, then judge the fight with everything combined.`
   : `Judge purely on canonical, demonstrated feats.`}${hasClaims
@@ -184,6 +185,7 @@ How to weigh abilities:
 - Do NOT favor the more popular or famous character. Judge purely on capability.
 - Apply the Location setting as a constraint on the fight.
 - Only return "Draw" if the fighters are genuinely, evenly matched once all abilities (canon + granted) are accounted for. Granted abilities often make a fight decisive - reflect that honestly rather than defaulting to a draw. If you DO return "Draw", the verdict_short and analysis must still explain the SPECIFIC reasons for the parity - name the concrete feats or abilities from each fighter that offset the other, and state why neither can land a kill or incapacitation - at the same depth and confidence as a win or loss. Never settle for vague "too close to call" or "evenly matched" hand-waving without naming the offsetting feats.
+- When one fighter has a genuine, comprehensive counter to the other - a damage type the opponent cannot recover from, or an established immunity that neutralizes the opponent's PRIMARY or ONLY realistic win condition with no alternate path left to them - this is not a close matchup, and the dominance scores should reflect that decisively at the 80/20 or higher rungs described below, not a near-even split. This applies ONLY when the counter is comprehensive and you are confident it is canon; neutralizing merely one of several of an opponent's options, or applying a partial debuff, does NOT qualify and should be scored as the contested-edge situation it is.
 - After determining the outcome, assign each fighter a DOMINANCE SCORE that reflects how decisively they would win this specific matchup. Scores are keyed by each fighter's exact name and must sum to exactly 100. Use the FULL 0-100 range, and do not compress a lopsided result toward the middle: the score reflects how decisively the winner wins. Calibrate roughly as follows, with honest values in between:
     Near 50/50: a dead-even fight; keep any genuinely close matchup close to 50/50, and if it is genuinely close, score it close.
     Around 60/40: a clear but contested edge between broadly comparable fighters.
