@@ -221,7 +221,7 @@ export default function PrivacyPolicy({ onBack }) {
 
           <h2>Links to other services</h2>
           <p>
-            The site links out to places like Instagram and Discord, and offers an email
+            The site links out to places like TikTok and Discord, and offers an email
             contact. Once you leave Versus Arena for one of those, you're covered by that
             service's own privacy policy, not this one.
           </p>
