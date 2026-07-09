@@ -205,6 +205,84 @@ export const GOKU = {
 };
 
 // ============================================================
+// ARCADE LADDER - four brackets, three opponents each, ordered weakest to strongest.
+// Ordering is not a matter of taste: decideOutcome's Layer 2 total reduces exactly to
+// P(fighter) - P(opponent), where P(x) = sum over stats of weight * index / (len - 1).
+// So a bracket is ascending iff its opponents' P values ascend. These are ordered that way.
+//
+// `revoke` gates the Layer 1 CATASTROPHIC win-revoke. Its thresholds are ABSOLUTE tier
+// indices tuned against Goku, so on a weak opponent they misfire (a fighter who massively
+// out-muscles a street tier would have the win revoked for merely low IQ/Fighting). It is
+// therefore disabled for EASY/MID and left active for HARD/EXTREME.
+// ============================================================
+export const LADDER = [
+  {
+    key: "EASY",
+    label: "Easy",
+    revoke: false,
+    opponents: [
+      { version: "Rock Lee", strength: "City Block level",       durability: "Multi-City Block level", speed: "Massively Hypersonic", stamina: "Peak Human", range: "Standard Melee Range", iq: "Average",       fighting: "Incredible" },
+      { version: "Yusuke",   strength: "Small Town level",       durability: "Small Town level",       speed: "Hypersonic",           stamina: "Superhuman", range: "Hundreds of Meters",  iq: "Above Average", fighting: "Incredible" },
+      { version: "Baki",     strength: "Multi-City Block level", durability: "Small Town level",       speed: "Hypersonic+",          stamina: "Peak Human", range: "Standard Melee Range", iq: "Gifted",       fighting: "Supreme" }
+    ]
+  },
+  {
+    key: "MID",
+    label: "Mid",
+    revoke: false,
+    opponents: [
+      { version: "Natsu",    strength: "Small City level", durability: "City level",  speed: "Massively Hypersonic",  stamina: "Superhuman", range: "Hundreds of Meters", iq: "Average",       fighting: "Superhuman" },
+      { version: "Ichigo",   strength: "Small City level", durability: "Town level",  speed: "Massively Hypersonic+", stamina: "Superhuman", range: "Tens of Meters",     iq: "Above Average", fighting: "Superhuman" },
+      { version: "Meliodas", strength: "Mountain level",   durability: "Island level", speed: "Relativistic",         stamina: "Godly",      range: "Kilometers",         iq: "Gifted",        fighting: "Supreme" }
+    ]
+  },
+  {
+    key: "HARD",
+    label: "Hard",
+    revoke: true,
+    opponents: [
+      { version: "Madara",  strength: "Multi-Continent level", durability: "Moon level",         speed: "Massively FTL",  stamina: "Godly",      range: "Planetary", iq: "Genius",               fighting: "Supreme" },
+      { version: "Escanor", strength: "Small Star level",      durability: "Star level",         speed: "Massively FTL",  stamina: "Superhuman", range: "Stellar",   iq: "Genius",               fighting: "Supreme" },
+      { version: "Yhwach",  strength: "Large Star level",      durability: "Solar System level", speed: "Massively FTL+", stamina: "Godly",      range: "Planetary", iq: "Extraordinary Genius", fighting: "Godly" }
+    ]
+  },
+  {
+    key: "EXTREME",
+    label: "Extreme",
+    revoke: true,
+    opponents: [
+      { version: "Saitama", strength: "High Universe level", durability: "High Universe level",  speed: "Massively FTL+", stamina: "Godly",    range: "Kilometers", iq: "Average",     fighting: "Incredible" },
+      GOKU,
+      { version: "Rimuru",  strength: "Universe level+",     durability: "Low Multiverse level", speed: "Massively FTL+", stamina: "Infinite", range: "Universal",  iq: "Supergenius", fighting: "Supreme" }
+    ]
+  }
+];
+
+// Fail fast at import time if an authored tier string does not resolve to a real index.
+// A bad string would silently score as index -1 rather than error, so this throws instead,
+// naming the bracket, character, stat, and offending value.
+// NOTE: `npm run build` only BUNDLES this module, it never executes it, so a typo would
+// still pass the build. This assertion fires on page load.
+function validateLadder() {
+  LADDER.forEach(function(bracket) {
+    bracket.opponents.forEach(function(opp) {
+      CATEGORIES.forEach(function(cat) {
+        if (!Object.prototype.hasOwnProperty.call(opp, cat.key)) {
+          throw new Error("LADDER " + bracket.key + "/" + opp.version + ": missing stat \"" + cat.key + "\"");
+        }
+        if (tierNames(cat.items).indexOf(opp[cat.key]) === -1) {
+          throw new Error(
+            "LADDER " + bracket.key + "/" + opp.version + "." + cat.key +
+            ": invalid tier \"" + opp[cat.key] + "\""
+          );
+        }
+      });
+    });
+  });
+}
+validateLadder();
+
+// ============================================================
 // VERDICT TUNING - edit these tables, not the logic in decideOutcome below.
 // Priority (king -> least): Strength = Durability > Speed = Stamina > Fighting
 // > IQ > Range. Margin matters - crushing a stat counts more than edging it.
@@ -254,19 +332,24 @@ const SCORE_THRESHOLDS = {
   SOLID_LOSS:   -6.0  // total >= this -> SOLID_LOSS; anything lower -> CRUSHED
 };
 
-export function decideOutcome(results) {
+// `opponent` defaults to GOKU, so an existing decideOutcome(results) call is unchanged.
+// `options.allowRevoke` (default true) gates the Layer 1 CATASTROPHIC revoke below; the
+// arcade ladder turns it off for its weak brackets. See the LADDER comment above.
+export function decideOutcome(results, opponent, options) {
+  var foe = opponent || GOKU;
+  var allowRevoke = !(options && options.allowRevoke === false);
   var shortfalls = [];
   var edges = [];
-  var idx = {};      // cat.key -> fighter tier index
-  var gokuIdx = {};  // cat.key -> Goku tier index
-  var score = 0;     // Layer 2 weighted total
+  var idx = {};     // cat.key -> fighter tier index
+  var foeIdx = {};  // cat.key -> opponent tier index
+  var score = 0;    // Layer 2 weighted total
 
   CATEGORIES.forEach(function(cat) {
     var names = tierNames(cat.items);
     var fIdx = names.indexOf(results[cat.key]);
-    var gIdx = names.indexOf(GOKU[cat.key]);
+    var gIdx = names.indexOf(foe[cat.key]);
     idx[cat.key] = fIdx;
-    gokuIdx[cat.key] = gIdx;
+    foeIdx[cat.key] = gIdx;
     if (fIdx < gIdx)      shortfalls.push(cat.title);
     else if (fIdx > gIdx) edges.push(cat.title);
     // Normalized margin vs Goku, relative to ladder length so ladders compare
@@ -276,12 +359,13 @@ export function decideOutcome(results) {
   });
 
   // ----- LAYER 1: dominance shortcut -----
-  // Above Goku in BOTH Strength AND Durability is always a WIN unless revoked.
+  // Above the opponent in BOTH Strength AND Durability is always a WIN unless revoked.
   // When the win holds, the Layer 2 score only decides DOMINANT vs NARROW - it
   // is floored at NARROW_WIN, so a thin physical edge still wins, just narrowly.
-  var dominant = idx.strength > gokuIdx.strength && idx.durability > gokuIdx.durability;
+  // The revoke is skipped entirely when allowRevoke is false.
+  var dominant = idx.strength > foeIdx.strength && idx.durability > foeIdx.durability;
   if (dominant) {
-    var revoked =
+    var revoked = allowRevoke &&
       idx.speed    <= CATASTROPHIC.speed &&
       idx.iq       <= CATASTROPHIC.iq &&
       idx.fighting <= CATASTROPHIC.fighting;

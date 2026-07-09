@@ -357,6 +357,257 @@
   margin-top: 0.15rem;
 }
 
+/* ============================================================
+   ARCADE MODE (Phase 1) - additive only. No selector above is modified.
+   ============================================================ */
+
+/* "Back to Brackets": shown instead of the mode toggle once a run is underway.
+   It reuses .cbg-back-btn wholesale (Cinzel, ink, gold hover) so it is visually
+   identical to "Back to the Arena"; this class only adds placement and the arrow. */
+.cbg-back-brackets-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cbg-back-arrow {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Mode toggle sits opposite the back button in the flex topbar. */
+.cbg-mode-btn {
+  margin-left: auto;
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.5rem 1.4rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.cbg-mode-btn:hover {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+/* -- Bracket select -- */
+/* Only the bracket-select phase gets vertically centered: the container grows to
+   fill the page column and centers its children. The fight/death/cleared screens
+   keep the default top-aligned flow. */
+.cbg-container--center {
+  flex: 1;
+  justify-content: center;
+  padding: 2rem 0 3.5rem;
+}
+
+.cbg-bracket-select {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: cbgFadeUp 0.35s ease forwards;
+}
+
+.cbg-bracket-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.cbg-bracket-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.4rem 1.2rem;
+  min-height: 220px;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.cbg-bracket-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(184, 134, 11, 0.12);
+}
+
+.cbg-bracket-label {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* One-line power descriptor under the bracket name. */
+.cbg-bracket-tier {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* Gold difficulty pips: filled = gold, empty = hairline. */
+.cbg-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.cbg-pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.cbg-pip--on {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.cbg-bracket-roster {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* -- Run status strip -- */
+.cbg-arcade-status {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.cbg-arcade-bracket {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.cbg-arcade-rung {
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.cbg-arcade-heart {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.cbg-arcade-heart--spent {
+  color: var(--muted);
+  opacity: 0.5;
+}
+.cbg-arcade-heart--spent .cbg-heart-icon {
+  filter: grayscale(1);
+}
+
+.cbg-heart-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* -- Death screen -- */
+.cbg-death {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cbg-death-text {
+  font-size: 0.95rem;
+  color: var(--ink);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.cbg-gameover {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Gold/cream retry heart: the one free continue in a run. */
+.cbg-heart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.7rem 1.9rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  animation: cbgFadeUp 0.22s ease forwards;
+}
+.cbg-heart-btn:hover {
+  background: var(--gold);
+  color: var(--bg);
+  transform: translateY(-1px);
+}
+.cbg-heart-btn:hover .cbg-heart-icon path {
+  fill: var(--bg);
+  stroke: var(--bg);
+}
+
+/* -- Bracket cleared -- */
+.cbg-cleared {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cbg-cleared-text {
+  font-size: 0.95rem;
+  color: var(--ink);
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .cbg-verdict-card {
@@ -371,4 +622,16 @@
     gap: 0.3rem;
   }
   .cbg-score-header { font-size: 0.56rem; }
+
+  /* Stack the four bracket cards on narrow screens; desktop is untouched. */
+  .cbg-bracket-grid {
+    grid-template-columns: 1fr;
+  }
+  .cbg-bracket-card {
+    min-height: 0;
+    padding: 1.6rem 1.2rem;
+  }
+  .cbg-container--center {
+    padding: 1rem 0 2rem;
+  }
 }
