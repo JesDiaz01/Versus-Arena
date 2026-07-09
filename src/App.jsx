@@ -350,8 +350,8 @@ export default function App() {
             onClick={() => { const p = PRESETS[presetIndex]; if (loadPresetRef.current) loadPresetRef.current(p); }}
             aria-label={"Show verdict: " + PRESETS[presetIndex].label}
           >
-            <PresetImg key={PRESETS[presetIndex].id + "-1"} src={PRESETS[presetIndex].image1} side="left" />
-            <PresetImg key={PRESETS[presetIndex].id + "-2"} src={PRESETS[presetIndex].image2} side="right" />
+            <PresetImg key={PRESETS[presetIndex].id + "-1"} src={PRESETS[presetIndex].image1} side="left" pos={PRESETS[presetIndex].leftPos} scale={PRESETS[presetIndex].leftScale} />
+            <PresetImg key={PRESETS[presetIndex].id + "-2"} src={PRESETS[presetIndex].image2} side="right" pos={PRESETS[presetIndex].rightPos} scale={PRESETS[presetIndex].rightScale} />
             <span className="spotlight-vs">VS</span>
             <div className="spotlight-caption">
               <span className="spotlight-title">{PRESETS[presetIndex].label}</span>

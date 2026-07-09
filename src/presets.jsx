@@ -78,11 +78,49 @@ export const PRESETS = [
       image2: "/presets/denji.png",
     },
   },
+  {
+    id: "aizen-vs-madara",
+    label: "Aizen vs Madara",
+    image1: "/presets/aizen.png",
+    image2: "/presets/madara.png",
+    // Spotlight-band framing (this card only). Madara's art is a full-body render with a
+    // small head, so it is zoomed in to match Aizen's bust; Aizen is only nudged vertically.
+    leftPos: "center 10%",
+    rightPos: "center 14%",
+    rightScale: 1.55,
+    verdict: {
+      winner: "Aizen",
+      authored: true,
+      verdict_short:
+        "Aizen takes it. Kyoka Suigetsu is a flawless sensory hypnosis Madara has no counter to, since Sharingan immunity only covers chakra genjutsu, and Aizen sits in a power tier (fought Yhwach, who beat the Royal Guard) that Madara's Five Kage and Night Guy showings do not reach.",
+      analysis:
+        "Aizen doesn't just beat Madara, he beats him without the fight ever really starting, and the reason is a win-condition Madara has no way to interact with.\n\n" +
+        "Start with the ceiling. Aizen fought Yhwach, the strongest character in Bleach, the man who'd already beaten the Royal Guard, whose combined power dwarfs the entire Gotei 13. Aizen didn't win that fight, but he stood in it, and more importantly he landed Kyoka Suigetsu on Yhwach while The Almighty was active, undermining the precognition of a functionally omniscient being. That alone puts Aizen in a scaling conversation Madara isn't part of. Madara's ceiling is a war against the Five Kage and a Ten-Tails jinchuriki run that ends with him getting cracked open by Night Guy, a strong human, not a realm-tier threat.\n\n" +
+        "The strength of Aizen's arsenal backs this up. Mugetsu, the attack that defeated his Hogyoku-evolved form, is one of the strongest abilities shown in the series, taking down an opponent no single Gotei 13 captain could handle alone. That's the tier of power Aizen operates around.\n\n" +
+        "But scaling isn't even the deciding factor. It's the mechanism. Kyoka Suigetsu's Complete Hypnosis is, by the series' own words, flawless. Once you've seen its release, you're under it, and knowing you're under it doesn't let you resist. Post-fusion, Aizen doesn't even need the blade; the trigger is simply seeing him. People point to the Uchiha Sharingan's genjutsu immunity, but that immunity is specifically against chakra-based genjutsu, the kind broken by flooding your own chakra. Kyoka isn't that. It's a sensory hypnosis from a completely different system, and Madara has no established defense against a mechanism his verse has never encountered. He has no reason to even avoid looking. First real exchange, and Madara's five senses belong to Aizen.\n\n" +
+        "Give Madara everything: Ten-Tails, Rinnegan, the meteors, the clones. It doesn't matter when his opponent controls what he sees, hears, and feels, and sits in a power tier he can't scratch. There's no reading of this where Madara wins. Aizen, mid diff.",
+      advantages: [
+        "Inescapable sensory hypnosis (Kyoka Suigetsu)",
+        "Sharingan immunity does not apply (non-chakra mechanism)",
+        "Scales above Madara via the Yhwach chain",
+      ],
+      user_claims_used: [],
+      scores: { "Aizen": 74, "Madara": 26 },
+    },
+    snapshot: {
+      f1: "Aizen", f2: "Madara",
+      winnerImageUrl: "/presets/aizen.png",
+      winnerImageError: false,
+      winnerAdjust: { x: 50, y: 50, zoom: 1 },
+      image1: "/presets/aizen.png",
+      image2: "/presets/madara.png",
+    },
+  },
 ];
 
 // One fighter image inside a preset spotlight. Falls back to the silhouette if the art is
 // missing (expected while /presets/*.png do not exist yet) so a 404 never breaks layout.
-export function PresetImg({ src, side }) {
+export function PresetImg({ src, side, pos, scale }) {
   const [err, setErr] = useState(false);
   if (err) {
     return (
@@ -91,11 +129,19 @@ export function PresetImg({ src, side }) {
       </span>
     );
   }
+  // Optional per-card framing for the spotlight band. When a preset omits pos/scale the
+  // style object stays empty and the .preset-img CSS defaults (per-side object-position)
+  // apply unchanged, so no other matchup is affected. scale zooms within the band, which
+  // clips the overflow (.spotlight-band has overflow: hidden).
+  const style = {};
+  if (pos) { style.objectPosition = pos; }
+  if (scale) { style.transform = "scale(" + scale + ")"; style.transformOrigin = pos || "center"; }
   return (
     <img
       className={"preset-img " + side}
       src={src}
       alt=""
+      style={style}
       onError={() => setErr(true)}
     />
   );
