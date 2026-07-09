@@ -125,17 +125,20 @@ function computeInputHash(f1, u1, f2, u2, battleType, location, power, depth, cl
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
-// Order-INDEPENDENT, universe-AGNOSTIC authored-verdict key: normalize each fighter name to a
-// lowercase, trimmed string, sort the two names so fighter order does not matter, and hash with
-// the dropdown settings. Universe (u1/u2) is deliberately EXCLUDED so an authored verdict matches
-// regardless of how the user spells the universe (JJK / jjk / kaisen / empty all hit); u1/u2 stay
-// in the signature (the call site is unchanged) but are unused here and still reach buildPrompt
-// separately. Claims are also EXCLUDED - authored verdicts serve only empty-granted-abilities
-// requests. Bump AUTHORED_VERSION to invalidate.
+// Order-INDEPENDENT, universe-AGNOSTIC, settings-AGNOSTIC authored-verdict key: normalize each
+// fighter name to a lowercase, trimmed string and sort the two names so fighter order does not
+// matter. Universe (u1/u2) is deliberately EXCLUDED so an authored verdict matches regardless of
+// how the user spells the universe (JJK / jjk / kaisen / empty all hit). The four dropdown
+// settings (battleType/location/power/depth) are EXCLUDED too, so ONE hand-written verdict serves
+// the matchup at every dropdown combination (Quick Verdict and Deep Dive return the same authored
+// text). All six stay in the signature (the call site is unchanged) but are unused here and still
+// reach buildPrompt separately. Claims are also EXCLUDED - the caller only consults an authored
+// verdict when BOTH claim lists are empty, so typing custom feats always falls through to the live
+// AI. Bump AUTHORED_VERSION to invalidate.
 function computeAuthoredKey(f1, u1, f2, u2, battleType, location, power, depth) {
   const norm = (s) => (s || "").toLowerCase().trim();
   const names = [norm(f1), norm(f2)].sort();
-  const obj = { v: AUTHORED_VERSION, n1: names[0], n2: names[1], battleType, location, power, depth };
+  const obj = { v: AUTHORED_VERSION, n1: names[0], n2: names[1] };
   return createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
