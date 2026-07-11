@@ -3816,7 +3816,7 @@ padding: 2.75rem 0 0;
     position: static;        /* undo the desktop absolute strip - back into flex flow */
     width: auto;
     flex: 0 0 50%;
-    height: 188px;
+    height: 240px;           /* taller band so cover crops the tall portraits less (was 188px) */
     object-position: center 12%;
   }
   .preset-card-img.left {
@@ -3847,6 +3847,6 @@ padding: 2.75rem 0 0;
   .preset-card-text .verdict-short { max-width: none; }
 }
 @media (max-width: 380px) {
-  .preset-card-img { height: 150px; }
+  .preset-card-img { height: 200px; }   /* was 150px - more vertical room for heads */
   .preset-card-body { padding: 1.5rem 1rem; }
 }

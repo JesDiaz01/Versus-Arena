@@ -114,6 +114,11 @@ export const PRESETS = [
       winnerAdjust: { x: 50, y: 50, zoom: 1 },
       image1: "/presets/aizen.png",
       image2: "/presets/madara.png",
+      // Top-anchored framing for the verdict card (CardFighter reads these as object-position).
+      // Without them CardFighter falls back to inline "center" (50%), which crops the heads on
+      // mobile's short band. ~15% pulls the frame up toward the faces.
+      image1Pos: "center 15%",
+      image2Pos: "center 15%",
     },
   },
 ];
