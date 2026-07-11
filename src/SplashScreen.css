@@ -45,13 +45,6 @@
 .v-logo {
   width: 220px;
   height: auto;
-  filter: drop-shadow(0 0 20px rgba(212,160,23,0.5)) drop-shadow(0 0 60px rgba(212,160,23,0.2));
-  animation: pulse 3s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { filter: drop-shadow(0 0 20px rgba(212,160,23,0.5)) drop-shadow(0 0 60px rgba(212,160,23,0.2)); }
-  50% { filter: drop-shadow(0 0 30px rgba(212,160,23,0.8)) drop-shadow(0 0 80px rgba(212,160,23,0.35)); }
 }
 
 .v-title {
@@ -60,7 +53,6 @@
   font-size: 1.6rem;
   letter-spacing: 0.35em;
   color: #D4A017;
-  text-shadow: 0 0 20px rgba(212,160,23,0.6), 0 0 40px rgba(212,160,23,0.2);
   text-transform: uppercase;
 }
 
@@ -93,7 +85,6 @@
   background: linear-gradient(90deg, #8B6914, #D4A017 40%, #F5D76E 60%, #D4A017);
   border-radius: 2px;
   transition: width 0.05s linear;
-  box-shadow: 0 0 8px rgba(212,160,23,0.7), 0 0 20px rgba(212,160,23,0.3);
 }
 
 .loading-bar-segments {
