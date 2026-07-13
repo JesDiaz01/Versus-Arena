@@ -4,10 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-app</title>
+    <title>Versus Arena</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Fallback shown if the app bundle fails to load or JS is disabled.
+         React clears #root on mount, so this only lingers when nothing booted. -->
+    <div id="root">
+      <div style="min-height:100vh;background:#F5F2EC;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;font-family:Georgia,serif;">
+        <div style="letter-spacing:0.35em;text-transform:uppercase;color:#B8860B;font-size:0.8rem;margin-bottom:1rem;">Versus Arena</div>
+        <h1 style="color:#1A1A1A;font-size:1.6rem;margin:0 0 0.75rem;">Loading the Arena...</h1>
+        <p style="color:#8A8479;max-width:26rem;line-height:1.6;">
+          If this screen doesn't clear in a few seconds, please refresh the page.
+          <noscript><br />This site needs JavaScript enabled to run.</noscript>
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -18,7 +18,7 @@ const MODEL = "claude-sonnet-4-6";
 
 // Read-through cache: identical battle inputs return the stored verdict instead of
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 
 // Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
 // dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.
@@ -507,7 +507,23 @@ export default async function handler(req, res) {
           // Use the verdict from the call where the winner was slot 1 - that
           // call argued FOR the winner, so its reasoning reads most naturally.
           const base = winnerName === f1 ? verdictA : verdictB;
-          verdict = { ...base, winner: winnerName };
+          // Ship the AVERAGED scores, not base's single-call scores, so `scores`
+          // and `winner` come from ONE source of truth and can never contradict.
+          // Normalize the two averages to integers summing to 100: round the
+          // winner's share of the total, then derive the loser as 100 minus it.
+          // A tie or flip is impossible here: the margin exceeds DRAW_MARGIN (>10)
+          // and each average is <=100, so the winner's share is always > 100/190
+          // (~52.6%), which rounds to >=53. The winner is always strictly higher.
+          const winnerAvg = avgF1 > avgF2 ? avgF1 : avgF2;
+          const loserAvg = avgF1 > avgF2 ? avgF2 : avgF1;
+          const loserName = winnerName === f1 ? f2 : f1;
+          const winnerScore = Math.round((winnerAvg / (winnerAvg + loserAvg)) * 100);
+          const loserScore = 100 - winnerScore;
+          verdict = {
+            ...base,
+            winner: winnerName,
+            scores: { [winnerName]: winnerScore, [loserName]: loserScore },
+          };
         } else {
           // Averaged scores within the draw margin - a genuine standoff. If either
           // call independently returned a model-authored "Draw" (the prompt now

@@ -20,6 +20,21 @@
   color: var(--muted);
 }
 
+.sb-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  max-width: 30rem;
+}
+
+.sb-error-text {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 1rem 0 1.75rem;
+}
+
 /* -- Page shell -- */
 .sb-page {
   min-height: 100vh;

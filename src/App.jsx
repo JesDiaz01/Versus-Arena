@@ -19,6 +19,7 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [sharedBattle, setSharedBattle] = useState(null);
   const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedError, setSharedError] = useState(false);
   const [showGoku, setShowGoku] = useState(false);
 
   // Battle INPUT state lives here (not in BattleArena) so it survives in-site
@@ -91,9 +92,12 @@ export default function App() {
     fetch("/api/get-battle?id=" + encodeURIComponent(battleId))
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (!data.error) setSharedBattle(data);
+        // A missing/invalid battle or an API error surfaces a visible message
+        // instead of silently dropping the user on the homepage.
+        if (data && !data.error) setSharedBattle(data);
+        else setSharedError(true);
       })
-      .catch(function() {})
+      .catch(function() { setSharedError(true); })
       .finally(function() { setSharedLoading(false); });
   }, []);
 
@@ -282,6 +286,29 @@ export default function App() {
     return (
       <div className="sb-loading-screen">
         <div className="sb-loading-text">Loading battle...</div>
+      </div>
+    );
+  }
+
+  if (sharedError) {
+    return (
+      <div className="sb-loading-screen">
+        <div className="sb-error">
+          <div className="sb-loading-text">Battle not found</div>
+          <p className="sb-error-text">
+            This shared battle couldn't be loaded. The link may be broken or the
+            battle may have expired.
+          </p>
+          <button
+            className="fight-btn"
+            onClick={function() {
+              setSharedError(false);
+              window.history.replaceState({}, "", window.location.pathname);
+            }}
+          >
+            Go to the Arena
+          </button>
+        </div>
       </div>
     );
   }
