@@ -1,0 +1,60 @@
+// src/AuthContext.jsx
+// Session plumbing for Supabase Auth. Wraps the app and exposes
+// { session, user, loading } via useAuth(). Purely additive: no UI, no
+// behavior change anywhere -- components simply gain the ABILITY to ask
+// "who is logged in?".
+//
+// If the browser Supabase client is unconfigured (src/supabaseClient.js
+// exported null), this provider settles immediately into a safe logged-out
+// state (session null, user null, loading false) so nothing downstream breaks.
+
+import { createContext, useContext, useState, useEffect } from "react";
+import supabase from "./supabaseClient";
+
+const AuthContext = createContext({ session: null, user: null, loading: false });
+
+export function AuthProvider({ children }) {
+  // loading starts true only when there is a client to ask; with no client
+  // there is nothing to wait for.
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(Boolean(supabase));
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let cancelled = false;
+
+    // Load any existing session (e.g. a returning user with a stored token).
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setSession(data && data.session ? data.session : null);
+      setLoading(false);
+    }).catch((err) => {
+      console.error("getSession failed:", err);
+      if (!cancelled) setLoading(false);
+    });
+
+    // Keep session state live across sign-in, sign-out, and token refresh.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!cancelled) setSession(newSession);
+    });
+
+    return () => {
+      cancelled = true;
+      if (sub && sub.subscription) sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const value = {
+    session,
+    user: session ? session.user : null,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuth() {
+  return useContext(AuthContext);
+}
