@@ -3816,6 +3816,12 @@ padding: 2.75rem 0 0;
     position: static;        /* undo the desktop absolute strip - back into flex flow */
     width: auto;
     flex: 0 0 50%;
+    /* A replaced <img> defaults to min-width:auto, which resolves to its intrinsic
+       transferred width (~240px * aspect ratio) and, with flex-shrink 0, forbids the
+       image from shrinking to its 50% basis - so the two overflow the row and the
+       right one wraps to a second line (vertical stack). min-width:0 lets each honor
+       the 50% basis, so both fit one row at exactly 100%. */
+    min-width: 0;
     height: 240px;           /* taller band so cover crops the tall portraits less (was 188px) */
     object-position: center 12%;
   }
