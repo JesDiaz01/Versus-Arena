@@ -3946,6 +3946,22 @@ padding: 2.75rem 0 0;
 
 .auth-actions {
   margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+/* Secondary action (e.g. "View My Battles"): outline instead of solid ink so it
+   reads as the lighter-weight choice next to Sign Out. */
+.auth-submit.auth-secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+}
+.auth-submit.auth-secondary:hover:not(:disabled) {
+  background: transparent;
+  color: var(--gold);
+  border-color: var(--gold);
+  box-shadow: none;
 }
 /* Submit button mirrors .fight-btn (ink base, gold hover) at a form-friendly size. */
 .auth-submit {

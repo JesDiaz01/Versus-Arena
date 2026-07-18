@@ -4,6 +4,7 @@ import { verdictDiffLabel } from "./diffTier";
 import { checkClientBlocked } from "./clientBlocklist";
 import FighterSilhouette from "./FighterSilhouette";
 import PresetCard from "./PresetCard";
+import { useAuth } from "./AuthContext";
 
 // Presentation only: a single charging portrait for the loading clash.
 // Falls back to the silhouette if the image is missing or fails to load.
@@ -503,6 +504,9 @@ export default function BattleArena({
   // and framing) are lifted to App.jsx so they survive in-site navigation; this
   // component receives them and their setters as props. The verdict result and
   // the transient UI state below stay local and clear normally on unmount.
+  // Auth session (may be null for anonymous users). Only used to attach the access
+  // token to the battle request so logged-in battles auto-save; never gates the UI.
+  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(initialBattle?.result || null);
   // Battle-time snapshot of the winner's portrait (image url + error flag + framing) plus
@@ -626,9 +630,16 @@ export default function BattleArena({
     // ===== REAL VERDICT (calls your Vercel backend at /api/battle) =====
     // The backend holds the API key securely and calls Anthropic for you.
     try {
+      // Attach the Supabase access token ONLY when signed in, so the server can
+      // auto-save the battle to this user's history. Anonymous users (no session)
+      // send the exact same request as before -- no header, no change in behavior.
+      const headers = { "Content-Type": "application/json" };
+      if (session && session.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
       const res = await fetch("/api/battle", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           f1: f1.trim(), f2: f2.trim(), u1, u2,
           battleType, location, power, depth, claims1, claims2,

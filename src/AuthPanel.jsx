@@ -24,7 +24,7 @@ function looksLikeEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-export default function AuthPanel() {
+export default function AuthPanel({ onViewBattles }) {
   const { user, loading } = useAuth();
 
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
@@ -145,11 +145,16 @@ export default function AuthPanel() {
           You're signed in as <strong>{user.email}</strong>.
         </p>
         <p>
-          Saved battles and your record are coming soon. For now, head back and
-          settle a debate.
+          Every battle you run while signed in is saved to your history. Your record
+          and more are coming soon.
         </p>
         {error && <p className="auth-error" role="alert">{error}</p>}
         <div className="auth-actions">
+          {onViewBattles && (
+            <button type="button" className="auth-submit auth-secondary" onClick={onViewBattles}>
+              View My Battles
+            </button>
+          )}
           <button className="auth-submit" onClick={handleSignOut} disabled={submitting}>
             {submitting ? "Signing out..." : "Sign Out"}
           </button>

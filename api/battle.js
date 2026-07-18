@@ -664,6 +664,39 @@ export default async function handler(req, res) {
       }
     }
 
+    // --- Auto-save to the logged-in user's history (ADDITIVE, fully fail-open) ---
+    // Runs only AFTER the battle row above was saved (shareId non-null). Anonymous
+    // requests carry no Authorization header, so this whole block is skipped and the
+    // response is byte-identical to before. SECURITY: user_id comes ONLY from
+    // db.auth.getUser(token), which verifies the JWT signature against the project
+    // secret -- never from the request body and never from an unverified decode. A
+    // missing/invalid/expired token is treated as anonymous (no save, no error). Any
+    // failure here is swallowed so it can NEVER break the verdict response.
+    if (db && shareId) {
+      try {
+        const authHeader = req.headers.authorization || "";
+        const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+        if (token) {
+          // JWT signature verification happens HERE (service-role client, server-side).
+          const { data: userData, error: authError } = await db.auth.getUser(token);
+          const user = userData && userData.user;
+          if (!authError && user && user.id) {
+            // Idempotent: unique (user_id, battle_id) makes a repeat a no-op.
+            const { error: linkError } = await db
+              .from("saved_battles")
+              .upsert(
+                { user_id: user.id, battle_id: shareId },
+                { onConflict: "user_id,battle_id", ignoreDuplicates: true }
+              );
+            if (linkError) console.error("saved_battles link error:", linkError);
+          }
+          // user null / authError -> treat as anonymous: fall through silently.
+        }
+      } catch (saveErr) {
+        console.error("Auto-save to history failed (non-fatal):", saveErr);
+      }
+    }
+
     return res.status(200).json(shareId ? { ...verdict, id: shareId } : verdict);
   } catch (err) {
     console.error("Battle handler error:", err);

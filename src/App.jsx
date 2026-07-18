@@ -11,11 +11,16 @@ import PrivacyPolicy from "./PrivacyPolicy";
 import Disclaimer from "./Disclaimer";
 import ComingSoon from "./ComingSoon";
 import AuthPanel from "./AuthPanel";
+import MyBattles from "./MyBattles";
+import { useAuth } from "./AuthContext";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
 import { PRESETS, PresetImg } from "./presets";
 
 export default function App() {
+  // Auth session, used only to gate the "My Battles" entry points (nav link +
+  // account page). Anonymous users get user === null and see none of it.
+  const { user } = useAuth();
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
   const [sharedBattle, setSharedBattle] = useState(null);
@@ -110,6 +115,25 @@ export default function App() {
       setShowGoku(true);
     }
   }, []);
+
+  // Re-open a saved battle by id from the My Battles list. Reuses the exact
+  // shared-battle path (sharedLoading -> SharedBattle) the ?b= mount effect uses,
+  // so no new render machinery is needed. Sets page to "home" first so the render
+  // falls through the page routing to the sharedBattle branch, and points the URL
+  // at ?b=<id> so a refresh/share still resolves the same battle.
+  function openSavedBattle(id) {
+    setPage("home");
+    setSharedLoading(true);
+    window.history.pushState({}, "", "?b=" + encodeURIComponent(id));
+    fetch("/api/get-battle?id=" + encodeURIComponent(id))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && !data.error) setSharedBattle(data);
+        else setSharedError(true);
+      })
+      .catch(function() { setSharedError(true); })
+      .finally(function() { setSharedLoading(false); });
+  }
 
   if (!entered) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
@@ -219,7 +243,7 @@ export default function App() {
           title={<>Join the <span className="vs-word">Arena</span></>}
           onBack={() => setPage("home")}
         >
-          <AuthPanel />
+          <AuthPanel onViewBattles={() => setPage("mybattles")} />
         </ComingSoon>
         <Footer
           onHome={() => setPage("home")}
@@ -264,6 +288,25 @@ export default function App() {
             </p>
           </div>
         </ComingSoon>
+        <Footer
+          onHome={() => setPage("home")}
+          onAbout={() => setPage("about")}
+          onLeaderboard={() => setPage("leaderboard")}
+          onPrivacy={() => setPage("privacy")}
+          onDisclaimer={() => setPage("disclaimer")}
+          onFaq={() => setPage("faq")}
+        />
+      </>
+    );
+  }
+
+  // "My Battles" is signed-in only: the branch is gated on `user`, so a logged-out
+  // visitor (even one whose page state is stale) falls through to the normal app
+  // instead of ever seeing the page.
+  if (page === "mybattles" && user) {
+    return (
+      <>
+        <MyBattles onBack={() => setPage("home")} onOpenBattle={openSavedBattle} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -343,6 +386,9 @@ export default function App() {
             <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
             <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
             <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
+            {user && (
+              <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("mybattles"); }}>My Battles</a></li>
+            )}
             <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
           </ul>
         </div>
