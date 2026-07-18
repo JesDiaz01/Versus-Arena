@@ -106,17 +106,19 @@ export default function PrivacyPolicy({ onBack }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: July 4, 2026</p>
+          <p className="pp-updated">Last updated: July 18, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
             <p style={{ margin: 0 }}>
-              We don't make you create an account, we don't track you across the web,
-              and we don't sell your data. But you should know two things: the battles
-              you run are saved to our database (so they load fast and can be shared by
-              link), and any battle can be opened by anyone who has its share link. Any
-              image you upload stays on your own device. Please don't type anything
-              private into a battle.
+              You can use Versus Arena without an account, we don't track you across the
+              web, and we don't sell your data. If you choose to create an account, we
+              collect your email and a password (handled securely by our authentication
+              provider) so you can sign in and keep your battles. Either way, two things
+              to know: the battles you run are saved to our database (so they load fast
+              and can be shared by link), and any battle can be opened by anyone who has
+              its share link. Any image you upload stays on your own device. Please don't
+              type anything private into a battle.
             </p>
           </div>
 
@@ -140,8 +142,11 @@ export default function PrivacyPolicy({ onBack }) {
             <li>
               <strong>Saved battles.</strong> We keep saved battles indefinitely,
               because they power two things: instant results when a matchup has been
-              run before, and shareable battle links. We do not attach your name,
-              email, or any account to a saved battle - there are no accounts yet.
+              run before, and shareable battle links. Battles themselves are stored
+              anonymously in a shared cache. If you are signed in, we separately record
+              which battles are yours so you can find them again; that link between you
+              and a battle is private to your account and is never part of the public
+              share link.
             </li>
             <li>
               <strong>Images you upload.</strong> If you upload your own image for a
@@ -158,9 +163,13 @@ export default function PrivacyPolicy({ onBack }) {
               or attach it to your saved battles.
             </li>
             <li>
-              <strong>Accounts.</strong> We don't have accounts or logins yet, so we
-              don't collect names, passwords, or profiles. If that changes, we'll update
-              this policy first.
+              <strong>Accounts.</strong> Accounts are optional - you can use the whole
+              site without one. If you create an account, we collect your email address
+              and a password so you can sign in. Passwords are handled and stored
+              securely by our authentication provider (Supabase Auth); we never see or
+              store your password in plain text. We use your email to sign you in, to
+              send account emails such as confirmation and password-reset links, and to
+              contact you about your account if needed.
             </li>
             <li>
               <strong>Analytics and cookies.</strong> We use Vercel Web Analytics, a
@@ -176,9 +185,10 @@ export default function PrivacyPolicy({ onBack }) {
 
           <h2>How we use information</h2>
           <p>
-            To run the site and generate your verdicts, to prevent abuse and keep our
-            costs under control through rate limiting, and to respond to you if you get
-            in touch.
+            To run the site and generate your verdicts, to create and secure your
+            account and sign you in if you choose to register, to prevent abuse and keep
+            our costs under control through rate limiting, and to respond to you if you
+            get in touch.
           </p>
 
           <h2>Shared battle links</h2>
@@ -197,8 +207,9 @@ export default function PrivacyPolicy({ onBack }) {
               inputs to create verdicts under its own terms and privacy policy.
             </li>
             <li>
-              <strong>Supabase</strong>, our database provider, which stores your saved
-              battles and verdicts.
+              <strong>Supabase</strong>, our database and authentication provider, which
+              stores your saved battles and verdicts and, if you create an account, your
+              account details (your email and a securely hashed password).
             </li>
             <li>
               <strong>Upstash</strong>, which handles rate limiting and abuse prevention
@@ -228,30 +239,33 @@ export default function PrivacyPolicy({ onBack }) {
 
           <h2>Children's privacy</h2>
           <p>
-            Versus Arena is intended for people aged 13 and older. We do not knowingly
-            collect personal information from children under 13. If you're a parent or
-            guardian and you believe your child under 13 has provided us information (for
-            example, by emailing us), please contact us at the address below and we'll
-            delete it.
+            Versus Arena is intended for people aged 13 and older, and you must be at
+            least 13 to create an account. We do not knowingly collect personal
+            information from children under 13. If you're a parent or guardian and you
+            believe your child under 13 has provided us information (for example, by
+            emailing us or creating an account), please contact us at the address below
+            and we'll delete it.
           </p>
 
           <h2>Your choices</h2>
           <p>
             If you'd like a specific saved battle removed, email us at
-            versusarenahq@gmail.com with its share link and we'll delete it. Because we
-            don't attach identities to battles, we may not be able to locate all of your
-            data without the specific links. If you'd like to know what we have, or ask
-            us to delete something like an email you've sent us, just reach out.
-            Depending on where you live, you may have rights under laws like the GDPR or
-            CCPA, and we'll honor reasonable requests.
+            versusarenahq@gmail.com with its share link and we'll delete it. If you have
+            an account, you can email us to delete your account along with the battle
+            history linked to it. For anonymous battles, because we don't attach an
+            identity to them, we may not be able to locate all of your data without the
+            specific share links. If you'd like to know what we have, or ask us to delete
+            something like an email you've sent us, just reach out. Depending on where
+            you live, you may have rights under laws like the GDPR or CCPA, and we'll
+            honor reasonable requests.
           </p>
 
           <h2>Changes to this policy</h2>
           <p>
-            We may update this policy as the site grows, for example if we add user
-            accounts. Battle saving and sharing, which this policy previously listed as
-            future features, are now live and described above. When we make changes,
-            we'll update the "last updated" date at the top of this page.
+            We may update this policy as the site grows. Optional accounts, which this
+            policy previously listed as a future feature, are now being introduced and
+            are described above. When we make changes, we'll update the "last updated"
+            date at the top of this page.
           </p>
 
           <h2>Contact</h2>
