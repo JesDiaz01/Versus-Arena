@@ -10,6 +10,7 @@ import Footer from "./Footer";
 import PrivacyPolicy from "./PrivacyPolicy";
 import Disclaimer from "./Disclaimer";
 import ComingSoon from "./ComingSoon";
+import AuthPanel from "./AuthPanel";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
 import { PRESETS, PresetImg } from "./presets";
@@ -215,17 +216,10 @@ export default function App() {
       <>
         <ComingSoon
           tag="Accounts"
-          title={<>Coming <span className="vs-word">Soon</span></>}
+          title={<>Join the <span className="vs-word">Arena</span></>}
           onBack={() => setPage("home")}
         >
-          <div className="about-section">
-            <p className="about-lead">Accounts are coming soon.</p>
-            <p>
-              We're building sign-ups so you'll be able to save your battles, track your
-              record, and make the Arena your own. For now, every battle runs free, with
-              no account needed.
-            </p>
-          </div>
+          <AuthPanel />
         </ComingSoon>
         <Footer
           onHome={() => setPage("home")}

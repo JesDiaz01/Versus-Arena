@@ -3856,3 +3856,156 @@ padding: 2.75rem 0 0;
   .preset-card-img { height: 200px; }   /* was 150px - more vertical room for heads */
   .preset-card-body { padding: 1.5rem 1rem; }
 }
+
+/* === AUTH PANEL (Step 2: sign up / sign in / sign out) ===
+   Rendered inside the ComingSoon shell's about-container on the signup page.
+   Reuses the site's tokens (--gold, --ink, Cinzel/Inter) and mirrors the
+   .claim-input field + .fight-btn button treatments so the form reads as native.
+   Every selector is .auth-* scoped; nothing here touches existing components. */
+.auth-panel {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+/* Sign In / Sign Up tab row. */
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+.auth-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;                 /* overlap the container border */
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.2s, border-color 0.2s;
+}
+.auth-tab:hover { color: var(--ink); }
+.auth-tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+}
+
+.auth-heading {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 1.75rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.auth-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+/* Field treatment mirrors .claim-input (surface bg, gold focus glow). */
+.auth-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.7rem 0.85rem;
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.auth-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184,134,11,0.15);
+}
+.auth-input::placeholder { color: var(--muted); }
+.auth-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-actions {
+  margin-top: 0.5rem;
+}
+/* Submit button mirrors .fight-btn (ink base, gold hover) at a form-friendly size. */
+.auth-submit {
+  width: 100%;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 2px;
+  padding: 0.9rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.auth-submit:hover:not(:disabled) {
+  background: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(184,134,11,0.25);
+}
+.auth-submit:active:not(:disabled) { transform: scale(0.98); }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Inline messages. */
+.auth-error {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9B2C2C;                      /* muted crimson, readable on the cream bg */
+  margin: 0;
+}
+.auth-notice {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--gold);
+  margin: 0;
+}
+.auth-loading {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Mode-switch links under the form. */
+.auth-switch {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.auth-quiet { color: var(--ink-soft); }
+.auth-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.auth-link:hover { color: var(--gold-bright); }
