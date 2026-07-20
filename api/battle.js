@@ -290,6 +290,67 @@ function buildDrawText(f1, f2, f1Call, f2Call, leader, trailer) {
   return { verdict_short, analysis };
 }
 
+// ---- Auto-save a battle to the signed-in user's history ----
+// Shared by ALL THREE return paths (authored verdict, cache hit, fresh generation)
+// so a logged-in user's battle is linked no matter which path served it. Before
+// this existed the save only ran on the fresh path, so cached/authored battles
+// were silently never saved.
+//
+// SECURITY: user_id comes ONLY from db.auth.getUser(token), which verifies the JWT
+// signature against the project secret -- never from the request body and never
+// from an unverified decode.
+//
+// FAIL-OPEN: the entire body is wrapped in try/catch, so this can never throw and
+// never affects the verdict response. Anonymous requests (no Authorization header)
+// return BEFORE any network call, so they add exactly zero latency.
+//
+// Every branch logs with the "[saveToHistory]" prefix so the api/battle function
+// logs in Vercel show which case occurred.
+async function saveToHistory(db, req, battleId) {
+  try {
+    if (!db || !battleId) {
+      console.log("[saveToHistory] skipped: no db client or no battle id");
+      return;
+    }
+
+    const authHeader = (req && req.headers && req.headers.authorization) || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    if (!token) {
+      // Anonymous battle: expected, not an error. Returns before any network call.
+      console.log("[saveToHistory] no token: anonymous battle, nothing to save");
+      return;
+    }
+
+    // JWT signature verification happens HERE (service-role client, server-side).
+    const { data: userData, error: authError } = await db.auth.getUser(token);
+    const user = userData && userData.user;
+    if (authError || !user || !user.id) {
+      console.log(
+        "[saveToHistory] getUser returned no user (invalid/expired token):",
+        authError ? authError.message : "no user"
+      );
+      return;
+    }
+
+    // Idempotent: the unique (user_id, battle_id) constraint makes a repeat a no-op,
+    // so re-running the same cached matchup never duplicates a row.
+    const { error: linkError } = await db
+      .from("saved_battles")
+      .upsert(
+        { user_id: user.id, battle_id: battleId },
+        { onConflict: "user_id,battle_id", ignoreDuplicates: true }
+      );
+    if (linkError) {
+      console.error("[saveToHistory] insert error:", linkError);
+      return;
+    }
+
+    console.log("[saveToHistory] saved battle", battleId, "for user", user.id);
+  } catch (err) {
+    console.error("[saveToHistory] failed (non-fatal):", err);
+  }
+}
+
 export default async function handler(req, res) {
   const ip = getClientIp(req);
 
@@ -394,6 +455,8 @@ export default async function handler(req, res) {
             w.toLowerCase().includes(f1.toLowerCase()) ||
             w.toLowerCase().includes(f2.toLowerCase());
           if (servable) {
+            // Link this authored battle to the signed-in user (no-op if anonymous).
+            await saveToHistory(db, req, data[0].id);
             return res.status(200).json({ ...data[0].result, id: data[0].id });
           }
           console.error("authored verdict winner matched neither fighter, skipping:", w);
@@ -417,6 +480,8 @@ export default async function handler(req, res) {
           .limit(1);
         if (!error && data && data[0] && data[0].result) {
           // Cache HIT: return the SAME flat shape as a fresh battle ({ ...verdict, id }).
+          // Link this cached battle to the signed-in user (no-op if anonymous).
+          await saveToHistory(db, req, data[0].id);
           return res.status(200).json({ ...data[0].result, id: data[0].id });
         }
       } catch (err) {
@@ -664,38 +729,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- Auto-save to the logged-in user's history (ADDITIVE, fully fail-open) ---
-    // Runs only AFTER the battle row above was saved (shareId non-null). Anonymous
-    // requests carry no Authorization header, so this whole block is skipped and the
-    // response is byte-identical to before. SECURITY: user_id comes ONLY from
-    // db.auth.getUser(token), which verifies the JWT signature against the project
-    // secret -- never from the request body and never from an unverified decode. A
-    // missing/invalid/expired token is treated as anonymous (no save, no error). Any
-    // failure here is swallowed so it can NEVER break the verdict response.
-    if (db && shareId) {
-      try {
-        const authHeader = req.headers.authorization || "";
-        const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-        if (token) {
-          // JWT signature verification happens HERE (service-role client, server-side).
-          const { data: userData, error: authError } = await db.auth.getUser(token);
-          const user = userData && userData.user;
-          if (!authError && user && user.id) {
-            // Idempotent: unique (user_id, battle_id) makes a repeat a no-op.
-            const { error: linkError } = await db
-              .from("saved_battles")
-              .upsert(
-                { user_id: user.id, battle_id: shareId },
-                { onConflict: "user_id,battle_id", ignoreDuplicates: true }
-              );
-            if (linkError) console.error("saved_battles link error:", linkError);
-          }
-          // user null / authError -> treat as anonymous: fall through silently.
-        }
-      } catch (saveErr) {
-        console.error("Auto-save to history failed (non-fatal):", saveErr);
-      }
-    }
+    // Link this freshly generated battle to the signed-in user (no-op if anonymous,
+    // or if the insert above failed and shareId is null). See saveToHistory above:
+    // fail-open, never throws, user_id only ever from the verified JWT.
+    await saveToHistory(db, req, shareId);
 
     return res.status(200).json(shareId ? { ...verdict, id: shareId } : verdict);
   } catch (err) {
