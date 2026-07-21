@@ -59,7 +59,7 @@ function looksLikeEmail(v) {
 }
 
 export default function AuthPanel({ onViewBattles }) {
-  const { user, loading, recovery, clearRecovery } = useAuth();
+  const { user, loading, recovery, clearRecovery, linkError, clearLinkError } = useAuth();
 
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
   const [email, setEmail] = useState("");
@@ -279,6 +279,54 @@ export default function AuthPanel({ onViewBattles }) {
           <VLogo className="auth-logo" />
           <span className="auth-rule" aria-hidden="true" />
           <p className="auth-loading">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Expired / already-used / invalid email link. Checked FIRST: a dead link
+  // never produces a session, so without this the app would just render the normal
+  // page and the link would look silently broken (which is exactly what happens
+  // today). Recovery links are single-use, so this also covers the common case of
+  // an email scanner prefetching and consuming the link before the user clicks. ---
+  if (linkError) {
+    const expired = (linkError.code || "").indexOf("expired") !== -1;
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <VLogo className="auth-logo" />
+          <span className="auth-rule" aria-hidden="true" />
+          <h2 className="auth-heading">
+            {expired ? "This link has expired" : "This link is no longer valid"}
+          </h2>
+          <p className="auth-text">
+            {expired
+              ? "Password reset links expire after a short time, and can only be used once."
+              : "This link has already been used, or it is not valid anymore."}
+            {" "}Request a new one and we'll email you a fresh link.
+          </p>
+          <div className="auth-actions">
+            <button
+              type="button"
+              className="auth-submit"
+              onClick={() => {
+                clearLinkError();
+                switchMode("forgot");
+              }}
+            >
+              Send a New Link
+            </button>
+            <button
+              type="button"
+              className="auth-submit auth-secondary"
+              onClick={() => {
+                clearLinkError();
+                switchMode("signin");
+              }}
+            >
+              Back to Sign In
+            </button>
+          </div>
         </div>
       </div>
     );

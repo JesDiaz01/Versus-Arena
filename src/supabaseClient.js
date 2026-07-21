@@ -10,6 +10,35 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+// Capture any auth error Supabase appended to the URL. This MUST run before
+// createClient() below: supabase-js processes and then STRIPS the hash, so reading
+// it later would race and usually find nothing.
+//
+// An expired, already-used, or otherwise invalid email link comes back as:
+//   #error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired
+// (Recovery links are SINGLE-USE, so an email scanner that prefetches the link can
+// consume it before the user ever clicks.) Without this the app just renders the
+// homepage and the link looks silently broken.
+function readAuthLinkError() {
+  if (typeof window === "undefined") return null;
+  const raw = (window.location.hash || "").replace(/^#/, "");
+  if (!raw || raw.indexOf("error") === -1) return null;
+  const p = new URLSearchParams(raw);
+  const error = p.get("error");
+  const code = p.get("error_code");
+  if (!error && !code) return null;
+  const description = p.get("error_description") || "";
+  // Clear the hash so a refresh does not re-trigger the error screen.
+  try {
+    window.history.replaceState({}, "", window.location.pathname + window.location.search);
+  } catch {
+    // Non-fatal: the screen still shows, the hash just lingers.
+  }
+  return { error: error || "", code: code || "", description: description.replace(/\+/g, " ") };
+}
+
+export const authLinkError = readAuthLinkError();
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 

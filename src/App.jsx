@@ -21,7 +21,7 @@ export default function App() {
   // Auth session, used only to gate the "My Battles" entry points (nav link +
   // account page). Anonymous users get user === null and see none of it.
   // `recovery` is true when the visitor arrived from a reset-password email.
-  const { user, recovery } = useAuth();
+  const { user, recovery, linkError } = useAuth();
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
   const [sharedBattle, setSharedBattle] = useState(null);
@@ -136,10 +136,22 @@ export default function App() {
       .finally(function() { setSharedLoading(false); });
   }
 
+  // Arriving from an email link (valid recovery OR a dead/expired one) lands the
+  // user with page still "home" and entered still false. Pin them to the accounts
+  // page and mark the app entered, so that when the flag later clears (password
+  // saved, or "Send a New Link" tapped) they STAY on the auth surface instead of
+  // being bounced back to the splash screen or the arena.
+  useEffect(() => {
+    if (recovery || linkError) {
+      setEntered(true);
+      setPage("signup");
+    }
+  }, [recovery, linkError]);
+
   // Skip the splash when the visitor arrived from a reset-password link: making
   // them click "Press to Start" before they can set a new password would look like
   // the link was broken.
-  if (!entered && !recovery) {
+  if (!entered && !recovery && !linkError) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
   }
 
@@ -243,7 +255,7 @@ export default function App() {
   // (usually home). Force the accounts page so the "set a new password" form is
   // actually visible -- otherwise the link appears to do nothing. Takes priority
   // over every other route, and clears itself once the password is saved.
-  if (page === "signup" || recovery) {
+  if (page === "signup" || recovery || linkError) {
     return (
       <>
         <ComingSoon

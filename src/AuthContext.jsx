@@ -9,7 +9,7 @@
 // state (session null, user null, loading false) so nothing downstream breaks.
 
 import { createContext, useContext, useState, useEffect } from "react";
-import supabase from "./supabaseClient";
+import supabase, { authLinkError } from "./supabaseClient";
 
 const AuthContext = createContext({
   session: null,
@@ -17,6 +17,8 @@ const AuthContext = createContext({
   loading: false,
   recovery: false,
   clearRecovery: () => {},
+  linkError: null,
+  clearLinkError: () => {},
 });
 
 export function AuthProvider({ children }) {
@@ -29,6 +31,9 @@ export function AuthProvider({ children }) {
   // the app shows the "set a new password" form instead of the normal account view
   // -- otherwise the reset link would silently sign the user in and dead-end.
   const [recovery, setRecovery] = useState(false);
+  // Set when the visitor arrived from an expired / already-used / invalid email
+  // link. Read once at module load (see supabaseClient) before the hash is stripped.
+  const [linkError, setLinkError] = useState(authLinkError);
 
   useEffect(() => {
     if (!supabase) return;
@@ -69,6 +74,8 @@ export function AuthProvider({ children }) {
     recovery,
     // Called once the new password is saved, so the app returns to normal.
     clearRecovery: () => setRecovery(false),
+    linkError,
+    clearLinkError: () => setLinkError(null),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
