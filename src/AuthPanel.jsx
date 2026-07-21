@@ -353,6 +353,8 @@ export default function AuthPanel({ onViewBattles }) {
               <input
                 className="auth-input"
                 type="password"
+                id="auth-new-password"
+                name="newPassword"
                 autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -366,6 +368,8 @@ export default function AuthPanel({ onViewBattles }) {
               <input
                 className="auth-input"
                 type="password"
+                id="auth-confirm-password"
+                name="confirmPassword"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -461,6 +465,8 @@ export default function AuthPanel({ onViewBattles }) {
           <input
             className="auth-input"
             type="email"
+            id="auth-email"
+            name="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -475,6 +481,8 @@ export default function AuthPanel({ onViewBattles }) {
             <input
               className="auth-input"
               type="password"
+              id="auth-password"
+              name="password"
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}

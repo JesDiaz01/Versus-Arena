@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
 import { checkClientBlocked } from "./clientBlocklist";
@@ -236,6 +236,9 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
   const [urlInput, setUrlInput] = useState("");
   const [msg, setMsg] = useState("");
   const fileInputRef = useRef(null);
+  // This component renders once per fighter, so ids must be unique PER INSTANCE.
+  // useId gives each mount its own stable prefix (no manual slot prop needed).
+  const uid = useId();
 
   function handleUrlSubmit() {
     if (!urlInput.trim()) return;
@@ -307,7 +310,7 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
           <button className="override-option" onClick={() => { setMsg(""); setMode("url"); }}>Paste URL</button>
           <button className="override-option" onClick={() => fileInputRef.current?.click()}>Upload file</button>
           <button className="override-cancel" onClick={() => { setMsg(""); setOpen(false); }}>Cancel</button>
-          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleFile} style={{ display: "none" }} />
+          <input ref={fileInputRef} id={`${uid}-file`} name="overrideImageFile" aria-label="Upload a fighter image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleFile} style={{ display: "none" }} />
           {msg && <div className="override-msg">{msg}</div>}
         </>
       )}
@@ -315,6 +318,9 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
         <>
           <input
             className="override-url-input"
+            id={`${uid}-url`}
+            name="overrideImageUrl"
+            aria-label="Paste an image URL"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="Paste image URL..."
@@ -331,7 +337,9 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
   );
 }
 
-function AutoTextarea({ value, onChange, onKeyDown, placeholder, maxLength }) {
+// id/name/ariaLabel are forwarded so each textarea has a stable identity and an
+// accessible name (a placeholder is not an accessible name).
+function AutoTextarea({ value, onChange, onKeyDown, placeholder, maxLength, id, name, ariaLabel }) {
   const textareaRef = useRef(null);
   useEffect(() => {
     const el = textareaRef.current;
@@ -344,6 +352,9 @@ function AutoTextarea({ value, onChange, onKeyDown, placeholder, maxLength }) {
     <textarea
       ref={textareaRef}
       className="claim-input"
+      id={id}
+      name={name}
+      aria-label={ariaLabel}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
@@ -829,20 +840,23 @@ export default function BattleArena({
         {img.imageUrl && !imgError && !adjusted && (
           <div className="img-adjust">
             <div className="img-adjust-row">
-              <span className="img-adjust-label">vertical</span>
+              <label className="img-adjust-label" htmlFor={`fighter-${side}-adjust-y`}>vertical</label>
               <input type="range" className="img-adjust-slider"
+                id={`fighter-${side}-adjust-y`} name={`fighter${side}AdjustY`}
                 min="0" max="100" step="1" value={adjust.y}
                 onChange={e => setAdjust({ ...adjust, y: Number(e.target.value) })} />
             </div>
             <div className="img-adjust-row">
-              <span className="img-adjust-label">zoom</span>
+              <label className="img-adjust-label" htmlFor={`fighter-${side}-adjust-zoom`}>zoom</label>
               <input type="range" className="img-adjust-slider"
+                id={`fighter-${side}-adjust-zoom`} name={`fighter${side}AdjustZoom`}
                 min="1" max="3" step="0.05" value={adjust.zoom}
                 onChange={e => setAdjust({ ...adjust, zoom: Number(e.target.value) })} />
             </div>
             <div className="img-adjust-row">
-              <span className="img-adjust-label">horizontal</span>
+              <label className="img-adjust-label" htmlFor={`fighter-${side}-adjust-x`}>horizontal</label>
               <input type="range" className="img-adjust-slider"
+                id={`fighter-${side}-adjust-x`} name={`fighter${side}AdjustX`}
                 min="0" max="100" step="1" value={adjust.x}
                 onChange={e => setAdjust({ ...adjust, x: Number(e.target.value) })} />
             </div>
@@ -886,10 +900,10 @@ export default function BattleArena({
             <div className="fighter-label">Fighter One</div>
             {renderAvatar(1)}
             <ImageOverride onSet={setOverride1} hasOverride={!!override1} onClear={() => setOverride1(null)} />
-            <input className="fighter-name-input" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
+            <input className="fighter-name-input" id="fighter-1-name" name="fighter1Name" aria-label="Fighter one name" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
             {f1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <UniverseHint />
-            <input className="universe-input" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
+            <input className="universe-input" id="fighter-1-universe" name="fighter1Universe" aria-label="Fighter one universe or series" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
             {u1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
@@ -904,6 +918,9 @@ export default function BattleArena({
               </div>
               <div className="claim-input-wrap">
                 <AutoTextarea
+                  id="fighter-1-feat"
+                  name="fighter1Feat"
+                  ariaLabel="Add a custom feat or lore note for fighter one"
                   value={draft1}
                   onChange={e => setDraft1(e.target.value.slice(0, CLAIM_LIMIT))}
                   onKeyDown={e => handleClaimKey(e, 1)}
@@ -926,10 +943,10 @@ export default function BattleArena({
             <div className="fighter-label">Fighter Two</div>
             {renderAvatar(2)}
             <ImageOverride onSet={setOverride2} hasOverride={!!override2} onClear={() => setOverride2(null)} />
-            <input className="fighter-name-input" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
+            <input className="fighter-name-input" id="fighter-2-name" name="fighter2Name" aria-label="Fighter two name" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
             {f2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <UniverseHint />
-            <input className="universe-input" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
+            <input className="universe-input" id="fighter-2-universe" name="fighter2Universe" aria-label="Fighter two universe or series" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
             {u2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
@@ -944,6 +961,9 @@ export default function BattleArena({
               </div>
               <div className="claim-input-wrap">
                 <AutoTextarea
+                  id="fighter-2-feat"
+                  name="fighter2Feat"
+                  ariaLabel="Add a custom feat or lore note for fighter two"
                   value={draft2}
                   onChange={e => setDraft2(e.target.value.slice(0, CLAIM_LIMIT))}
                   onKeyDown={e => handleClaimKey(e, 2)}
@@ -959,8 +979,8 @@ export default function BattleArena({
 
         <div className="fight-settings">
           <div className="setting-group">
-            <label className="setting-label">Battle Type</label>
-            <select className="setting-select" value={battleType} onChange={e => setBattleType(e.target.value)}>
+            <label className="setting-label" htmlFor="setting-battle-type">Battle Type</label>
+            <select className="setting-select" id="setting-battle-type" name="battleType" value={battleType} onChange={e => setBattleType(e.target.value)}>
               <option>Standard Fight</option>
               <option>In-Character</option>
               <option>Out of Character</option>
@@ -969,8 +989,8 @@ export default function BattleArena({
             </select>
           </div>
           <div className="setting-group">
-            <label className="setting-label">Location</label>
-            <select className="setting-select" value={location} onChange={e => setLocation(e.target.value)}>
+            <label className="setting-label" htmlFor="setting-location">Location</label>
+            <select className="setting-select" id="setting-location" name="location" value={location} onChange={e => setLocation(e.target.value)}>
               <option>Neutral Terrain</option>
               <option>Urban City</option>
               <option>Space</option>
@@ -978,8 +998,8 @@ export default function BattleArena({
             </select>
           </div>
           <div className="setting-group">
-            <label className="setting-label">Power Level</label>
-            <select className="setting-select" value={power} onChange={e => setPower(e.target.value)}>
+            <label className="setting-label" htmlFor="setting-power">Power Level</label>
+            <select className="setting-select" id="setting-power" name="power" value={power} onChange={e => setPower(e.target.value)}>
               <option>Canon Only</option>
               <option>Composite</option>
               <option>Post-Series Peak</option>
@@ -987,8 +1007,8 @@ export default function BattleArena({
             </select>
           </div>
           <div className="setting-group">
-            <label className="setting-label">Depth</label>
-            <select className="setting-select" value={depth} onChange={e => setDepth(e.target.value)}>
+            <label className="setting-label" htmlFor="setting-depth">Depth</label>
+            <select className="setting-select" id="setting-depth" name="depth" value={depth} onChange={e => setDepth(e.target.value)}>
               <option>Quick Verdict</option>
               <option>Detailed Analysis</option>
               <option>Deep Dive</option>
@@ -1187,6 +1207,9 @@ export default function BattleArena({
                   </div>
                   <textarea
                     className="disagree-note"
+                    id="disagree-note"
+                    name="disagreeNote"
+                    aria-label="Optional: tell us why you disagree"
                     value={disagreeNote}
                     onChange={(e) => setDisagreeNote(e.target.value.slice(0, 500))}
                     maxLength={500}
