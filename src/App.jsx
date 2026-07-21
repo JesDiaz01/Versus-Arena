@@ -123,6 +123,12 @@ export default function App() {
   // only target that is not a plain page (it toggles its own view + URL flag).
   function navigate(target) {
     if (target === "goku") {
+      // Reset the page FIRST: the showGoku branch is rendered AFTER every
+      // page === "..." branch, so leaving a sub-page selected (e.g. "about")
+      // would match that branch first and the Goku view would never appear -
+      // the click would look like it did nothing. Same reason openSavedBattle
+      // sets "home" before handing off to the shared-battle branch.
+      setPage("home");
       setShowGoku(true);
       window.history.replaceState(null, "", "?goku=1");
       return;
