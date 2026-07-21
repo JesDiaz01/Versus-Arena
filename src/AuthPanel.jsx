@@ -59,7 +59,7 @@ function looksLikeEmail(v) {
 }
 
 export default function AuthPanel({ onViewBattles }) {
-  const { user, loading } = useAuth();
+  const { user, loading, recovery, clearRecovery } = useAuth();
 
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
   const [email, setEmail] = useState("");
@@ -75,6 +75,47 @@ export default function AuthPanel({ onViewBattles }) {
   const captchaEnabled = Boolean(TURNSTILE_SITE_KEY);
   const [captchaToken, setCaptchaToken] = useState("");
   const turnstileRef = useRef(null);
+
+  // "Set a new password" flow (arrived via a reset-password email link).
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  async function handleSetNewPassword(e) {
+    e.preventDefault();
+    if (submitting) return;
+    setError("");
+    setNotice("");
+
+    // Same policy as sign-up, enforced here too (Supabase re-checks server-side).
+    const pwErr = passwordPolicyError(newPassword);
+    if (pwErr) {
+      setError(pwErr);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Both passwords must match.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // No captcha token here: Supabase enforces CAPTCHA on signup/signin/recover,
+      // not on updateUser. The recovery session itself is the proof of ownership.
+      const { error: upErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (upErr) {
+        setError(upErr.message || "Could not update your password. Try again.");
+      } else {
+        setNewPassword("");
+        setConfirmPassword("");
+        setNotice("Password updated. You're signed in.");
+        clearRecovery(); // leave recovery mode -> normal account view
+      }
+    } catch {
+      setError("Something went wrong. Try again in a moment.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   function resetCaptcha() {
     setCaptchaToken("");
@@ -190,10 +231,12 @@ export default function AuthPanel({ onViewBattles }) {
       } else if (mode === "forgot") {
         // NOTE: resetPasswordForEmail takes options as its SECOND argument (there is
         // no nested `options` key here, unlike signUp / signInWithPassword above).
-        const { error: rpErr } = await supabase.auth.resetPasswordForEmail(
-          em,
-          captchaToken ? { captchaToken } : undefined
-        );
+        // redirectTo sends the user back to THIS origin, so a reset started on
+        // localhost returns to localhost instead of the production Site URL. The
+        // origin must be listed under Supabase Auth -> URL Configuration -> Redirect URLs.
+        const resetOptions = { redirectTo: window.location.origin };
+        if (captchaToken) resetOptions.captchaToken = captchaToken;
+        const { error: rpErr } = await supabase.auth.resetPasswordForEmail(em, resetOptions);
         if (rpErr) {
           setError(rpErr.message || "Could not send a reset email. Try again.");
         } else {
@@ -236,6 +279,62 @@ export default function AuthPanel({ onViewBattles }) {
           <VLogo className="auth-logo" />
           <span className="auth-rule" aria-hidden="true" />
           <p className="auth-loading">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Password recovery: the user clicked the reset link in their email. This is
+  // checked BEFORE the signed-in view, because a recovery session DOES have a user
+  // -- without this branch the link would silently sign them in and never let them
+  // set a new password. ---
+  if (recovery) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <VLogo className="auth-logo" />
+          <span className="auth-rule" aria-hidden="true" />
+          <h2 className="auth-heading">Set a new password</h2>
+          <p className="auth-text">
+            Choose a new password for <strong>{user ? user.email : "your account"}</strong>.
+          </p>
+
+          <form className="auth-form" onSubmit={handleSetNewPassword} noValidate>
+            <label className="auth-field">
+              <span className="auth-label">New password</span>
+              <input
+                className="auth-input"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={MIN_PASSWORD + "+ chars, with a capital and a number"}
+                disabled={submitting}
+              />
+            </label>
+
+            <label className="auth-field">
+              <span className="auth-label">Confirm new password</span>
+              <input
+                className="auth-input"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your new password"
+                disabled={submitting}
+              />
+            </label>
+
+            {error && <p className="auth-error" role="alert">{error}</p>}
+            {notice && <p className="auth-notice" role="status">{notice}</p>}
+
+            <div className="auth-actions">
+              <button className="auth-submit" type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : "Save New Password"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );

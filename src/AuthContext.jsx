@@ -11,13 +11,24 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import supabase from "./supabaseClient";
 
-const AuthContext = createContext({ session: null, user: null, loading: false });
+const AuthContext = createContext({
+  session: null,
+  user: null,
+  loading: false,
+  recovery: false,
+  clearRecovery: () => {},
+});
 
 export function AuthProvider({ children }) {
   // loading starts true only when there is a client to ask; with no client
   // there is nothing to wait for.
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(Boolean(supabase));
+  // True from the moment Supabase reports PASSWORD_RECOVERY (the user arrived via
+  // a reset-password email link) until the new password is saved. While it is set,
+  // the app shows the "set a new password" form instead of the normal account view
+  // -- otherwise the reset link would silently sign the user in and dead-end.
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -35,8 +46,14 @@ export function AuthProvider({ children }) {
     });
 
     // Keep session state live across sign-in, sign-out, and token refresh.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (!cancelled) setSession(newSession);
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (cancelled) return;
+      setSession(newSession);
+      // Arriving from a reset-password email fires PASSWORD_RECOVERY with a valid
+      // (recovery) session. Flag it so the UI can demand a new password. Signing
+      // out always clears the flag so it can never stick around.
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      if (event === "SIGNED_OUT") setRecovery(false);
     });
 
     return () => {
@@ -49,6 +66,9 @@ export function AuthProvider({ children }) {
     session,
     user: session ? session.user : null,
     loading,
+    recovery,
+    // Called once the new password is saved, so the app returns to normal.
+    clearRecovery: () => setRecovery(false),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

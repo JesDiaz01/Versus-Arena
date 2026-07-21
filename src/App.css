@@ -3991,14 +3991,22 @@ padding: 2.75rem 0 0;
 .auth-tab.active { color: var(--ink); }
 .auth-tab.active::after { transform: scaleX(1); }
 
+/* Centered to match the rest of the card (it was the only left-aligned element,
+   which made the wrap read as a mistake). Slightly smaller size + tighter tracking
+   so "Reset your password" fits one line at the card's width; text-wrap:balance
+   keeps any wrap that does happen (narrow phones) evenly split instead of leaving
+   one orphan word. */
 .auth-heading {
   font-family: 'Cinzel', serif;
   font-weight: 900;
-  font-size: 1.4rem;
-  letter-spacing: 0.1em;
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
   text-transform: uppercase;
   color: var(--ink);
-  margin-bottom: 1.75rem;
+  text-align: center;
+  text-wrap: balance;
+  margin-bottom: 1.5rem;
 }
 
 .auth-form {

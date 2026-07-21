@@ -20,7 +20,8 @@ import { PRESETS, PresetImg } from "./presets";
 export default function App() {
   // Auth session, used only to gate the "My Battles" entry points (nav link +
   // account page). Anonymous users get user === null and see none of it.
-  const { user } = useAuth();
+  // `recovery` is true when the visitor arrived from a reset-password email.
+  const { user, recovery } = useAuth();
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState("home");
   const [sharedBattle, setSharedBattle] = useState(null);
@@ -135,7 +136,10 @@ export default function App() {
       .finally(function() { setSharedLoading(false); });
   }
 
-  if (!entered) {
+  // Skip the splash when the visitor arrived from a reset-password link: making
+  // them click "Press to Start" before they can set a new password would look like
+  // the link was broken.
+  if (!entered && !recovery) {
     return <SplashScreen onEnter={() => setEntered(true)} />;
   }
 
@@ -235,7 +239,11 @@ export default function App() {
     );
   }
 
-  if (page === "signup") {
+  // A reset-password link drops the user on whatever page the redirect targets
+  // (usually home). Force the accounts page so the "set a new password" form is
+  // actually visible -- otherwise the link appears to do nothing. Takes priority
+  // over every other route, and clears itself once the password is saved.
+  if (page === "signup" || recovery) {
     return (
       <>
         <ComingSoon
