@@ -4057,16 +4057,9 @@ padding: 2.75rem 0 0;
   display: flex;
   justify-content: center;
   margin-top: 0.25rem;
+  max-width: 100%;
 }
 .auth-captcha > * { max-width: 100%; }
-/* The normal widget is ~300px; below that the iframe would overflow the card, so
-   scale it down from the center instead of letting it spill. */
-@media (max-width: 350px) {
-  .auth-captcha {
-    transform: scale(0.92);
-    transform-origin: center;
-  }
-}
 
 .auth-actions {
   margin-top: 0.5rem;
@@ -4153,11 +4146,38 @@ padding: 2.75rem 0 0;
 }
 .auth-link:hover { color: var(--gold-bright); }
 
-/* Mobile: tighten the halo + card padding so nothing overflows a narrow screen. */
+/* Mobile: the Turnstile iframe has a ~300px hard minimum and will NOT reflow
+   smaller, so the card has to be given enough inner width to hold it.
+   Budget at <=768px (root font-size 16px):
+     .about-container padding 1.25rem -> viewport - 40
+     .auth-shell padding + negative margin                  -> see below
+     .auth-card padding 1rem                                -> -32
+   Net inner width = viewport - 48, i.e. 300px of room from ~348px upward, so
+   360 / 375 / 390 all fit the widget at FULL SIZE (no scaling, text stays crisp). */
 @media (max-width: 520px) {
-  .auth-shell { padding: 1.25rem 0.5rem 0.75rem; }
+  .auth-shell {
+    /* Claw back most of the shared .about-container side padding. Scoped to
+       .auth-shell so no other page using .about-container shifts. Leaves a ~4px
+       gutter between the card and the screen edge. */
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 1.25rem 0.25rem 0.75rem;
+  }
   .auth-card {
-    padding: 1.85rem 1.35rem 1.6rem;
+    padding: 1.85rem 1rem 1.6rem;
     border-radius: 10px;
+  }
+}
+
+/* Below ~348px there is no longer 300px of inner width even at minimum padding,
+   so scale by the smallest amount that fits (0.88 -> 264px visual, inside the
+   272px available at 320px). transform-origin is TOP so the negative margin can
+   reclaim the vertical gap the scaled-but-still-full-size layout box leaves
+   behind (a scaled transform does not shrink the reserved space). */
+@media (max-width: 340px) {
+  .auth-captcha {
+    transform: scale(0.88);
+    transform-origin: center top;
+    margin-bottom: -8px;
   }
 }
