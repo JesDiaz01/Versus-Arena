@@ -149,6 +149,20 @@ body::before {
   padding-bottom: 2px;
 }
 
+/* Desktop row layout: the links begin just after the wordmark (separated by
+   .nav-inner's gap) and only the CTA is anchored to the right edge. Relying on
+   space-between alone shoved the whole link group right, so with fewer links
+   (signed out) a large gap opened between "VERSUS ARENA" and "Battles". */
+@media (min-width: 769px) {
+  .nav-links {
+    flex: 1;
+    justify-content: flex-start;
+  }
+  .nav-links > li:last-child {
+    margin-left: auto;
+  }
+}
+
 /* Just above the mobile stack the row is tightest, so shave the side padding to
    buy back a little more width. (Base spacing is already tightened above.) */
 @media (min-width: 769px) and (max-width: 1100px) {
