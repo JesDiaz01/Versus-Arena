@@ -3862,13 +3862,96 @@ padding: 2.75rem 0 0;
    Reuses the site's tokens (--gold, --ink, Cinzel/Inter) and mirrors the
    .claim-input field + .fight-btn button treatments so the form reads as native.
    Every selector is .auth-* scoped; nothing here touches existing components. */
-.auth-panel {
-  max-width: 420px;
-  margin: 0 auto;
-  text-align: left;
+/* Soft warm halo behind the card so it never floats on dead-flat cream. Wider
+   than the card so the glow feathers out into the page. */
+.auth-shell {
+  max-width: 620px;
+  margin: 0.5rem auto 0;
+  padding: 2.25rem 1rem 1.25rem;
+  background: radial-gradient(90% 70% at 50% 18%, rgba(184,134,11,0.07), rgba(184,134,11,0) 70%);
+  border-radius: 18px;
 }
 
-/* Sign In / Sign Up tab row. */
+/* Elevated form card. Echoes the verdict preset-card language: a top gold radial
+   glow over a surface->surface-2 gradient, a hairline border, and soft LAYERED
+   shadows for real depth. A gradient gold "ring" is drawn via ::before. */
+.auth-card {
+  position: relative;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 2.5rem 2.25rem 2.25rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(184,134,11,0.10), rgba(184,134,11,0) 55%),
+    linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  box-shadow:
+    0 1px 2px rgba(26,26,26,0.04),
+    0 6px 14px rgba(26,26,26,0.05),
+    0 26px 52px rgba(26,26,26,0.10);
+  animation: authCardIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+/* Subtle gold gradient ring hugging the card edge (the verdict-card gold language),
+   painted as a 1px border-mask so it never bleeds inward over the content. */
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(155deg, rgba(212,160,23,0.55), rgba(184,134,11,0.06) 42%, rgba(184,134,11,0) 72%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-card { animation: none; }
+}
+
+/* Brand hero at the top of the card: the gold V mark over a thin gold rule, tying
+   the card to the site identity (and giving the page a logo it otherwise lacks). */
+.auth-logo {
+  display: block;
+  width: 46px;
+  height: auto;
+  margin: 0 auto 0.85rem;
+  filter: drop-shadow(0 4px 8px rgba(184,134,11,0.22));
+}
+.auth-rule {
+  display: block;
+  width: 46px;
+  height: 2px;
+  margin: 0 auto 1.6rem;
+  border-radius: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+
+/* Self-contained paragraph styles (the card no longer sits inside .about-section,
+   so these replace the inherited .about-section p / .about-lead treatment). */
+.auth-lead {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin-bottom: 0.9rem;
+  text-align: center;
+}
+.auth-lead strong { color: var(--gold); font-weight: 700; }
+.auth-text {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Sign In / Sign Up tab row. The active gold underline grows in smoothly via a
+   scaleX transition on ::after (no layout shift, no logic change). */
 .auth-tabs {
   display: flex;
   gap: 0;
@@ -3876,12 +3959,11 @@ padding: 2.75rem 0 0;
   border-bottom: 1px solid var(--line);
 }
 .auth-tab {
+  position: relative;
   flex: 1;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;                 /* overlap the container border */
-  padding: 0.75rem 0.5rem;
+  padding: 0.8rem 0.5rem;
   cursor: pointer;
   font-family: 'Cinzel', serif;
   font-weight: 700;
@@ -3889,13 +3971,22 @@ padding: 2.75rem 0 0;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
-  transition: color 0.2s, border-color 0.2s;
+  transition: color 0.25s ease;
+}
+.auth-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;                        /* sit on the container's border line */
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .auth-tab:hover { color: var(--ink); }
-.auth-tab.active {
-  color: var(--ink);
-  border-bottom-color: var(--gold);
-}
+.auth-tab.active { color: var(--ink); }
+.auth-tab.active::after { transform: scaleX(1); }
 
 .auth-heading {
   font-family: 'Cinzel', serif;
@@ -3924,25 +4015,47 @@ padding: 2.75rem 0 0;
   color: var(--ink-soft);
   font-weight: 600;
 }
-/* Field treatment mirrors .claim-input (surface bg, gold focus glow). */
+/* Elevated field: refined border, comfortable padding, a faint inset so it reads
+   as recessed, and a smooth gold border + glow on focus. */
 .auth-input {
   width: 100%;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
   color: var(--ink);
   font-family: 'Inter', sans-serif;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 1px 2px rgba(26,26,26,0.03);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
+.auth-input:hover:not(:focus):not(:disabled) { border-color: var(--muted); }
 .auth-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(184,134,11,0.15);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(184,134,11,0.15), inset 0 1px 2px rgba(26,26,26,0.02);
 }
 .auth-input::placeholder { color: var(--muted); }
 .auth-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Turnstile widget slot. Cloudflare renders it in an iframe with fixed dimensions
+   and only exposes a theme/size option, so we control placement: centered, spaced,
+   and never allowed to push the card wider than its content box on mobile. */
+.auth-captcha {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+.auth-captcha > * { max-width: 100%; }
+/* The normal widget is ~300px; below that the iframe would overflow the card, so
+   scale it down from the center instead of letting it spill. */
+@media (max-width: 350px) {
+  .auth-captcha {
+    transform: scale(0.92);
+    transform-origin: center;
+  }
+}
 
 .auth-actions {
   margin-top: 0.5rem;
@@ -3956,6 +4069,7 @@ padding: 2.75rem 0 0;
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line-strong);
+  box-shadow: none;
 }
 .auth-submit.auth-secondary:hover:not(:disabled) {
   background: transparent;
@@ -3963,7 +4077,8 @@ padding: 2.75rem 0 0;
   border-color: var(--gold);
   box-shadow: none;
 }
-/* Submit button mirrors .fight-btn (ink base, gold hover) at a form-friendly size. */
+/* Primary button: ink base with real weight (resting shadow), a smooth gold hover
+   lift, matching the input radius. Mirrors the .fight-btn family. */
 .auth-submit {
   width: 100%;
   font-family: 'Cinzel', serif;
@@ -3974,18 +4089,19 @@ padding: 2.75rem 0 0;
   background: var(--ink);
   color: var(--bg);
   border: none;
-  border-radius: 2px;
-  padding: 0.9rem 1.5rem;
+  border-radius: 6px;
+  padding: 0.95rem 1.5rem;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(26,26,26,0.14);
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 .auth-submit:hover:not(:disabled) {
   background: var(--gold);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(184,134,11,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(184,134,11,0.28);
 }
-.auth-submit:active:not(:disabled) { transform: scale(0.98); }
-.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-submit:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
 /* Inline messages. */
 .auth-error {
@@ -4025,3 +4141,12 @@ padding: 2.75rem 0 0;
   text-underline-offset: 2px;
 }
 .auth-link:hover { color: var(--gold-bright); }
+
+/* Mobile: tighten the halo + card padding so nothing overflows a narrow screen. */
+@media (max-width: 520px) {
+  .auth-shell { padding: 1.25rem 0.5rem 0.75rem; }
+  .auth-card {
+    padding: 1.85rem 1.35rem 1.6rem;
+    border-radius: 10px;
+  }
+}
