@@ -76,7 +76,10 @@ export default function FAQ({ onNavigate }) {
             <p className="faq-a">
               Click <strong>Use My Own Image</strong> under the fighter and either paste
               an image URL or upload your own picture. It works for any character and is
-              the reliable way to set exactly the art you want.
+              the reliable way to set exactly the art you want. An image you pick this
+              way stays on your own device and is never uploaded to our servers, so it
+              applies to your current visit only and you'll need to set it again if you
+              reload the page.
             </p>
           </FaqItem>
 

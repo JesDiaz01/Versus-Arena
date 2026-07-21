@@ -94,7 +94,7 @@ export default function Disclaimer({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Disclaimer</h1>
-          <p className="pp-updated">Last updated: July 4, 2026</p>
+          <p className="pp-updated">Last updated: July 21, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -142,9 +142,10 @@ export default function Disclaimer({ onNavigate }) {
 
           <h2>Your responsibility</h2>
           <p>
-            You are responsible for the content you enter into the custom feats and lore
-            fields. Do not use this site to harass, defame, or post hateful content
-            about any real person.
+            You are responsible for the content you enter into the site, including the
+            custom feats and lore fields and any note you send us through the feedback
+            option after a verdict. Do not use this site to harass, defame, or post
+            hateful content about any real person.
           </p>
 
           <h2>Intellectual property</h2>

@@ -94,7 +94,7 @@ export default function PrivacyPolicy({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: July 18, 2026</p>
+          <p className="pp-updated">Last updated: July 21, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -140,6 +140,20 @@ export default function PrivacyPolicy({ onNavigate }) {
               <strong>Images you upload.</strong> If you upload your own image for a
               fighter, it stays in your browser for that session only. It is never sent
               to or stored on our servers.
+            </li>
+            <li>
+              <strong>Feedback on verdicts.</strong> If you use the "Disagree with the
+              outcome?" option after a battle, we save the two characters, the verdict
+              you disagreed with, the reason you picked, and your optional written note,
+              so we can improve the judging. That note is free text and is stored in our
+              database, so please don't include personal information in it.
+            </li>
+            <li>
+              <strong>Crash reports.</strong> If the site hits an unexpected error in
+              your browser, it automatically sends us a diagnostic report containing the
+              error message and technical stack trace, the page address you were on
+              (which may include a battle share link), and your browser's user-agent
+              string. We use these only to find and fix bugs.
             </li>
             <li>
               <strong>Technical information.</strong> Like almost every website, our
@@ -206,6 +220,11 @@ export default function PrivacyPolicy({ onNavigate }) {
             <li>
               <strong>Vercel</strong>, our hosting provider, which serves the site and
               keeps the standard logs described above.
+            </li>
+            <li>
+              <strong>Cloudflare</strong>, which provides the anti-bot verification
+              challenge on our sign-in and sign-up forms, and receives your IP address
+              and basic browser signals in order to tell real people from bots.
             </li>
             <li>
               <strong>Fandom and Wikipedia.</strong> When the site looks up a character
