@@ -12,6 +12,7 @@ import Disclaimer from "./Disclaimer";
 import ComingSoon from "./ComingSoon";
 import AuthPanel from "./AuthPanel";
 import MyBattles from "./MyBattles";
+import NavBar from "./NavBar";
 import { useAuth } from "./AuthContext";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
@@ -117,6 +118,19 @@ export default function App() {
     }
   }, []);
 
+  // Single navigation entry point for the whole site. Every page forwards this to
+  // NavBar, so a page needs one prop instead of a handler per link. "goku" is the
+  // only target that is not a plain page (it toggles its own view + URL flag).
+  function navigate(target) {
+    if (target === "goku") {
+      setShowGoku(true);
+      window.history.replaceState(null, "", "?goku=1");
+      return;
+    }
+    setShowGoku(false);
+    setPage(target);
+  }
+
   // Re-open a saved battle by id from the My Battles list. Reuses the exact
   // shared-battle path (sharedLoading -> SharedBattle) the ?b= mount effect uses,
   // so no new render machinery is needed. Sets page to "home" first so the render
@@ -158,7 +172,7 @@ export default function App() {
   if (page === "about") {
     return (
       <>
-        <About onBack={() => setPage("home")} />
+        <About onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -174,7 +188,7 @@ export default function App() {
   if (page === "faq") {
     return (
       <>
-        <FAQ onBack={() => setPage("home")} />
+        <FAQ onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -190,7 +204,7 @@ export default function App() {
   if (page === "tools") {
     return (
       <>
-        <Tools onBack={() => setPage("home")} />
+        <Tools onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -206,7 +220,7 @@ export default function App() {
   if (page === "leaderboard") {
     return (
       <>
-        <Leaderboard onBack={() => setPage("home")} />
+        <Leaderboard onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -222,7 +236,7 @@ export default function App() {
   if (page === "privacy") {
     return (
       <>
-        <PrivacyPolicy onBack={() => setPage("home")} />
+        <PrivacyPolicy onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -238,7 +252,7 @@ export default function App() {
   if (page === "disclaimer") {
     return (
       <>
-        <Disclaimer onBack={() => setPage("home")} />
+        <Disclaimer onNavigate={navigate} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -266,7 +280,8 @@ export default function App() {
           title={user
             ? <>Your <span className="vs-word">Account</span></>
             : <>Join the <span className="vs-word">Arena</span></>}
-          onBack={() => setPage("home")}
+          onNavigate={navigate}
+          active="signup"
         >
           <AuthPanel onViewBattles={() => setPage("mybattles")} />
         </ComingSoon>
@@ -288,7 +303,8 @@ export default function App() {
         <ComingSoon
           tag="Ranked Mode"
           title={<>Ranked <span className="vs-word">Mode</span></>}
-          onBack={() => setPage("home")}
+          onNavigate={navigate}
+          active="categories"
         >
           <div className="about-section">
             <p className="about-lead">Ranked Mode is coming soon.</p>
@@ -331,7 +347,7 @@ export default function App() {
   if (page === "mybattles" && user) {
     return (
       <>
-        <MyBattles onBack={() => setPage("home")} onOpenBattle={openSavedBattle} />
+        <MyBattles onNavigate={navigate} onOpenBattle={openSavedBattle} />
         <Footer
           onHome={() => setPage("home")}
           onAbout={() => setPage("about")}
@@ -400,36 +416,7 @@ export default function App() {
 
   return (
     <div className="page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#">VERSUS<span> ARENA</span></a>
-          <ul className="nav-links">
-            <li><a href="#">Battles</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("leaderboard"); }}>Leaderboard</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("tools"); }}>Tools</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("categories"); }}>Categories</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("about"); }}>About</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
-            <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
-            {user && (
-              <li><a href="#" className="nav-nowrap" onClick={(e) => { e.preventDefault(); setPage("mybattles"); }}>My Battles</a></li>
-            )}
-            {/* Signed out -> "Sign Up Free" (acquisition CTA). Signed in -> "Account",
-                which opens the same page, where AuthPanel renders the signed-in view
-                (email + View My Battles + Sign Out). Showing "Sign Up Free" to someone
-                who is already signed in makes no sense. */}
-            <li>
-              <a
-                href="#"
-                className="nav-cta nav-nowrap"
-                onClick={(e) => { e.preventDefault(); setPage("signup"); }}
-              >
-                {user ? "Account" : "Sign Up Free"}
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={navigate} active="home" />
 
       <div className="hero">
         <div className="hero-tag">Settle the debate</div>

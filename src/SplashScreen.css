@@ -87,23 +87,6 @@
   transition: width 0.05s linear;
 }
 
-.loading-bar-segments {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.segment {
-  flex: 1;
-  border-radius: 1px;
-  background: rgba(0,0,0,0.35);
-  transition: background 0.1s;
-}
-
 .loading-label {
   font-family: 'Cinzel', serif;
   font-size: 0.65rem;

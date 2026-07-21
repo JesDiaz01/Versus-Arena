@@ -1,3 +1,4 @@
+import NavBar from "./NavBar";
 // src/Disclaimer.jsx
 // Disclaimer page for Versus Arena.
 // Implemented exactly like PrivacyPolicy.jsx: its own simple navbar with a
@@ -5,26 +6,13 @@
 // classes), plus its own scoped styles for the page text. It uses the CSS
 // variables already defined in App.css, so it needs no changes to App.css.
 //
-// Takes an onBack callback (same pattern as PrivacyPolicy.jsx) to return to the arena.
+// Takes the shared onNavigate(target) callback (same pattern as every page) for
+// the site nav and the "back to the arena" CTA.
 
-export default function Disclaimer({ onBack }) {
-  const goBack = (e) => {
-    if (e) e.preventDefault();
-    if (onBack) onBack();
-  };
-
+export default function Disclaimer({ onNavigate }) {
   return (
     <div className="privacy-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={goBack}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="disclaimer" />
 
       <div className="pp-wrap">
         <style>{`
@@ -167,7 +155,7 @@ export default function Disclaimer({ onBack }) {
           </p>
 
           <div className="pp-cta">
-            <button className="fight-btn" onClick={() => onBack && onBack()}>
+            <button className="fight-btn" onClick={() => onNavigate && onNavigate("home")}>
               Back to the Arena
             </button>
           </div>

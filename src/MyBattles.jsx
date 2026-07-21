@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import NavBar from "./NavBar";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -18,7 +19,7 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export default function MyBattles({ onBack, onOpenBattle }) {
+export default function MyBattles({ onNavigate, onOpenBattle }) {
   const { session } = useAuth();
   // Start "ready"/empty when there is no session so the effect never has to set
   // state synchronously; a signed-in mount starts "loading" and the fetch fills it.
@@ -27,7 +28,7 @@ export default function MyBattles({ onBack, onOpenBattle }) {
 
   const goBack = (e) => {
     if (e) e.preventDefault();
-    if (onBack) onBack();
+    if (onNavigate) onNavigate("home");
   };
 
   useEffect(() => {
@@ -58,16 +59,7 @@ export default function MyBattles({ onBack, onOpenBattle }) {
 
   return (
     <div className="privacy-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={goBack}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="mybattles" />
 
       <div className="about-container">
         <div className="about-tag">Accounts</div>

@@ -7,6 +7,7 @@
 // answer is hidden until clicked. Open state is plain per-item React state (no storage,
 // no deps); multiple items may be open at once.
 import { useState } from "react";
+import NavBar from "./NavBar";
 
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 const CONTACT_EMAIL = "versusarenahq@gmail.com";
@@ -48,23 +49,14 @@ function FaqItem({ q, isOpen, onToggle, children }) {
   );
 }
 
-export default function FAQ({ onBack }) {
+export default function FAQ({ onNavigate }) {
   // Map of index -> open. Toggling one never closes the others (multiple-open accordion).
   const [openItems, setOpenItems] = useState({});
   const toggle = (i) => setOpenItems((prev) => ({ ...prev, [i]: !prev[i] }));
 
   return (
     <div className="about-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="faq" />
 
       <div className="about-container">
         <div className="about-tag">Help</div>
@@ -132,7 +124,7 @@ export default function FAQ({ onBack }) {
         </div>
 
         <div className="about-section about-footer-cta">
-          <button className="fight-btn about-cta-btn" onClick={onBack}>
+          <button className="fight-btn about-cta-btn" onClick={() => onNavigate("home")}>
             Enter the Arena
           </button>
         </div>

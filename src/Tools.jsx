@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import NavBar from "./NavBar";
 
 /* ============================================================
    SHARED HELPERS
@@ -1114,19 +1115,10 @@ function EnergyTierChart() {
 /* ============================================================
    PAGE
    ============================================================ */
-export default function Tools({ onBack }) {
+export default function Tools({ onNavigate }) {
   return (
     <div className="tools-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="tools" />
 
       <div className="tools-container">
         <div className="about-tag">Powerscaling Tools</div>

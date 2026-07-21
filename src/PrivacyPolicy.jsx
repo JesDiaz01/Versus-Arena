@@ -1,3 +1,4 @@
+import NavBar from "./NavBar";
 // src/PrivacyPolicy.jsx
 // Privacy policy page for Versus Arena.
 // Matches your About page: its own simple navbar with a "Back to Arena" link
@@ -5,26 +6,13 @@
 // own scoped styles for the policy text. It uses the CSS variables already defined
 // in App.css, so it needs no changes to App.css.
 //
-// Takes an onBack callback (same pattern as About.jsx) to return to the arena.
+// Takes the shared onNavigate(target) callback (same pattern as every page) for
+// the site nav and the "back to the arena" CTA.
 
-export default function PrivacyPolicy({ onBack }) {
-  const goBack = (e) => {
-    if (e) e.preventDefault();
-    if (onBack) onBack();
-  };
-
+export default function PrivacyPolicy({ onNavigate }) {
   return (
     <div className="privacy-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={goBack}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={goBack}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="privacy" />
 
       <div className="pp-wrap">
         <style>{`
@@ -275,7 +263,7 @@ export default function PrivacyPolicy({ onBack }) {
           </p>
 
           <div className="pp-cta">
-            <button className="fight-btn" onClick={() => onBack && onBack()}>
+            <button className="fight-btn" onClick={() => onNavigate && onNavigate("home")}>
               Back to the Arena
             </button>
           </div>

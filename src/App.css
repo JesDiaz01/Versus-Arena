@@ -71,12 +71,20 @@ body::before {
    width there and simply wraps. */
 .nav-inner {
   width: 100%;
-  max-width: 1000px;
+  /* Slightly wider than the 1000px .arena content column. Ten items (nine links
+     plus the wordmark, once signed in) need ~1075px at a readable size; capping
+     at 1000 forced the row to wrap on every desktop width. The ~60px per side of
+     extra reach is a deliberate trade to keep the nav on ONE line. */
+  max-width: 1120px;
   margin: 0 auto;
   padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Guarantees the wordmark and the first link ("Battles") are separated by the
+     SAME gap the links use between themselves, instead of touching once the row
+     runs out of slack. Matches .nav-links gap below. */
+  gap: 2rem;
 }
 
 .logo {
@@ -86,29 +94,40 @@ body::before {
   letter-spacing: 0.25em;
   color: var(--ink);
   text-decoration: none;
+  /* Stacked wordmark: VERSUS over ARENA. The nav is now the SAME full set of links
+     on every page, so stacking keeps the mark narrow and leaves room for the row.
+     nowrap keeps each of the two lines unbroken. */
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  white-space: nowrap;
 }
 .logo span { color: var(--gold); }
 
 .nav-links {
   display: flex;
-  gap: 2rem;
+  /* Nine links plus the wordmark have to fit inside .nav-inner's 1000px column
+     (which is capped to stay aligned with the .arena content column). At the old
+     2rem gap the row needed ~1176px and the "Sign Up Free" CTA was pushed off
+     screen, so the spacing is tightened here rather than per-breakpoint.
+     flex-wrap is the safety net: if a future link overflows anyway it drops to a
+     second line instead of being clipped. */
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   list-style: none;
 }
 .nav-links a {
   color: var(--ink-soft);
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
   transition: color 0.2s;
 }
 .nav-links a:hover { color: var(--ink); }
-.nav-links a.nav-back-link {
-  color: var(--ink);
-  transition: color 0.2s;
-}
-.nav-links a.nav-back-link:hover { color: var(--gold); }
 .nav-cta {
   background: var(--ink) !important;
   color: var(--bg) !important;
@@ -122,6 +141,19 @@ body::before {
 /* Keep multi-word nav items ("My Battles", "Sign Up Free") on one line instead of
    breaking mid-phrase when the bar gets crowded. */
 .nav-nowrap { white-space: nowrap; }
+/* Current page: a quiet gold underline so the shared nav tells you where you are.
+   Excludes .nav-cta, which is already a solid button and would look broken. */
+.nav-links a.active:not(.nav-cta) {
+  color: var(--ink);
+  border-bottom: 1.5px solid var(--gold);
+  padding-bottom: 2px;
+}
+
+/* Just above the mobile stack the row is tightest, so shave the side padding to
+   buy back a little more width. (Base spacing is already tightened above.) */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .nav-inner { padding: 0 1rem; }
+}
 .nav-goku:hover { color: var(--gold-bright) !important; }
 
 /* HERO */
@@ -564,7 +596,6 @@ body::before {
   color: var(--ink);
   text-transform: uppercase;
 }
-.result-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; letter-spacing: 0.1em; }
 
 /* Difficulty ("diff") tier pill, derived from the winner's dominance score.
    Shared by the BattleArena and SharedBattle verdict headers. */
@@ -1563,24 +1594,6 @@ textarea.claim-input {
 }
 
 
-/* === FOOTER DISCORD BUTTON (matches link styling) === */
-.footer-social-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.85rem;
-  color: rgba(245,242,236,0.65);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: color 0.2s;
-  text-align: left;
-}
-
-.footer-social-btn:hover { color: var(--bg); }
-
 /* === FOOTER (complete) === */
 .site-footer {
   background: var(--ink);
@@ -1659,24 +1672,6 @@ textarea.claim-input {
   flex-shrink: 0;
   opacity: 0.8;
 }
-
-/* Discord button styled like a link */
-.footer-social-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.85rem;
-  color: rgba(245,242,236,0.65);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: color 0.2s;
-  text-align: left;
-}
-
-.footer-social-btn:hover { color: var(--bg); }
 
 .footer-bottom {
   border-top: 1px solid rgba(245,242,236,0.1);
@@ -3766,12 +3761,6 @@ padding: 2.75rem 0 0;
   text-transform: uppercase;
   color: var(--ink);
   overflow-wrap: anywhere;
-}
-.preset-card-subtitle {
-  font-size: 0.74rem;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-top: 0.5rem;
 }
 .preset-card-chips {
   /* Stack the advantage chips in a single centered column so no chip row is ever wide enough to

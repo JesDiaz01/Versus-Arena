@@ -319,19 +319,6 @@
   color: var(--ink-soft);
 }
 
-.cbg-score-tag {
-  display: inline-block;
-  margin-left: 0.45rem;
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-.cbg-score-tag--up {
-  color: var(--gold);
-}
-
 .cbg-arrow-up,
 .cbg-arrow-down {
   display: inline-block;

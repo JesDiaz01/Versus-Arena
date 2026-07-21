@@ -1,21 +1,15 @@
-// Shared "coming soon" / roadmap-teaser page. Presentational only - it renders the
-// same about-* shell the Leaderboard uses, with its own minimal navbar and an
-// "Enter the Arena" CTA. Callers pass the eyebrow tag, the title (string or JSX),
-// and the body via children. Routed by page-state in App.jsx (setPage), wrapped
-// there with the shared Footer like every other page.
-export default function ComingSoon({ tag, title, onBack, children }) {
+// Shared "coming soon" / roadmap-teaser page, also used as the shell for the
+// accounts page. Presentational only - it renders the same about-* shell the
+// Leaderboard uses, with the site-wide NavBar and an "Enter the Arena" CTA.
+// Callers pass the eyebrow tag, the title (string or JSX), the body via children,
+// and `active` so the nav can highlight the current page. Routed by page-state in
+// App.jsx, wrapped there with the shared Footer like every other page.
+import NavBar from "./NavBar";
+
+export default function ComingSoon({ tag, title, onNavigate, active, children }) {
   return (
     <div className="about-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active={active} />
 
       <div className="about-container">
         <div className="about-tag">{tag}</div>
@@ -24,7 +18,7 @@ export default function ComingSoon({ tag, title, onBack, children }) {
         {children}
 
         <div className="about-section about-footer-cta">
-          <button className="fight-btn about-cta-btn" onClick={onBack}>
+          <button className="fight-btn about-cta-btn" onClick={() => onNavigate("home")}>
             Enter the Arena
           </button>
         </div>

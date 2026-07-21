@@ -1,16 +1,8 @@
-export default function About({ onBack }) {
+import NavBar from "./NavBar";
+export default function About({ onNavigate }) {
   return (
     <div className="about-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <a className="logo" href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>
-            VERSUS<span> ARENA</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="#" className="nav-back-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Back to the Arena</a></li>
-          </ul>
-        </div>
-      </nav>
+      <NavBar onNavigate={onNavigate} active="about" />
 
       <div className="about-container">
         <div className="about-tag">My Mission</div>
@@ -74,7 +66,7 @@ export default function About({ onBack }) {
             Found a bug? Have a character that won't load? Have ideas for new features?
             We're listening.
           </p>
-          <button className="fight-btn about-cta-btn" onClick={onBack}>
+          <button className="fight-btn about-cta-btn" onClick={() => onNavigate("home")}>
             Enter the Arena
           </button>
         </div>
