@@ -110,6 +110,14 @@ function cleanClaims(v) {
     .filter(c => c.length > 0);
 }
 
+// True when a raw request field is a string longer than its cap. Used to REJECT
+// oversized input with a 400 instead of silently truncating it: a trimmed name or
+// feat could judge a different fight than the one the user submitted. Non-strings
+// fall through to cleanStr/cleanClaims, which coerce them exactly as before.
+function exceedsLen(v, maxLen) {
+  return typeof v === "string" && v.length > maxLen;
+}
+
 function pickAllowed(v, list) {
   return list.includes(v) ? v : list[0];
 }
@@ -395,6 +403,25 @@ export default async function handler(req, res) {
     }
 
     const body = req.body || {};
+
+    // --- Reject overlong free-text fields (no silent truncation) ---
+    // Same caps the sanitizers below have always enforced (names/universes 80,
+    // feats 200 x 20); the only change is that exceeding one now returns a clear
+    // 400 instead of quietly trimming the text before the verdict. The UI's feat
+    // box stops at 100 chars, so from the real app only a very long pasted
+    // name/universe can trip this.
+    if (
+      exceedsLen(body.f1, MAX_NAME_LEN) ||
+      exceedsLen(body.f2, MAX_NAME_LEN) ||
+      exceedsLen(body.u1, MAX_NAME_LEN) ||
+      exceedsLen(body.u2, MAX_NAME_LEN) ||
+      (Array.isArray(body.claims1) &&
+        (body.claims1.length > MAX_CLAIMS || body.claims1.some(c => exceedsLen(c, MAX_CLAIM_LEN)))) ||
+      (Array.isArray(body.claims2) &&
+        (body.claims2.length > MAX_CLAIMS || body.claims2.some(c => exceedsLen(c, MAX_CLAIM_LEN))))
+    ) {
+      return res.status(400).json({ error: "Input too long." });
+    }
 
     // --- Sanitize every field ---
     const f1 = cleanStr(body.f1, MAX_NAME_LEN);

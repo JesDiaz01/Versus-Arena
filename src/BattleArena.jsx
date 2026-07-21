@@ -50,6 +50,9 @@ function BattleClash({ img1Url, img2Url, name1, name2, adjust1, adjust2 }) {
 }
 
 const CLAIM_LIMIT = 100;
+// Mirrors MAX_NAME_LEN in api/battle.js, which now REJECTS (400) anything longer
+// instead of truncating -- capping the inputs keeps that error unreachable in the UI.
+const NAME_LIMIT = 80;
 // Same invite as the site footer (Footer.jsx); reused as the identical string.
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 export const DEFAULT_ADJUST = { x: 50, y: 50, zoom: 1 };
@@ -900,10 +903,10 @@ export default function BattleArena({
             <div className="fighter-label">Fighter One</div>
             {renderAvatar(1)}
             <ImageOverride onSet={setOverride1} hasOverride={!!override1} onClear={() => setOverride1(null)} />
-            <input className="fighter-name-input" id="fighter-1-name" name="fighter1Name" aria-label="Fighter one name" value={f1} onChange={e => setF1(e.target.value)} placeholder="Enter character name" />
+            <input className="fighter-name-input" id="fighter-1-name" name="fighter1Name" aria-label="Fighter one name" value={f1} onChange={e => setF1(e.target.value)} maxLength={NAME_LIMIT} placeholder="Enter character name" />
             {f1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <UniverseHint />
-            <input className="universe-input" id="fighter-1-universe" name="fighter1Universe" aria-label="Fighter one universe or series" value={u1} onChange={e => setU1(e.target.value)} placeholder="Universe / Series" />
+            <input className="universe-input" id="fighter-1-universe" name="fighter1Universe" aria-label="Fighter one universe or series" value={u1} onChange={e => setU1(e.target.value)} maxLength={NAME_LIMIT} placeholder="Universe / Series" />
             {u1Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
@@ -943,10 +946,10 @@ export default function BattleArena({
             <div className="fighter-label">Fighter Two</div>
             {renderAvatar(2)}
             <ImageOverride onSet={setOverride2} hasOverride={!!override2} onClear={() => setOverride2(null)} />
-            <input className="fighter-name-input" id="fighter-2-name" name="fighter2Name" aria-label="Fighter two name" value={f2} onChange={e => setF2(e.target.value)} placeholder="Enter character name" />
+            <input className="fighter-name-input" id="fighter-2-name" name="fighter2Name" aria-label="Fighter two name" value={f2} onChange={e => setF2(e.target.value)} maxLength={NAME_LIMIT} placeholder="Enter character name" />
             {f2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
             <UniverseHint />
-            <input className="universe-input" id="fighter-2-universe" name="fighter2Universe" aria-label="Fighter two universe or series" value={u2} onChange={e => setU2(e.target.value)} placeholder="Universe / Series" />
+            <input className="universe-input" id="fighter-2-universe" name="fighter2Universe" aria-label="Fighter two universe or series" value={u2} onChange={e => setU2(e.target.value)} maxLength={NAME_LIMIT} placeholder="Universe / Series" />
             {u2Blocked && <p style={MUTED_NOTE_STYLE}>{BLOCKED_WORDING_NOTE}</p>}
 
             <div className="claims-section">
