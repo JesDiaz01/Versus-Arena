@@ -33,9 +33,24 @@ if (!TURNSTILE_SITE_KEY) {
   );
 }
 
-// Match the Supabase dashboard's minimum password length (default 6). Kept as a
-// client-side courtesy check; Supabase remains the real authority.
-const MIN_PASSWORD = 6;
+// Mirrors the password policy configured in the Supabase dashboard (minimum length
+// 8, plus lowercase + uppercase + digit). These are client-side COURTESY checks so a
+// user gets a clear inline message instead of a confusing server rejection; Supabase
+// remains the real authority and re-validates everything server-side.
+const MIN_PASSWORD = 8;
+
+// Returns an error string, or "" when the password satisfies the policy.
+// NOTE: applied to SIGN-UP only. Existing accounts may predate the policy, so
+// sign-in must never pre-validate beyond "not empty" -- otherwise a legitimate
+// user with an older password could be locked out of their own account by our
+// own form before Supabase is ever asked.
+function passwordPolicyError(pw) {
+  if (pw.length < MIN_PASSWORD) return "Password must be at least " + MIN_PASSWORD + " characters.";
+  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+  if (!/[0-9]/.test(pw)) return "Password must include a number.";
+  return "";
+}
 
 // Simple structural email check (non-empty, one @, a dotted domain). Deliberately
 // lenient: Supabase does the authoritative validation.
@@ -119,9 +134,12 @@ export default function AuthPanel({ onViewBattles }) {
         setError("Enter your password.");
         return;
       }
-      if (mode === "signup" && password.length < MIN_PASSWORD) {
-        setError("Password must be at least " + MIN_PASSWORD + " characters.");
-        return;
+      if (mode === "signup") {
+        const pwErr = passwordPolicyError(password);
+        if (pwErr) {
+          setError(pwErr);
+          return;
+        }
       }
     }
 
@@ -313,7 +331,7 @@ export default function AuthPanel({ onViewBattles }) {
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "signup" ? "At least " + MIN_PASSWORD + " characters" : "Your password"}
+              placeholder={mode === "signup" ? MIN_PASSWORD + "+ chars, with a capital and a number" : "Your password"}
               disabled={submitting}
             />
           </label>

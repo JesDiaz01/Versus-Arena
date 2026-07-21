@@ -119,6 +119,9 @@ body::before {
 }
 .nav-cta:hover { background: var(--gold) !important; }
 .nav-goku { color: var(--gold) !important; white-space: nowrap; }
+/* Keep multi-word nav items ("My Battles", "Sign Up Free") on one line instead of
+   breaking mid-phrase when the bar gets crowded. */
+.nav-nowrap { white-space: nowrap; }
 .nav-goku:hover { color: var(--gold-bright) !important; }
 
 /* HERO */

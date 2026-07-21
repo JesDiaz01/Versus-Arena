@@ -239,8 +239,13 @@ export default function App() {
     return (
       <>
         <ComingSoon
-          tag="Accounts"
-          title={<>Join the <span className="vs-word">Arena</span></>}
+          // Signed in, the eyebrow states STATUS ("Signed In") rather than repeating
+          // the title's "Account"; signed out it names the section. Kept as a string
+          // either way so the shell's bordered tag never renders empty.
+          tag={user ? "Signed In" : "Accounts"}
+          title={user
+            ? <>Your <span className="vs-word">Account</span></>
+            : <>Join the <span className="vs-word">Arena</span></>}
           onBack={() => setPage("home")}
         >
           <AuthPanel onViewBattles={() => setPage("mybattles")} />
@@ -387,9 +392,21 @@ export default function App() {
             <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("faq"); }}>FAQ</a></li>
             <li><a href="#" className="nav-goku" onClick={(e) => { e.preventDefault(); setShowGoku(true); window.history.replaceState(null, "", "?goku=1"); }}>vs Goku?</a></li>
             {user && (
-              <li><a href="#" onClick={(e) => { e.preventDefault(); setPage("mybattles"); }}>My Battles</a></li>
+              <li><a href="#" className="nav-nowrap" onClick={(e) => { e.preventDefault(); setPage("mybattles"); }}>My Battles</a></li>
             )}
-            <li><a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); setPage("signup"); }}>Sign Up Free</a></li>
+            {/* Signed out -> "Sign Up Free" (acquisition CTA). Signed in -> "Account",
+                which opens the same page, where AuthPanel renders the signed-in view
+                (email + View My Battles + Sign Out). Showing "Sign Up Free" to someone
+                who is already signed in makes no sense. */}
+            <li>
+              <a
+                href="#"
+                className="nav-cta nav-nowrap"
+                onClick={(e) => { e.preventDefault(); setPage("signup"); }}
+              >
+                {user ? "Account" : "Sign Up Free"}
+              </a>
+            </li>
           </ul>
         </div>
       </nav>
