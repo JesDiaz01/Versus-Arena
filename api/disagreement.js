@@ -12,6 +12,12 @@ import { createClient } from "@supabase/supabase-js";
 import { getClientIp, checkAbuseBlock, checkReadLimit, recordOffense } from "./_rateLimit.js";
 import { containsBlockedContent } from "./_contentFilter.js";
 
+// Battle-id shape, kept identical to api/get-battle.js: the 8-char base64url ids this
+// API generates AND the 36-char uuids hand-seeded rows (authored verdicts) carry. The
+// previous `length <= 20` test silently dropped the battle_id of any authored/cached
+// battle, so feedback on those verdicts was stored unattached to its battle.
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
 // Defensive length caps so we never store unbounded text.
 const MAX_NAME_LEN = 80;    // fighter name / winner
 const MAX_CHOICE_LEN = 200; // the chosen "disagreed_with" label
@@ -47,9 +53,10 @@ export default async function handler(req, res) {
   const body = req.body || {};
 
   // battle_id may be null/absent (a verdict that failed to save has no share id). Keep it
-  // only when it looks like one of our base64url share ids (same length bound as get-battle).
+  // only when it matches a real battle-id shape (same ID_RE as get-battle); anything else,
+  // including an empty string, stores as null exactly as before.
   const rawBattleId = typeof body.battle_id === "string" ? body.battle_id.trim() : "";
-  const battle_id = rawBattleId.length > 0 && rawBattleId.length <= 20 ? rawBattleId : null;
+  const battle_id = ID_RE.test(rawBattleId) ? rawBattleId : null;
 
   const char_a = clean(body.char_a, MAX_NAME_LEN);
   const char_b = clean(body.char_b, MAX_NAME_LEN);

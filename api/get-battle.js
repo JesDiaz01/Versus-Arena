@@ -1,9 +1,18 @@
 // api/get-battle.js
-// Vercel Serverless Function — fetches a saved battle by ID from Supabase.
+// Vercel Serverless Function - fetches a saved battle by ID from Supabase.
 // Uses the service role key server-side only; the key is never sent to the browser.
 
 import { createClient } from "@supabase/supabase-js";
 import { getClientIp, checkReadLimit } from "./_rateLimit.js";
+
+// Accepts BOTH id shapes present in the battles table: the 8-char base64url ids this
+// API generates (randomBytes(6).toString("base64url")) AND the 36-char uuids that
+// hand-seeded rows (authored verdicts) get from the column default. The previous
+// `id.length > 20` cap rejected every uuid BEFORE the query ran, so an authored or
+// cached battle that really does exist came back as an error and the UI rendered it
+// as "Battle not found". Still length-bounded and charset-restricted, so junk input
+// is rejected exactly as before.
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -18,7 +27,7 @@ export default async function handler(req, res) {
   }
 
   const id = typeof req.query.id === "string" ? req.query.id.trim() : "";
-  if (!id || id.length > 20) {
+  if (!id || !ID_RE.test(id)) {
     return res.status(400).json({ error: "Invalid battle ID." });
   }
 
