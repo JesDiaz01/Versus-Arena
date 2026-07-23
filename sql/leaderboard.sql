@@ -66,7 +66,7 @@ begin
   insert into public.matchup_counts (matchup_key, day, hits)
   values (p_key, (now() at time zone 'utc')::date, 1)
   on conflict (matchup_key, day)
-  do update set hits = public.matchup_counts.hits + 1;
+  do update set hits = matchup_counts.hits + 1;
 
   insert into public.matchup_meta (matchup_key, a_name, a_universe, b_name, b_universe, updated_at)
   values (p_key, p_a_name, p_a_universe, p_b_name, p_b_universe, now())
@@ -98,13 +98,16 @@ stable
 security definer
 set search_path = public
 as $$
+  -- Output columns map positionally to the RETURNS TABLE names, so the aggregate is
+  -- left UNALIASED and ordered by the raw expression -- aliasing it "hits" would collide
+  -- with the RETURNS TABLE column of the same name and fail creation of this sql function.
   select c.matchup_key,
-         sum(c.hits)::bigint as hits,
+         sum(c.hits)::bigint,
          m.a_name, m.a_universe, m.b_name, m.b_universe
   from public.matchup_counts c
   join public.matchup_meta   m on m.matchup_key = c.matchup_key
   where c.day >= ((now() at time zone 'utc')::date - 6)
   group by c.matchup_key, m.a_name, m.a_universe, m.b_name, m.b_universe, m.updated_at
-  order by hits desc, m.updated_at desc
+  order by sum(c.hits) desc, m.updated_at desc
   limit greatest(p_limit, 0);
 $$;

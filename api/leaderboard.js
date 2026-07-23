@@ -48,9 +48,11 @@ export default async function handler(req, res) {
       };
     });
 
-    // Short edge cache: the board changes slowly and is identical for everyone, so let
-    // Vercel serve it from the edge for a few minutes and refresh in the background.
-    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    // Short edge cache: the board is identical for everyone, so let Vercel serve it from
+    // the edge, but keep the window tight (60s fresh, 120s stale-while-revalidate) so a
+    // freshly fought matchup climbs the board within about a minute rather than lagging
+    // several minutes behind -- important while the site is new and low-traffic.
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
     return res.status(200).json({ matchups });
   } catch (err) {
     console.error("leaderboard error:", err);
