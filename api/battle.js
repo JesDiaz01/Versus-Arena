@@ -13,6 +13,7 @@ import { randomBytes, createHash } from "crypto";
 import { Redis } from "@upstash/redis";
 import { getClientIp, checkBattleLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
 import { containsBlockedContent, containsBlockedOutput } from "./_contentFilter.js";
+import { buildMatchupIdentity } from "./_matchup.js";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -359,6 +360,35 @@ async function saveToHistory(db, req, battleId) {
   }
 }
 
+// ---- Record a served matchup for the weekly leaderboard ----
+// Called on EVERY path that returns a verdict (authored hit, cache hit, fresh
+// generation) so the count reflects how often a matchup is actually fought, not how many
+// distinct rows exist in `battles`. Identity is the order-independent canonical name pair
+// (buildMatchupIdentity): universe, settings, and custom feats do not split a matchup, so
+// "Goku vs Superman" fought plain and with granted abilities roll up together.
+//
+// FAIL-OPEN: fully wrapped, so a leaderboard write can never throw or change the verdict
+// response. A matchup whose names cannot be canonicalized (empty/non-Latin) is skipped
+// rather than guessed. Awaited at the call sites so the RPC completes before a serverless
+// instance can freeze, but a failure is swallowed.
+async function recordMatchup(db, f1, u1, f2, u2) {
+  try {
+    if (!db) return;
+    const id = buildMatchupIdentity(f1, u1, f2, u2);
+    if (!id) return;
+    const { error } = await db.rpc("record_matchup", {
+      p_key: id.key,
+      p_a_name: id.a.name,
+      p_a_universe: id.a.universe || null,
+      p_b_name: id.b.name,
+      p_b_universe: id.b.universe || null,
+    });
+    if (error) console.error("[recordMatchup] rpc error (non-fatal):", error.message || error);
+  } catch (err) {
+    console.error("[recordMatchup] failed (non-fatal):", err && err.message);
+  }
+}
+
 export default async function handler(req, res) {
   const ip = getClientIp(req);
 
@@ -484,6 +514,8 @@ export default async function handler(req, res) {
           if (servable) {
             // Link this authored battle to the signed-in user (no-op if anonymous).
             await saveToHistory(db, req, data[0].id);
+            // Count this matchup toward the weekly leaderboard (fail-open).
+            await recordMatchup(db, f1, u1, f2, u2);
             return res.status(200).json({ ...data[0].result, id: data[0].id });
           }
           console.error("authored verdict winner matched neither fighter, skipping:", w);
@@ -509,6 +541,8 @@ export default async function handler(req, res) {
           // Cache HIT: return the SAME flat shape as a fresh battle ({ ...verdict, id }).
           // Link this cached battle to the signed-in user (no-op if anonymous).
           await saveToHistory(db, req, data[0].id);
+          // Count this matchup toward the weekly leaderboard (fail-open).
+          await recordMatchup(db, f1, u1, f2, u2);
           return res.status(200).json({ ...data[0].result, id: data[0].id });
         }
       } catch (err) {
@@ -760,6 +794,9 @@ export default async function handler(req, res) {
     // or if the insert above failed and shareId is null). See saveToHistory above:
     // fail-open, never throws, user_id only ever from the verified JWT.
     await saveToHistory(db, req, shareId);
+
+    // Count this matchup toward the weekly leaderboard (fail-open).
+    await recordMatchup(db, f1, u1, f2, u2);
 
     return res.status(200).json(shareId ? { ...verdict, id: shareId } : verdict);
   } catch (err) {
