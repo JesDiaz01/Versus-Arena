@@ -59,7 +59,7 @@ function looksLikeEmail(v) {
 }
 
 export default function AuthPanel({ onViewBattles }) {
-  const { user, loading, recovery, clearRecovery, linkError, clearLinkError } = useAuth();
+  const { session, user, loading, recovery, clearRecovery, linkError, clearLinkError } = useAuth();
 
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
   const [email, setEmail] = useState("");
@@ -79,6 +79,46 @@ export default function AuthPanel({ onViewBattles }) {
   // "Set a new password" flow (arrived via a reset-password email link).
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Account deletion. Kept behind a collapsed panel and a typed-email confirmation:
+  // it is irreversible, so it must never be one stray click away.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  // Set once the account is gone. Signing out immediately would swap the card for the
+  // sign-in form with no explanation, so the confirmation is shown first and the sign-out
+  // happens when the user dismisses it.
+  const [deleted, setDeleted] = useState(false);
+
+  async function handleDeleteAccount() {
+    if (deleting || !session || !session.access_token) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ confirm_email: deleteEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeleteError(data.error || "Could not delete your account. Try again in a moment.");
+        return;
+      }
+      // The account is gone. Show the confirmation before tearing the session down --
+      // the leftover tokens are already dead server-side, so nothing can be done with
+      // them in the meantime.
+      setDeleted(true);
+    } catch {
+      setDeleteError("Something went wrong. Try again in a moment.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleSetNewPassword(e) {
     e.preventDefault();
@@ -392,6 +432,35 @@ export default function AuthPanel({ onViewBattles }) {
     );
   }
 
+  // --- Account just deleted: confirm before dropping to the logged-out form. Checked
+  // BEFORE the signed-in branch, because the browser still holds the (now dead) session
+  // until the user dismisses this. ---
+  if (deleted) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <VLogo className="auth-logo" />
+          <span className="auth-rule" aria-hidden="true" />
+          <h2 className="auth-heading">Your account has been deleted</h2>
+          <p className="auth-text">
+            Your sign-in details and saved battle history are gone. Thanks for stopping
+            by the Arena, you're welcome back any time.
+          </p>
+          <div className="auth-actions">
+            <button
+              className="auth-submit"
+              onClick={async () => {
+                try { await supabase.auth.signOut(); } catch { /* session is dead anyway */ }
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // --- Signed-in view (Step 2 scope: confirm + sign out only). ---
   if (user) {
     return (
@@ -416,6 +485,104 @@ export default function AuthPanel({ onViewBattles }) {
             <button className="auth-submit" onClick={handleSignOut} disabled={submitting}>
               {submitting ? "Signing out..." : "Sign Out"}
             </button>
+          </div>
+
+          <style>{`
+            .auth-danger { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+            .auth-danger-toggle {
+              background: none; border: none; padding: 0; cursor: pointer;
+              font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--muted);
+              text-decoration: underline; text-underline-offset: 3px;
+            }
+            .auth-danger-toggle:hover { color: #9b2c2c; }
+            .auth-danger-panel {
+              margin-top: 1rem; border: 1px solid #9b2c2c; border-radius: 4px;
+              background: rgba(155,44,44,0.06); padding: 1rem 1.15rem; text-align: left;
+            }
+            .auth-danger-panel p {
+              font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.65;
+              color: var(--ink-soft); margin: 0 0 0.7rem;
+            }
+            .auth-danger-panel strong { color: #9b2c2c; }
+            .auth-danger-input {
+              width: 100%; box-sizing: border-box; margin-bottom: 0.7rem;
+              font-family: 'Inter', sans-serif; font-size: 0.9rem;
+              padding: 0.6rem 0.7rem; border: 1px solid var(--line-strong);
+              border-radius: 4px; background: var(--surface); color: var(--ink);
+            }
+            .auth-danger-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+            .auth-danger-go {
+              font-family: 'Inter', sans-serif; font-size: 0.78rem;
+              background: #9b2c2c; color: #fff; border: 1px solid #9b2c2c;
+              border-radius: 4px; padding: 0.5rem 0.95rem; cursor: pointer;
+            }
+            .auth-danger-go:disabled { opacity: 0.55; cursor: default; }
+            .auth-danger-cancel {
+              font-family: 'Inter', sans-serif; font-size: 0.78rem;
+              background: transparent; color: var(--ink-soft);
+              border: 1px solid var(--line-strong);
+              border-radius: 4px; padding: 0.5rem 0.95rem; cursor: pointer;
+            }
+          `}</style>
+
+          <div className="auth-danger">
+            {!deleteOpen ? (
+              <button
+                type="button"
+                className="auth-danger-toggle"
+                onClick={() => { setDeleteError(""); setDeleteEmail(""); setDeleteOpen(true); }}
+              >
+                Delete my account
+              </button>
+            ) : (
+              <div className="auth-danger-panel" role="alert">
+                <p>
+                  <strong>Delete your account permanently?</strong> This removes your
+                  sign-in details and your saved battle history. It cannot be undone.
+                </p>
+                <p>
+                  The battles you ran stay in the Arena, but nothing links them to you
+                  once your account is gone. If a battle contains anything private, use
+                  Delete on it in My Battles <em>before</em> deleting your account, since
+                  afterwards you will not be able to find it.
+                </p>
+                <p>Type <strong>{user.email}</strong> to confirm.</p>
+                <input
+                  className="auth-danger-input"
+                  type="email"
+                  id="auth-delete-confirm"
+                  name="deleteConfirmEmail"
+                  autoComplete="off"
+                  aria-label="Type your email address to confirm account deletion"
+                  value={deleteEmail}
+                  onChange={(e) => setDeleteEmail(e.target.value)}
+                  placeholder="your email address"
+                  disabled={deleting}
+                />
+                {deleteError && <p className="auth-error" role="alert">{deleteError}</p>}
+                <div className="auth-danger-actions">
+                  <button
+                    type="button"
+                    className="auth-danger-go"
+                    onClick={handleDeleteAccount}
+                    disabled={
+                      deleting ||
+                      deleteEmail.trim().toLowerCase() !== (user.email || "").trim().toLowerCase()
+                    }
+                  >
+                    {deleting ? "Deleting..." : "Delete my account"}
+                  </button>
+                  <button
+                    type="button"
+                    className="auth-danger-cancel"
+                    onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

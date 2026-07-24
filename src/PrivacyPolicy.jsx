@@ -94,7 +94,7 @@ export default function PrivacyPolicy({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: July 23, 2026</p>
+          <p className="pp-updated">Last updated: July 24, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -262,7 +262,10 @@ export default function PrivacyPolicy({ onNavigate }) {
             battle itself, so its share link stops working for everyone. If you'd rather
             not do it yourself, or the battle was run without an account, email us at
             versusarenahq@gmail.com with its share link and we'll delete it. You can also
-            email us to delete your account along with the battle history linked to it. For anonymous battles, because we don't attach an
+            delete your whole account from the account page, which removes your sign-in
+            details and your saved battle history. The battles themselves stay in the
+            Arena, but nothing links them to you once the account is gone, so please
+            delete any battle containing private information before closing your account. For anonymous battles, because we don't attach an
             identity to them, we may not be able to locate all of your data without the
             specific share links. If you'd like to know what we have, or ask us to delete
             something like an email you've sent us, just reach out. Depending on where
