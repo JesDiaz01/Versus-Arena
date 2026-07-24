@@ -275,6 +275,37 @@
   color: var(--gold);
 }
 
+/* Footer actions sit on one row (Share + Back) and wrap on narrow screens. */
+.sb-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Same shape as the back button, filled so Share reads as the primary action. */
+.sb-share-btn {
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: var(--bg);
+  padding: 0.7rem 1.75rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.sb-share-btn:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
 /* -- Responsive -- */
 @media (max-width: 500px) {
   .sb-page { padding: 1.5rem 1rem 4rem; }

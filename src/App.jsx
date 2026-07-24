@@ -28,6 +28,12 @@ export default function App() {
   const [sharedBattle, setSharedBattle] = useState(null);
   const [sharedLoading, setSharedLoading] = useState(false);
   const [sharedError, setSharedError] = useState(false);
+  // Share id of the battle currently open. get-battle returns only battle_data +
+  // result, so SharedBattle cannot derive its own link -- it is handed down here.
+  const [sharedBattleId, setSharedBattleId] = useState(null);
+  // True when the open battle was reached from the My Battles list rather than from a
+  // ?b= link, so closing it can return the user to their history instead of the arena.
+  const [sharedFromHistory, setSharedFromHistory] = useState(false);
   const [showGoku, setShowGoku] = useState(false);
 
   // Battle INPUT state lives here (not in BattleArena) so it survives in-site
@@ -96,6 +102,8 @@ export default function App() {
 
     setEntered(true);
     setSharedLoading(true);
+    // Arrived via a link, so closing returns to the arena (not to My Battles).
+    setSharedBattleId(battleId);
 
     fetch("/api/get-battle?id=" + encodeURIComponent(battleId))
       .then(function(r) { return r.json(); })
@@ -145,6 +153,10 @@ export default function App() {
   function openSavedBattle(id) {
     setPage("home");
     setSharedLoading(true);
+    setSharedBattleId(id);
+    // Remember the entry point so "Back to the Arena" can return to the history list
+    // the user was browsing rather than dropping them on the arena home.
+    setSharedFromHistory(true);
     window.history.pushState({}, "", "?b=" + encodeURIComponent(id));
     fetch("/api/get-battle?id=" + encodeURIComponent(id))
       .then(function(r) { return r.json(); })
@@ -154,6 +166,18 @@ export default function App() {
       })
       .catch(function() { setSharedError(true); })
       .finally(function() { setSharedLoading(false); });
+  }
+
+  // Close the open (or failed) shared battle and clear ?b= from the URL. A battle
+  // reached from My Battles returns to that list so the user keeps their place;
+  // one reached from a link falls through to the arena as before.
+  function closeSharedBattle() {
+    setSharedBattle(null);
+    setSharedError(false);
+    setSharedBattleId(null);
+    window.history.replaceState({}, "", window.location.pathname);
+    if (sharedFromHistory) setPage("mybattles");
+    setSharedFromHistory(false);
   }
 
   // Arriving from an email link (valid recovery OR a dead/expired one) lands the
@@ -383,14 +407,8 @@ export default function App() {
             This shared battle couldn't be loaded. The link may be broken or the
             battle may have expired.
           </p>
-          <button
-            className="fight-btn"
-            onClick={function() {
-              setSharedError(false);
-              window.history.replaceState({}, "", window.location.pathname);
-            }}
-          >
-            Go to the Arena
+          <button className="fight-btn" onClick={closeSharedBattle}>
+            {sharedFromHistory ? "Back to My Battles" : "Go to the Arena"}
           </button>
         </div>
       </div>
@@ -401,10 +419,8 @@ export default function App() {
     return (
       <SharedBattle
         battle={sharedBattle}
-        onBackToArena={function() {
-          setSharedBattle(null);
-          window.history.replaceState({}, "", window.location.pathname);
-        }}
+        battleId={sharedBattleId}
+        onBackToArena={closeSharedBattle}
       />
     );
   }

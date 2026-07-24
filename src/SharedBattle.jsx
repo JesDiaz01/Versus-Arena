@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { highlightClaims } from "./highlightClaims";
 import { verdictDiffLabel } from "./diffTier";
 import "./SharedBattle.css";
@@ -6,9 +7,25 @@ import "./SharedBattle.css";
 // here rather than a shared import so the footer itself stays untouched.
 const DISCORD_URL = "https://discord.gg/vpdswhYcpd";
 
-export default function SharedBattle({ battle, onBackToArena }) {
+// battleId is the share id of the battle being viewed. It is passed down from App
+// (which knows it from the ?b= URL param or from the My Battles row that was opened)
+// because GET /api/get-battle returns only { battle_data, result } and not the id
+// itself, so this component cannot derive the share link from `battle` alone.
+export default function SharedBattle({ battle, battleId, onBackToArena }) {
   const bd = battle.battle_data || {};
   const result = battle.result || {};
+  const [copied, setCopied] = useState(false);
+
+  // Copy this battle's public link. Mirrors BattleArena's share button so the two
+  // behave identically (same URL shape, same 2s "copied" confirmation).
+  function shareBattle() {
+    if (!battleId) return;
+    const url = window.location.origin + "/?b=" + encodeURIComponent(battleId);
+    navigator.clipboard.writeText(url).then(function() {
+      setCopied(true);
+      setTimeout(function() { setCopied(false); }, 2000);
+    }).catch(function() {});
+  }
 
   const f1 = bd.f1 || "";
   const f2 = bd.f2 || "";
@@ -142,9 +159,18 @@ export default function SharedBattle({ battle, onBackToArena }) {
 
         {/* -- Footer -- */}
         <div className="sb-footer">
-          <button className="sb-back-btn" onClick={onBackToArena}>
-            Back to the Arena
-          </button>
+          <div className="sb-actions">
+            {/* Shown to every viewer, not just the owner: the link is public either
+                way, so surfacing it here lets anyone pass the battle along. */}
+            {battleId && (
+              <button className="sb-share-btn" onClick={shareBattle}>
+                {copied ? "Link Copied!" : "Share Battle"}
+              </button>
+            )}
+            <button className="sb-back-btn" onClick={onBackToArena}>
+              Back to the Arena
+            </button>
+          </div>
           <a
             className="sb-discord-link"
             href={DISCORD_URL}
