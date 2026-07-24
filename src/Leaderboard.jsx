@@ -126,13 +126,16 @@ export default function Leaderboard({ onNavigate }) {
           .lb-rank { font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.25rem; color: var(--gold); text-align: center; }
           .lb-fighter { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.35rem; min-width: 0; }
           .lb-avatar {
-            width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
+            width: 76px; height: 76px; border-radius: 50%; overflow: hidden;
             background: var(--surface-2); color: var(--muted);
             display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--line);
           }
           .lb-avatar svg { width: 100%; height: 100%; }
-          .lb-photo { width: 100%; height: 100%; object-fit: cover; }
+          /* cover fills the circle (no empty letterboxing), and anchoring the crop to the
+             TOP keeps the head in frame -- wiki art is usually full-body and portrait, so a
+             centered crop decapitates the character and shows the torso instead. */
+          .lb-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; }
           .lb-name { font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.95rem; color: var(--ink); line-height: 1.2; word-break: break-word; }
           .lb-universe { font-family: 'Inter', sans-serif; font-size: 0.72rem; color: var(--muted); }
           .lb-vs { font-family: 'Cinzel', serif; font-style: italic; color: var(--gold); font-size: 0.9rem; }
@@ -142,7 +145,7 @@ export default function Leaderboard({ onNavigate }) {
             .lb-row { grid-template-columns: 1.5rem 1fr auto 1fr; row-gap: 0.5rem; }
             .lb-count { grid-column: 1 / -1; text-align: center; }
             .lb-count strong { display: inline; margin-right: 0.35rem; }
-            .lb-avatar { width: 52px; height: 52px; }
+            .lb-avatar { width: 60px; height: 60px; }
           }
         `}</style>
 
