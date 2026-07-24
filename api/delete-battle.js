@@ -19,10 +19,14 @@
 //
 // SIDE EFFECT, BY DESIGN: battles are shared and deduplicated, so erasing the row also
 // clears it from any OTHER user's history. That is inherent to the shared-cache model --
-// the content has to go for the deletion to be real. Their links are deleted here too so
-// no orphaned rows are left behind (and so a foreign key, if one exists, cannot block the
-// delete). The leaderboard is unaffected: matchup_counts is keyed by fighter names, not
-// by battle id, so removing a battle never rewrites the rankings.
+// the content has to go for the deletion to be real. The leaderboard is unaffected:
+// matchup_counts is keyed by fighter names, not by battle id, so removing a battle never
+// rewrites the rankings.
+//
+// The erase itself runs as ONE transaction via the delete_battle_cascade SQL function
+// (sql/delete-battle.sql), which clears every reference to the battle before removing it.
+// Doing it in separate calls was not atomic and could leave a user's history link deleted
+// while the battle it pointed at survived.
 
 import { createClient } from "@supabase/supabase-js";
 import { getClientIp, checkReadLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
@@ -118,28 +122,23 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- Delete links FIRST so nothing references the row, then the battle itself. ---
-    // This order works whether or not a foreign key exists between the two tables.
-    const { error: linksDeleteError } = await db
-      .from("saved_battles")
-      .delete()
-      .eq("battle_id", battleId);
-    if (linksDeleteError) {
-      console.error("delete-battle links delete error:", linksDeleteError);
-      return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
-    }
-
-    // A missing battle row (already deleted) is fine: the links are gone either way, so
-    // the caller's intent is satisfied and a repeat request stays harmless.
-    if (battleRow) {
-      const { error: battleDeleteError } = await db
-        .from("battles")
-        .delete()
-        .eq("id", battleId);
-      if (battleDeleteError) {
-        console.error("delete-battle battle delete error:", battleDeleteError);
-        return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
-      }
+    // --- Erase everything in ONE transaction (see sql/delete-battle.sql) ---
+    // This was previously three separate calls that deleted the history links first and
+    // the battle row last. That was not atomic: if the battle delete failed (for example
+    // on a foreign key from another table still referencing it), the links were already
+    // gone -- the user lost their history entry while the battle and its share link
+    // survived. A plpgsql function runs in a single transaction, so the whole erase now
+    // either succeeds or rolls back completely. It also clears the disagreements
+    // reference, which a plain delete could not do and which can block the delete.
+    const { error: rpcError } = await db.rpc("delete_battle_cascade", { p_battle_id: battleId });
+    if (rpcError) {
+      console.error("delete-battle rpc error:", rpcError);
+      // The underlying message is surfaced deliberately: this endpoint is owner-only, and
+      // a generic "try again" hid the real cause (a missing function, a foreign key
+      // violation) behind an identical string every time. Trim this once it is proven out.
+      return res.status(500).json({
+        error: "Could not delete that battle: " + (rpcError.message || "unknown database error"),
+      });
     }
 
     console.log("[delete-battle] permanently deleted battle", battleId, "for user", user.id);
