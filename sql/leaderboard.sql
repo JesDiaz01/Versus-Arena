@@ -73,9 +73,12 @@ begin
   on conflict (matchup_key)
   do update set
     a_name     = excluded.a_name,
-    a_universe = excluded.a_universe,
+    -- Keep a previously-known universe when this run supplied none. A blank universe
+    -- forces the portrait lookup down a slow, often-failing name-only path, so letting an
+    -- empty value overwrite a good one would silently break art that used to resolve.
+    a_universe = coalesce(nullif(excluded.a_universe, ''), matchup_meta.a_universe),
     b_name     = excluded.b_name,
-    b_universe = excluded.b_universe,
+    b_universe = coalesce(nullif(excluded.b_universe, ''), matchup_meta.b_universe),
     updated_at = now();
 end;
 $$;

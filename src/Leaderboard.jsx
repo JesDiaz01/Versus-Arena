@@ -23,7 +23,11 @@ function LbFighter({ name, universe }) {
 
     async function attempt() {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 7000);
+      // 12s (vs the arena's 7s): a name with no universe falls back to a multi-query
+      // Wikipedia search that can take many sequential round trips. The board loads in the
+      // background, so waiting longer costs nothing visually and lets a slow lookup finish
+      // -- and a success gets edge-cached for a week, so it only has to be paid once.
+      const timer = setTimeout(() => controller.abort(), 12000);
       try {
         const params = new URLSearchParams({ name: name.trim() });
         if (universe) params.set("universe", universe);
