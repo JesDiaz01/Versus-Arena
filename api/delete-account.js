@@ -16,12 +16,22 @@
 // why the UI says so before this runs.
 //
 // SECURITY: the account acted on comes ONLY from db.auth.getUser(token). No user id is
-// ever accepted from the request, so one user can never delete another's account. As a
-// second guard the caller must echo back their own email address, which makes an
-// accidental or drive-by trigger of this endpoint fail closed.
+// ever accepted from the request, so one user can never delete another's account. That
+// verified token is the actual security boundary.
+//
+// The typed confirmation below is an INTENT check, not a security control: anything
+// holding a valid token could send the phrase too. Its job is to stop an accidental or
+// reflexive click from destroying an account, so it is matched leniently (trimmed,
+// case-insensitive) -- punishing a typo would be friction with no safety benefit.
 
 import { createClient } from "@supabase/supabase-js";
-import { getClientIp, checkReadLimit, checkAbuseBlock, recordOffense } from "./_rateLimit.js";
+import { getClientIp, checkReadLimit, checkAbuseBlock } from "./_rateLimit.js";
+
+// Short, fixed, and case-insensitive on purpose. An email address was the first choice
+// (the GitHub/Vercel pattern) but that exists to disambiguate WHICH repo or org is being
+// destroyed; there is exactly one account per person here, so it bought nothing and cost
+// a long, autofill-prone, motor-unfriendly string.
+const CONFIRM_PHRASE = "delete";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -52,7 +62,7 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
-  const confirmEmail = typeof body.confirm_email === "string" ? body.confirm_email.trim().toLowerCase() : "";
+  const confirmText = typeof body.confirm === "string" ? body.confirm.trim().toLowerCase() : "";
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -71,12 +81,10 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Your session has expired. Please sign in again." });
     }
 
-    // Typed-confirmation guard: the caller must echo their own email back. A mismatch is
-    // treated as a probe rather than a typo-free accident.
-    const accountEmail = (user.email || "").trim().toLowerCase();
-    if (!confirmEmail || confirmEmail !== accountEmail) {
-      await recordOffense(ip, 1);
-      return res.status(400).json({ error: "Type your account email exactly to confirm deletion." });
+    // Intent check (see the header note). Re-verified here rather than trusting the UI,
+    // so the endpoint still refuses if it is ever called directly without the phrase.
+    if (confirmText !== CONFIRM_PHRASE) {
+      return res.status(400).json({ error: 'Type "delete" to confirm.' });
     }
 
     // --- Unlink history FIRST. ---

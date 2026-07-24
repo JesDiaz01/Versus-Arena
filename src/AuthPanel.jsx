@@ -10,7 +10,7 @@
 // onAuthStateChange fires, useAuth() updates, and this component re-renders into
 // the signed-in view on its own.
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import supabase from "./supabaseClient";
 import { useAuth } from "./AuthContext";
@@ -38,6 +38,12 @@ if (!TURNSTILE_SITE_KEY) {
 // user gets a clear inline message instead of a confusing server rejection; Supabase
 // remains the real authority and re-validates everything server-side.
 const MIN_PASSWORD = 8;
+
+// Word typed to confirm account deletion. Short and case-insensitive so the confirmation
+// stays deliberate without being a burden: a long string (an email address) means more
+// keystrokes for anyone with a motor impairment, and browsers try to autofill it, which
+// would defeat the point of asking. Must match CONFIRM_PHRASE in api/delete-account.js.
+const DELETE_CONFIRM_PHRASE = "delete";
 
 // Returns an error string, or "" when the password satisfies the policy.
 // NOTE: applied to SIGN-UP only. Existing accounts may predate the policy, so
@@ -83,7 +89,13 @@ export default function AuthPanel({ onViewBattles }) {
   // Account deletion. Kept behind a collapsed panel and a typed-email confirmation:
   // it is irreversible, so it must never be one stray click away.
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  // Focus moves into the panel when it opens, so keyboard and screen-reader users land on
+  // the thing they now have to do instead of being left where the trigger used to be.
+  const deleteInputRef = useRef(null);
+  useEffect(() => {
+    if (deleteOpen && deleteInputRef.current) deleteInputRef.current.focus();
+  }, [deleteOpen]);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   // Set once the account is gone. Signing out immediately would swap the card for the
@@ -93,6 +105,14 @@ export default function AuthPanel({ onViewBattles }) {
 
   async function handleDeleteAccount() {
     if (deleting || !session || !session.access_token) return;
+    // Validated on submit rather than by disabling the button: a disabled control gives
+    // no reason for being unavailable, so a screen-reader user gets an announced error
+    // here instead of a button that silently refuses to work.
+    if (deleteConfirm.trim().toLowerCase() !== DELETE_CONFIRM_PHRASE) {
+      setDeleteError('Type "delete" to confirm.');
+      if (deleteInputRef.current) deleteInputRef.current.focus();
+      return;
+    }
     setDeleting(true);
     setDeleteError("");
     try {
@@ -102,7 +122,7 @@ export default function AuthPanel({ onViewBattles }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ confirm_email: deleteEmail }),
+        body: JSON.stringify({ confirm: deleteConfirm }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -504,6 +524,11 @@ export default function AuthPanel({ onViewBattles }) {
               color: var(--ink-soft); margin: 0 0 0.7rem;
             }
             .auth-danger-panel strong { color: #9b2c2c; }
+            .auth-danger-label {
+              display: block; margin-bottom: 0.4rem;
+              font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink-soft);
+            }
+            .auth-danger-label strong { color: #9b2c2c; }
             .auth-danger-input {
               width: 100%; box-sizing: border-box; margin-bottom: 0.7rem;
               font-family: 'Inter', sans-serif; font-size: 0.9rem;
@@ -530,7 +555,7 @@ export default function AuthPanel({ onViewBattles }) {
               <button
                 type="button"
                 className="auth-danger-toggle"
-                onClick={() => { setDeleteError(""); setDeleteEmail(""); setDeleteOpen(true); }}
+                onClick={() => { setDeleteError(""); setDeleteConfirm(""); setDeleteOpen(true); }}
               >
                 Delete my account
               </button>
@@ -546,17 +571,19 @@ export default function AuthPanel({ onViewBattles }) {
                   Delete on it in My Battles <em>before</em> deleting your account, since
                   afterwards you will not be able to find it.
                 </p>
-                <p>Type <strong>{user.email}</strong> to confirm.</p>
+                <label className="auth-danger-label" htmlFor="auth-delete-confirm">
+                  Type <strong>delete</strong> to confirm.
+                </label>
                 <input
+                  ref={deleteInputRef}
                   className="auth-danger-input"
-                  type="email"
+                  type="text"
                   id="auth-delete-confirm"
-                  name="deleteConfirmEmail"
+                  name="deleteConfirm"
                   autoComplete="off"
-                  aria-label="Type your email address to confirm account deletion"
-                  value={deleteEmail}
-                  onChange={(e) => setDeleteEmail(e.target.value)}
-                  placeholder="your email address"
+                  value={deleteConfirm}
+                  onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }}
+                  placeholder="delete"
                   disabled={deleting}
                 />
                 {deleteError && <p className="auth-error" role="alert">{deleteError}</p>}
@@ -565,17 +592,14 @@ export default function AuthPanel({ onViewBattles }) {
                     type="button"
                     className="auth-danger-go"
                     onClick={handleDeleteAccount}
-                    disabled={
-                      deleting ||
-                      deleteEmail.trim().toLowerCase() !== (user.email || "").trim().toLowerCase()
-                    }
+                    disabled={deleting}
                   >
                     {deleting ? "Deleting..." : "Delete my account"}
                   </button>
                   <button
                     type="button"
                     className="auth-danger-cancel"
-                    onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
+                    onClick={() => { setDeleteOpen(false); setDeleteConfirm(""); setDeleteError(""); }}
                     disabled={deleting}
                   >
                     Cancel
