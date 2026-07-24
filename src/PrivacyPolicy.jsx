@@ -94,7 +94,7 @@ export default function PrivacyPolicy({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: July 21, 2026</p>
+          <p className="pp-updated">Last updated: July 23, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -256,10 +256,13 @@ export default function PrivacyPolicy({ onNavigate }) {
 
           <h2>Your choices</h2>
           <p>
-            If you'd like a specific saved battle removed, email us at
-            versusarenahq@gmail.com with its share link and we'll delete it. If you have
-            an account, you can email us to delete your account along with the battle
-            history linked to it. For anonymous battles, because we don't attach an
+            If you have an account, you can manage your own battles from the My Battles
+            page: "Remove" takes a battle out of your history (the battle itself stays
+            saved and its share link keeps working), and "Delete" permanently erases the
+            battle itself, so its share link stops working for everyone. If you'd rather
+            not do it yourself, or the battle was run without an account, email us at
+            versusarenahq@gmail.com with its share link and we'll delete it. You can also
+            email us to delete your account along with the battle history linked to it. For anonymous battles, because we don't attach an
             identity to them, we may not be able to locate all of your data without the
             specific share links. If you'd like to know what we have, or ask us to delete
             something like an email you've sent us, just reach out. Depending on where

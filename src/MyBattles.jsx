@@ -40,6 +40,11 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
   // Battle id awaiting a second click to confirm removal, and the one in flight.
   const [confirmId, setConfirmId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
+  // Permanent delete is deliberately separate from "remove": it needs a spelled-out
+  // warning panel rather than a second click, because it erases the verdict for everyone
+  // and breaks the public share link.
+  const [deleteId, setDeleteId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [actionError, setActionError] = useState("");
 
   const goBack = (e) => {
@@ -127,6 +132,37 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
       .finally(() => setRemovingId(null));
   }
 
+  // Permanently erase the battle itself (content + share link + cache entry), not just
+  // this user's link to it. The server refuses ids the caller has no history link to, and
+  // refuses curated/authored verdicts.
+  function deleteBattle(id) {
+    if (deletingId || !session || !session.access_token) return;
+    setDeletingId(id);
+    setActionError("");
+
+    fetch("/api/delete-battle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ battle_id: id }),
+    })
+      .then((r) => (r.ok ? r.json() : r.json().then((d) => Promise.reject(new Error(d && d.error)))))
+      .then(() => {
+        setBattles((prev) => prev.filter((b) => b.id !== id));
+        // Same cursor correction as removal: the result set just shrank by one.
+        setNextOffset((n) => (n > 0 ? n - 1 : 0));
+        setDeleteId(null);
+      })
+      .catch((err) =>
+        setActionError(
+          (err && err.message) || "Couldn't delete that battle. Try again in a moment."
+        )
+      )
+      .finally(() => setDeletingId(null));
+  }
+
   return (
     <div className="privacy-page">
       <NavBar onNavigate={onNavigate} active="mybattles" />
@@ -137,7 +173,8 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
 
         <style>{`
           .mb-list { list-style: none; margin: 0; padding: 0; }
-          .mb-row { display: flex; align-items: stretch; gap: 0.5rem; margin-bottom: 0.75rem; }
+          .mb-entry { margin-bottom: 0.75rem; }
+          .mb-row { display: flex; align-items: stretch; gap: 0.5rem; }
           .mb-item {
             flex: 1;
             display: flex;
@@ -204,6 +241,43 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
           }
           .mb-more:hover { border-color: var(--gold); color: var(--gold); }
           .mb-more:disabled { opacity: 0.6; cursor: default; }
+          .mb-delete {
+            flex: 0 0 auto;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 0 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: color 0.2s, border-color 0.2s;
+          }
+          .mb-delete:hover { color: #9b2c2c; border-color: #9b2c2c; }
+          .mb-danger {
+            border: 1px solid #9b2c2c;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            background: rgba(155,44,44,0.06);
+            padding: 0.85rem 1.1rem;
+            font-family: 'Inter', sans-serif;
+          }
+          .mb-danger p { margin: 0 0 0.7rem; font-size: 0.85rem; line-height: 1.6; color: var(--ink-soft); }
+          .mb-danger strong { color: #9b2c2c; }
+          .mb-danger-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+          .mb-danger-go {
+            font-family: 'Inter', sans-serif; font-size: 0.78rem;
+            background: #9b2c2c; color: #fff; border: 1px solid #9b2c2c;
+            border-radius: 4px; padding: 0.45rem 0.9rem; cursor: pointer;
+          }
+          .mb-danger-go:disabled { opacity: 0.6; cursor: default; }
+          .mb-danger-cancel {
+            font-family: 'Inter', sans-serif; font-size: 0.78rem;
+            background: transparent; color: var(--ink-soft);
+            border: 1px solid var(--line-strong);
+            border-radius: 4px; padding: 0.45rem 0.9rem; cursor: pointer;
+          }
           @media (max-width: 520px) {
             .mb-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .mb-meta { align-items: flex-start; }
@@ -230,7 +304,8 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
 
             <ul className="mb-list">
               {battles.map((b) => (
-                <li key={b.id} className="mb-row">
+                <li key={b.id} className="mb-entry">
+                  <div className="mb-row">
                   <button
                     type="button"
                     className="mb-item"
@@ -274,6 +349,49 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
                         ? "Confirm?"
                         : "Remove"}
                   </button>
+
+                  {/* Permanent erase. Opens a warning panel rather than acting on click. */}
+                  <button
+                    type="button"
+                    className="mb-delete"
+                    aria-label={`Permanently delete ${b.f1} vs ${b.f2}`}
+                    aria-expanded={deleteId === b.id}
+                    onClick={() => {
+                      setConfirmId(null);
+                      setDeleteId((d) => (d === b.id ? null : b.id));
+                    }}
+                  >
+                    Delete
+                  </button>
+                  </div>
+
+                  {deleteId === b.id && (
+                    <div className="mb-danger" role="alert">
+                      <p>
+                        <strong>Permanently delete this battle?</strong> This erases the
+                        verdict itself, not just your history entry. Its share link will
+                        stop working for anyone who has it, and it will disappear from
+                        any other user's history too. This cannot be undone.
+                      </p>
+                      <div className="mb-danger-actions">
+                        <button
+                          type="button"
+                          className="mb-danger-go"
+                          disabled={deletingId === b.id}
+                          onClick={() => deleteBattle(b.id)}
+                        >
+                          {deletingId === b.id ? "Deleting..." : "Yes, delete permanently"}
+                        </button>
+                        <button
+                          type="button"
+                          className="mb-danger-cancel"
+                          onClick={() => setDeleteId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
