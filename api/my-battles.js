@@ -12,7 +12,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { getClientIp, checkReadLimit } from "./_rateLimit.js";
 
-const MAX_ROWS = 100;
+// One page of history. Smaller than the old flat 100-row pull: each row carries the
+// battle's full battle_data + result JSON, so a big page was hundreds of KB for a list
+// that only renders four fields. The client asks for more via ?offset=.
+const PAGE_SIZE = 25;
+
+// Bound how deep pagination can go, so a crafted offset can never ask the DB to skip an
+// unbounded number of rows.
+const MAX_OFFSET = 5000;
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -50,22 +57,38 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Your session has expired. Please sign in again." });
     }
 
+    // Page offset from the query string; anything non-numeric or negative reads as 0.
+    const parsedOffset = parseInt(req.query.offset, 10);
+    const offset = Number.isFinite(parsedOffset) && parsedOffset > 0
+      ? Math.min(parsedOffset, MAX_OFFSET)
+      : 0;
+
     // Pull this user's saved links (newest first), joined to the battle rows. The
     // user_id filter comes from the verified identity above, not from the request.
+    // Fetch ONE extra row beyond the page so we can tell the client whether more exist
+    // without running a second count query.
     const { data, error } = await db
       .from("saved_battles")
       .select("battle_id, created_at, battles ( id, battle_data, result )")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(MAX_ROWS);
+      .range(offset, offset + PAGE_SIZE);
 
     if (error) {
       console.error("my-battles query error:", error);
       return res.status(500).json({ error: "Could not load your battles. Try again in a moment." });
     }
 
+    // The extra row fetched above only answers "is there another page?" -- it is never
+    // returned. nextOffset counts ROWS CONSUMED (not battles emitted), so links whose
+    // battle row is missing and get filtered out below still advance the cursor and
+    // cannot cause the same rows to be served twice.
+    const rows = data || [];
+    const hasMore = rows.length > PAGE_SIZE;
+    const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+
     // Return only what the list view needs to render + re-open each battle.
-    const battles = (data || [])
+    const battles = page
       .map(function (row) {
         const b = row.battles || {};
         const bd = b.battle_data || {};
@@ -82,7 +105,7 @@ export default async function handler(req, res) {
       })
       .filter(Boolean);
 
-    return res.status(200).json({ battles });
+    return res.status(200).json({ battles, hasMore, nextOffset: offset + page.length });
   } catch (err) {
     console.error("my-battles error:", err);
     return res.status(500).json({ error: "Something went wrong. Try again in a moment." });
