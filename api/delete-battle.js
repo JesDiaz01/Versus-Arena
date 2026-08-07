@@ -84,6 +84,38 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Your session has expired. Please sign in again." });
     }
 
+    // --- Look the battle up FIRST, so an already-deleted one is not mistaken for a probe. ---
+    // Ordering matters here. When the ownership check ran first, deleting a battle removed
+    // the caller's history link, so a retry (a stale second tab, a double submit) found no
+    // link and was charged an abuse offense -- a few of those and a legitimate user was
+    // temp-blocked for repeating an action that had already succeeded. Resolving the battle
+    // first makes a repeat idempotent instead of punishable. This reveals only whether a
+    // battle id exists, which a public share link already tells anyone.
+    const { data: rows, error: readError } = await db
+      .from("battles")
+      .select("id, authored_key")
+      .eq("id", battleId)
+      .limit(1);
+
+    if (readError) {
+      console.error("delete-battle read error:", readError);
+      return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
+    }
+
+    const battleRow = rows && rows[0];
+    if (!battleRow) {
+      // Already gone: the caller's intent is satisfied, so report success rather than
+      // treating a duplicate request as an attack.
+      return res.status(200).json({ ok: true });
+    }
+
+    // --- Refuse curated/authored verdicts (site content, not user data). ---
+    if (battleRow.authored_key) {
+      return res.status(400).json({
+        error: "This is a featured verdict and can't be deleted. You can remove it from your history instead.",
+      });
+    }
+
     // --- Ownership gate: the caller must have this battle in their own history. ---
     const { data: link, error: linkError } = await db
       .from("saved_battles")
@@ -97,29 +129,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
     }
     if (!link || link.length === 0) {
-      // Knowing an id is not permission: a public share link would otherwise be enough
-      // to destroy someone else's battle. Count it as a probe.
+      // The battle exists but is not the caller's: knowing an id is not permission, or a
+      // public share link would be enough to destroy someone else's battle. Count it as
+      // the probe it is.
       await recordOffense(ip, 2);
       return res.status(403).json({ error: "You can only delete battles from your own history." });
-    }
-
-    // --- Refuse curated/authored verdicts (site content, not user data). ---
-    const { data: rows, error: readError } = await db
-      .from("battles")
-      .select("id, authored_key")
-      .eq("id", battleId)
-      .limit(1);
-
-    if (readError) {
-      console.error("delete-battle read error:", readError);
-      return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
-    }
-
-    const battleRow = rows && rows[0];
-    if (battleRow && battleRow.authored_key) {
-      return res.status(400).json({
-        error: "This is a featured verdict and can't be deleted. You can remove it from your history instead.",
-      });
     }
 
     // --- Erase everything in ONE transaction (see sql/delete-battle.sql) ---
@@ -132,13 +146,12 @@ export default async function handler(req, res) {
     // reference, which a plain delete could not do and which can block the delete.
     const { error: rpcError } = await db.rpc("delete_battle_cascade", { p_battle_id: battleId });
     if (rpcError) {
+      // Full detail goes to the Vercel function log, never to the response: a raw
+      // Postgres message names tables, columns, and constraints, which is free schema
+      // reconnaissance. This briefly returned the raw text to debug a failing delete;
+      // the diagnostic now lives in the log where only you can read it.
       console.error("delete-battle rpc error:", rpcError);
-      // The underlying message is surfaced deliberately: this endpoint is owner-only, and
-      // a generic "try again" hid the real cause (a missing function, a foreign key
-      // violation) behind an identical string every time. Trim this once it is proven out.
-      return res.status(500).json({
-        error: "Could not delete that battle: " + (rpcError.message || "unknown database error"),
-      });
+      return res.status(500).json({ error: "Could not delete that battle. Try again in a moment." });
     }
 
     console.log("[delete-battle] permanently deleted battle", battleId, "for user", user.id);

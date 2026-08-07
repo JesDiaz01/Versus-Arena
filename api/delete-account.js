@@ -95,19 +95,16 @@ export default async function handler(req, res) {
       .delete()
       .eq("user_id", user.id);
     if (linksError) {
+      // Detail to the log only -- a raw Postgres message leaks schema (see delete-battle).
       console.error("delete-account links delete error:", linksError);
-      return res.status(500).json({
-        error: "Could not delete your account: " + (linksError.message || "unknown database error"),
-      });
+      return res.status(500).json({ error: "Could not delete your account. Try again in a moment." });
     }
 
     // --- Delete the auth record itself (email + hashed password). ---
     const { error: deleteError } = await db.auth.admin.deleteUser(user.id);
     if (deleteError) {
       console.error("delete-account auth delete error:", deleteError);
-      return res.status(500).json({
-        error: "Could not delete your account: " + (deleteError.message || "unknown error"),
-      });
+      return res.status(500).json({ error: "Could not delete your account. Try again in a moment." });
     }
 
     console.log("[delete-account] deleted account", user.id);

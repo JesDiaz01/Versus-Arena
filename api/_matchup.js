@@ -77,7 +77,13 @@ function normalizeName(raw) {
   s = s.normalize("NFKD").replace(DIACRITICS, "");
   s = s.replace(/[^a-z0-9]+/g, " ").trim();
   if (!s) return "";
-  return ALIASES[s] || s;
+  // Own properties only. A plain object literal inherits from Object.prototype, so a
+  // bare ALIASES[s] lookup resolves inherited members too: a fighter named "constructor"
+  // returned the Object CONSTRUCTOR, which then stringified into the matchup key as
+  // "function Object() { [native code] }" and put a junk row on the leaderboard. Only
+  // "constructor" could reach this (the normalizer lowercases first, so "toString" and
+  // friends miss), but the guard closes the whole class rather than that one name.
+  return Object.prototype.hasOwnProperty.call(ALIASES, s) ? ALIASES[s] : s;
 }
 
 // Build the order-independent matchup identity, or null when either name cannot be

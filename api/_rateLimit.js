@@ -82,13 +82,47 @@ function getReadLimiter() {
   return readLimiter;
 }
 
-// Derive the client IP exactly as the original in-memory limiter did: first
-// entry of x-forwarded-for, then x-real-ip, then a stable fallback.
+// Normalize a header that may arrive as a string or as an array of values.
+function headerValue(v) {
+  if (typeof v === "string") return v;
+  if (Array.isArray(v) && v.length) return String(v[0]);
+  return "";
+}
+
+// Derive the client IP used to key EVERY per-IP protection: the battle limits, the
+// read limiter, and the escalating abuse block.
+//
+// This previously read the FIRST entry of x-forwarded-for, which is client-writable.
+// The chain format is "originalClient, proxy1, proxy2...", where the leftmost entry is
+// whatever the caller claimed and each trusted hop APPENDS the address it actually
+// observed. So if a request arrives already carrying an x-forwarded-for, reading the
+// left end hands an attacker a fresh identity per request -- enough to walk past the
+// 5/min and 30/hr battle caps and the abuse block at once, leaving only the global
+// daily cap between them and the Anthropic bill.
+//
+// Preference order:
+//   1. x-vercel-forwarded-for, set by Vercel's edge and overwritten on every request,
+//      so a caller cannot forge it. Absent off-platform (plain `vite`), hence the
+//      fallbacks below.
+//   2. the LAST entry of x-forwarded-for, appended by the nearest trusted proxy, so it
+//      reflects an address that proxy genuinely saw. When the platform replaces the
+//      header outright there is a single entry and this is simply that entry.
+//   3. x-real-ip, then a stable fallback so a key always exists.
 export function getClientIp(req) {
-  const xff = req.headers["x-forwarded-for"];
-  if (typeof xff === "string" && xff.length) return xff.split(",")[0].trim();
-  if (Array.isArray(xff) && xff.length) return String(xff[0]).trim();
-  return req.headers["x-real-ip"] || "unknown";
+  const vercel = headerValue(req.headers["x-vercel-forwarded-for"]).trim();
+  if (vercel) {
+    const parts = vercel.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+
+  const xff = headerValue(req.headers["x-forwarded-for"]);
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+
+  const real = headerValue(req.headers["x-real-ip"]).trim();
+  return real || "unknown";
 }
 
 // Battle endpoint: check the minute cap first so the returned scope matches the
