@@ -118,7 +118,13 @@ export default function Leaderboard({ onNavigate }) {
           .lb-row {
             display: grid;
             grid-template-columns: 2rem 1fr auto 1fr auto;
-            align-items: center;
+            /* start, not center: the two .lb-fighter columns have different heights
+               whenever one name wraps to a second line or only one side has a universe.
+               Centering split that difference above and below the midline, so the taller
+               column's avatar rode higher than the other's. Top-aligning the columns puts
+               both fixed-height avatars on one line for any name length. The rank, vs, and
+               count opt back into centering individually below. */
+            align-items: start;
             gap: 0.75rem;
             padding: 1rem 1.25rem;
             margin-bottom: 0.75rem;
@@ -127,7 +133,7 @@ export default function Leaderboard({ onNavigate }) {
             border-radius: 6px;
           }
           .lb-row:first-child { border-color: var(--gold); box-shadow: 0 6px 20px rgba(184,134,11,0.14); }
-          .lb-rank { font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.25rem; color: var(--gold); text-align: center; }
+          .lb-rank { font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.25rem; color: var(--gold); text-align: center; align-self: center; }
           .lb-fighter { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.35rem; min-width: 0; }
           .lb-avatar {
             width: 76px; height: 76px; border-radius: 50%; overflow: hidden;
@@ -142,14 +148,18 @@ export default function Leaderboard({ onNavigate }) {
           .lb-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; }
           .lb-name { font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.95rem; color: var(--ink); line-height: 1.2; word-break: break-word; }
           .lb-universe { font-family: 'Inter', sans-serif; font-size: 0.72rem; color: var(--muted); }
-          .lb-vs { font-family: 'Cinzel', serif; font-style: italic; color: var(--gold); font-size: 0.9rem; }
-          .lb-count { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--ink-soft); text-align: right; white-space: nowrap; }
+          /* Sits level with the middle of the avatars rather than the middle of the row,
+             so a tall two-line name below does not drag it out from between the portraits.
+             The offset is half the avatar height minus half this line's own height. */
+          .lb-vs { font-family: 'Cinzel', serif; font-style: italic; color: var(--gold); font-size: 0.9rem; align-self: start; margin-top: 30px; }
+          .lb-count { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--ink-soft); text-align: right; white-space: nowrap; align-self: center; }
           .lb-count strong { display: block; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--ink); }
           @media (max-width: 560px) {
             .lb-row { grid-template-columns: 1.5rem 1fr auto 1fr; row-gap: 0.5rem; }
             .lb-count { grid-column: 1 / -1; text-align: center; }
             .lb-count strong { display: inline; margin-right: 0.35rem; }
             .lb-avatar { width: 60px; height: 60px; }
+            .lb-vs { margin-top: 22px; } /* re-centers on the smaller 60px avatar */
           }
         `}</style>
 
