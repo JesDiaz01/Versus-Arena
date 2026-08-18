@@ -69,6 +69,12 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
   // responses out of order; anything that is not the latest request is dropped so a
   // slow earlier page cannot paint over a newer one.
   const requestRef = useRef(0);
+  // The "My Battles" heading, used as the landing spot after a page change.
+  const headingRef = useRef(null);
+  // Raised by a DELIBERATE page change (a pager click, or the clamp that drops you off
+  // an emptied page) and consumed once the new page has rendered. A ref, not state, so
+  // arming it costs no render.
+  const pendingScrollRef = useRef(false);
   // Battle id awaiting a second click to confirm removal, and the one in flight.
   const [confirmId, setConfirmId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
@@ -111,6 +117,9 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
         // and let the effect re-run; pageLoading stays true across the hop so the view
         // never flashes an empty list. This only ever moves DOWN, so it cannot loop.
         if (list.length === 0 && page > lastPage) {
+          // Being bumped off an emptied page strands you at the footer just like a pager
+          // click does, so land on the heading there too.
+          pendingScrollRef.current = true;
           setTotal(count);
           setPageSize(size);
           setPage(lastPage);
@@ -126,6 +135,9 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
       .catch(() => {
         if (cancelled || reqId !== requestRef.current) return;
         setPageLoading(false);
+        // No new page rendered, so disarm -- otherwise this scroll would fire later on
+        // an unrelated re-fetch.
+        pendingScrollRef.current = false;
         // A failed page change keeps the list that is already on screen and reports the
         // failure inline; only a failed FIRST load takes over the whole view.
         setStatus((s) => (s === "ready" ? s : "error"));
@@ -136,6 +148,31 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
       cancelled = true;
     };
   }, [session, page, reloadKey]);
+
+  // Land on the heading once the NEW page has actually rendered, so the list is in view
+  // instead of the footer.
+  //
+  // Scrolling at click time did not stick: the animation starts from wherever the user
+  // was, then the response lands mid-flight and a shorter page collapses the document
+  // height, so the browser clamps the scroll and leaves them at the bottom. Running
+  // after the commit means the final height is already in place. Keyed on `battles`, so
+  // it fires exactly once per rendered page and never on the initial load (the flag is
+  // only raised by a pager click or the off-the-end clamp).
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+
+    const el = headingRef.current;
+    if (!el || typeof window === "undefined" || !window.scrollTo) return;
+
+    // The navbar is sticky, and on mobile its links wrap to a variable number of rows,
+    // so measure it rather than assume a fixed offset -- otherwise the heading lands
+    // tucked underneath it. Falls back to no offset if the bar is not found.
+    const nav = document.querySelector(".navbar");
+    const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+    const top = window.scrollY + el.getBoundingClientRect().top - navHeight - 12;
+    window.scrollTo({ top: top > 0 ? top : 0, behavior: "smooth" });
+  }, [battles]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
@@ -151,7 +188,8 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
     setActionError("");
     setPageLoading(true);
     setPage(next);
-    if (typeof window !== "undefined" && window.scrollTo) window.scrollTo({ top: 0, behavior: "smooth" });
+    // Deliberately NOT scrolling here -- see the effect below.
+    pendingScrollRef.current = true;
   }
 
   // Re-fetch the page currently on screen (after a row leaves it), so the list and the
@@ -227,7 +265,7 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
 
       <div className="about-container">
         <div className="about-tag">Accounts</div>
-        <h1 className="about-title">My <span className="vs-word">Battles</span></h1>
+        <h1 className="about-title" ref={headingRef}>My <span className="vs-word">Battles</span></h1>
 
         <style>{`
           .mb-list { list-style: none; margin: 0; padding: 0; }
