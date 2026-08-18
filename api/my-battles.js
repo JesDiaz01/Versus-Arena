@@ -7,19 +7,23 @@
 // SECURITY: the user is identified ONLY by db.auth.getUser(token), which verifies
 // the JWT signature against the project secret. The user_id filter is derived from
 // that verified identity -- a user_id is NEVER accepted from the query or body, so
-// one user can never request another user's history.
+// one user can never request another user's history. The ?page= param below only
+// moves a window WITHIN that user-scoped query; it cannot widen it.
 
 import { createClient } from "@supabase/supabase-js";
 import { getClientIp, checkReadLimit } from "./_rateLimit.js";
 
 // One page of history. Smaller than the old flat 100-row pull: each row carries the
 // battle's full battle_data + result JSON, so a big page was hundreds of KB for a list
-// that only renders four fields. The client asks for more via ?offset=.
-const PAGE_SIZE = 25;
+// that only renders four fields. The client asks for a page via ?page=.
+//
+// Deliberately fixed server-side and NOT settable by the client: a ?pageSize= param
+// would be a lever for asking the DB for 10000 rows in one request.
+const PAGE_SIZE = 10;
 
-// Bound how deep pagination can go, so a crafted offset can never ask the DB to skip an
-// unbounded number of rows.
-const MAX_OFFSET = 5000;
+// Bound how deep pagination can go, so a crafted page number can never ask the DB to
+// skip an unbounded number of rows. 500 * 10 keeps the old 5000-row offset ceiling.
+const MAX_PAGE = 500;
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -57,38 +61,45 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Your session has expired. Please sign in again." });
     }
 
-    // Page offset from the query string; anything non-numeric or negative reads as 0.
-    const parsedOffset = parseInt(req.query.offset, 10);
-    const offset = Number.isFinite(parsedOffset) && parsedOffset > 0
-      ? Math.min(parsedOffset, MAX_OFFSET)
-      : 0;
+    // Page number from the query string. Anything non-numeric, zero, or negative reads
+    // as page 1; anything past the ceiling is clamped rather than rejected, so a crafted
+    // value degrades to an empty page instead of a huge DB skip.
+    const parsedPage = parseInt(req.query.page, 10);
+    const page = Number.isFinite(parsedPage) && parsedPage > 1
+      ? Math.min(parsedPage, MAX_PAGE)
+      : 1;
+    const offset = (page - 1) * PAGE_SIZE;
 
-    // Pull this user's saved links (newest first), joined to the battle rows. The
-    // user_id filter comes from the verified identity above, not from the request.
-    // Fetch ONE extra row beyond the page so we can tell the client whether more exist
-    // without running a second count query.
-    const { data, error } = await db
+    // Pull ONE page of this user's saved links (newest first), joined to the battle
+    // rows. The user_id filter comes from the verified identity above, not from the
+    // request, and .range() is applied AFTER it -- so the window can only ever slide
+    // within this user's own rows.
+    //
+    // count: "exact" returns the size of the full filtered set (this user's total saved
+    // battles) in the same round trip, so the client can render page buttons without a
+    // second query. The count reflects the .eq() filter but NOT the .range().
+    //
+    // battle_id is a secondary sort key: created_at alone is not unique, and offset
+    // paging over a non-deterministic order can show the same row twice or skip one.
+    const { data, error, count } = await db
       .from("saved_battles")
-      .select("battle_id, created_at, battles ( id, battle_data, result )")
+      .select("battle_id, created_at, battles ( id, battle_data, result )", { count: "exact" })
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .range(offset, offset + PAGE_SIZE);
+      .order("battle_id", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
       console.error("my-battles query error:", error);
       return res.status(500).json({ error: "Could not load your battles. Try again in a moment." });
     }
 
-    // The extra row fetched above only answers "is there another page?" -- it is never
-    // returned. nextOffset counts ROWS CONSUMED (not battles emitted), so links whose
-    // battle row is missing and get filtered out below still advance the cursor and
-    // cannot cause the same rows to be served twice.
+    // A page past the end of the set is not an error: the DB returns no rows and the
+    // real total still goes back, so the client can clamp itself to a valid page.
     const rows = data || [];
-    const hasMore = rows.length > PAGE_SIZE;
-    const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
 
     // Return only what the list view needs to render + re-open each battle.
-    const battles = page
+    const battles = rows
       .map(function (row) {
         const b = row.battles || {};
         const bd = b.battle_data || {};
@@ -105,7 +116,15 @@ export default async function handler(req, res) {
       })
       .filter(Boolean);
 
-    return res.status(200).json({ battles, hasMore, nextOffset: offset + page.length });
+    // total counts saved_battles rows, so it can run one ahead of battles.length on the
+    // rare page holding a link whose battle row was purged (filtered out above). The
+    // client must not assume battles.length === pageSize.
+    return res.status(200).json({
+      battles,
+      total: typeof count === "number" ? count : battles.length,
+      page,
+      pageSize: PAGE_SIZE,
+    });
   } catch (err) {
     console.error("my-battles error:", err);
     return res.status(500).json({ error: "Something went wrong. Try again in a moment." });

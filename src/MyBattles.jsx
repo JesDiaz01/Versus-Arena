@@ -5,9 +5,10 @@
 // that battle's stored verdict via the app's existing share-link mechanism
 // (onOpenBattle -> the ?b= / SharedBattle path).
 //
-// History is paged (25 at a time) rather than a single flat pull, so a user with
-// hundreds of battles can actually reach the old ones instead of silently seeing
-// only the newest page.
+// History is paged 10 at a time with numbered page buttons rather than a single
+// flat pull, so a user with hundreds of battles can jump straight to the old ones.
+// The server owns the page size and the total count; this view only asks for a
+// page number and renders what comes back.
 //
 // "Remove" deletes only the link between this user and the battle (POST
 // /api/remove-battle). The battle itself stays cached and its share link keeps
@@ -17,7 +18,7 @@
 // Reuses the About/Privacy page shell (navbar + about-* classes + tokens) so it
 // looks native; only a small scoped style block is added for the list rows.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import NavBar from "./NavBar";
 
@@ -28,15 +29,46 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+// Which page buttons to draw. Up to 7 pages get every number; beyond that the list is
+// windowed to first / last / current +-1 with "..." gaps, so a user with 40 pages of
+// history still gets a pager that wraps onto a phone screen instead of overflowing it.
+function pageNumbers(current, count) {
+  if (count <= 7) {
+    const all = [];
+    for (let i = 1; i <= count; i++) all.push(i);
+    return all;
+  }
+  const out = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(count - 1, current + 1);
+  if (start > 2) out.push("gap-left");
+  for (let i = start; i <= end; i++) out.push(i);
+  if (end < count - 1) out.push("gap-right");
+  out.push(count);
+  return out;
+}
+
 export default function MyBattles({ onNavigate, onOpenBattle }) {
   const { session } = useAuth();
   // Start "ready"/empty when there is no session so the effect never has to set
   // state synchronously; a signed-in mount starts "loading" and the fetch fills it.
   const [status, setStatus] = useState(session && session.access_token ? "loading" : "ready");
   const [battles, setBattles] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [nextOffset, setNextOffset] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // Server-owned paging state. pageSize is echoed by the API rather than hardcoded here
+  // so the two can never disagree about how many buttons to draw.
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  // Set by whoever asks for a page (mount, goToPage, refreshPage) and cleared by the
+  // fetch that answers, rather than raised inside the effect -- a synchronous setState
+  // in an effect body is a cascading render.
+  const [pageLoading, setPageLoading] = useState(Boolean(session && session.access_token));
+  // Bumped to re-run the fetch effect for the SAME page (after a remove/delete).
+  const [reloadKey, setReloadKey] = useState(0);
+  // Rising id of the newest in-flight request. Clicking through pages quickly can land
+  // responses out of order; anything that is not the latest request is dropped so a
+  // slow earlier page cannot paint over a newer one.
+  const requestRef = useRef(0);
   // Battle id awaiting a second click to confirm removal, and the one in flight.
   const [confirmId, setConfirmId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
@@ -59,50 +91,74 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
     if (!session || !session.access_token) return;
 
     let cancelled = false;
+    const reqId = requestRef.current + 1;
+    requestRef.current = reqId;
 
-    fetch("/api/my-battles", {
+    fetch(`/api/my-battles?page=${encodeURIComponent(page)}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("request failed"))))
       .then((data) => {
-        if (cancelled) return;
-        setBattles(Array.isArray(data.battles) ? data.battles : []);
-        setHasMore(Boolean(data.hasMore));
-        setNextOffset(typeof data.nextOffset === "number" ? data.nextOffset : 0);
+        if (cancelled || reqId !== requestRef.current) return;
+
+        const list = Array.isArray(data.battles) ? data.battles : [];
+        const size = typeof data.pageSize === "number" && data.pageSize > 0 ? data.pageSize : 10;
+        const count = typeof data.total === "number" && data.total >= 0 ? data.total : list.length;
+        const lastPage = Math.max(1, Math.ceil(count / size));
+
+        // Stranded past the end -- the last row on this page was just removed, or the
+        // history shrank in another tab. Step back to the last page that still has rows
+        // and let the effect re-run; pageLoading stays true across the hop so the view
+        // never flashes an empty list. This only ever moves DOWN, so it cannot loop.
+        if (list.length === 0 && page > lastPage) {
+          setTotal(count);
+          setPageSize(size);
+          setPage(lastPage);
+          return;
+        }
+
+        setBattles(list);
+        setTotal(count);
+        setPageSize(size);
         setStatus("ready");
+        setPageLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setStatus("error");
+        if (cancelled || reqId !== requestRef.current) return;
+        setPageLoading(false);
+        // A failed page change keeps the list that is already on screen and reports the
+        // failure inline; only a failed FIRST load takes over the whole view.
+        setStatus((s) => (s === "ready" ? s : "error"));
+        setActionError("Couldn't load that page. Try again in a moment.");
       });
 
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, page, reloadKey]);
 
-  // Append the next page. Guarded so a double-click cannot fire two requests, and
-  // failures surface inline without destroying the list already on screen.
-  function loadMore() {
-    if (loadingMore || !hasMore || !session || !session.access_token) return;
-    setLoadingMore(true);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  // Jump to a page. Guarded against re-requesting the page already shown.
+  function goToPage(next) {
+    if (next < 1 || next > pageCount || next === page || pageLoading) return;
+    // A row's two-step confirm and its danger panel belong to the row that opened them,
+    // so neither may survive the hop into whatever row lands in that slot next. (The
+    // clamp path in the effect needs no such reset: the remove/delete handler that
+    // triggered it already cleared both.)
+    setConfirmId(null);
+    setDeleteId(null);
     setActionError("");
+    setPageLoading(true);
+    setPage(next);
+    if (typeof window !== "undefined" && window.scrollTo) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-    fetch(`/api/my-battles?offset=${encodeURIComponent(nextOffset)}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("request failed"))))
-      .then((data) => {
-        const more = Array.isArray(data.battles) ? data.battles : [];
-        // Guard against any duplicate ids so React keys stay unique.
-        setBattles((prev) => {
-          const seen = new Set(prev.map((b) => b.id));
-          return prev.concat(more.filter((b) => !seen.has(b.id)));
-        });
-        setHasMore(Boolean(data.hasMore));
-        setNextOffset(typeof data.nextOffset === "number" ? data.nextOffset : nextOffset + more.length);
-      })
-      .catch(() => setActionError("Couldn't load more battles. Try again in a moment."))
-      .finally(() => setLoadingMore(false));
+  // Re-fetch the page currently on screen (after a row leaves it), so the list and the
+  // total both come from the server rather than being guessed at locally.
+  function refreshPage() {
+    setPageLoading(true);
+    setReloadKey((k) => k + 1);
   }
 
   // Remove one battle from this user's history (does not delete the battle itself).
@@ -121,12 +177,13 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("request failed"))))
       .then(() => {
+        // Drop the row immediately so the click feels instant, then re-fetch this page:
+        // the rows after it have all shifted up by one, and the total (and with it the
+        // page buttons) has changed. The re-fetch also handles emptying the last page --
+        // see the clamp in the fetch effect.
         setBattles((prev) => prev.filter((b) => b.id !== id));
-        // The removed row sat BEFORE the pagination cursor, so the underlying result set
-        // just shrank by one. Pull the cursor back to match, otherwise the next "Load
-        // More" would start one row too deep and silently skip a battle.
-        setNextOffset((n) => (n > 0 ? n - 1 : 0));
         setConfirmId(null);
+        refreshPage();
       })
       .catch(() => setActionError("Couldn't remove that battle. Try again in a moment."))
       .finally(() => setRemovingId(null));
@@ -150,10 +207,11 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
     })
       .then((r) => (r.ok ? r.json() : r.json().then((d) => Promise.reject(new Error(d && d.error)))))
       .then(() => {
+        // Same as removal: optimistic drop, then re-fetch this page for the corrected
+        // rows and total.
         setBattles((prev) => prev.filter((b) => b.id !== id));
-        // Same cursor correction as removal: the result set just shrank by one.
-        setNextOffset((n) => (n > 0 ? n - 1 : 0));
         setDeleteId(null);
+        refreshPage();
       })
       .catch((err) =>
         setActionError(
@@ -225,22 +283,56 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
           .mb-remove:hover { color: #9b2c2c; border-color: #9b2c2c; }
           .mb-remove.confirming { color: #fff; background: #9b2c2c; border-color: #9b2c2c; }
           .mb-remove:disabled { opacity: 0.6; cursor: default; }
-          .mb-more-wrap { display: flex; justify-content: center; margin: 1.25rem 0 0; }
-          .mb-more {
+          .mb-pager {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 1.5rem 0 0;
+          }
+          .mb-page-btn {
             font-family: 'Cinzel', serif;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
             font-size: 0.8rem;
+            letter-spacing: 0.06em;
+            min-width: 2.3rem;
             background: transparent;
             color: var(--ink);
-            border: 1px solid var(--line-strong);
+            border: 1px solid var(--line);
             border-radius: 4px;
-            padding: 0.7rem 1.6rem;
+            padding: 0.5rem 0.6rem;
             cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
           }
-          .mb-more:hover { border-color: var(--gold); color: var(--gold); }
-          .mb-more:disabled { opacity: 0.6; cursor: default; }
+          .mb-page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+          .mb-page-btn.current {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(184,134,11,0.10);
+            font-weight: 700;
+            cursor: default;
+          }
+          .mb-page-btn:disabled { opacity: 0.45; cursor: default; }
+          .mb-page-step {
+            text-transform: uppercase;
+            border-color: var(--line-strong);
+            padding: 0.5rem 0.9rem;
+          }
+          .mb-page-gap {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: var(--muted);
+            padding: 0 0.1rem;
+            user-select: none;
+          }
+          .mb-page-count {
+            width: 100%;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin: 0.35rem 0 0;
+          }
           .mb-delete {
             flex: 0 0 auto;
             font-family: 'Inter', sans-serif;
@@ -281,6 +373,10 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
           @media (max-width: 520px) {
             .mb-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .mb-meta { align-items: flex-start; }
+            /* Tighter buttons + wrapping keeps the pager inside a narrow screen. */
+            .mb-pager { gap: 0.3rem; }
+            .mb-page-btn { min-width: 2rem; padding: 0.45rem 0.4rem; font-size: 0.72rem; }
+            .mb-page-step { padding: 0.45rem 0.65rem; }
           }
         `}</style>
 
@@ -294,7 +390,9 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
           </p>
         )}
 
-        {status === "ready" && battles.length === 0 && (
+        {/* pageLoading guard: after removing the last row on a page the list is briefly
+            empty while the corrected page is fetched -- that is not "no battles yet". */}
+        {status === "ready" && battles.length === 0 && !pageLoading && (
           <p className="mb-note">No saved battles yet - run one!</p>
         )}
 
@@ -396,17 +494,49 @@ export default function MyBattles({ onNavigate, onOpenBattle }) {
               ))}
             </ul>
 
-            {hasMore && (
-              <div className="mb-more-wrap">
+            {/* One page of history needs no pager. */}
+            {pageCount > 1 && (
+              <nav className="mb-pager" aria-label="Battle history pages">
                 <button
                   type="button"
-                  className="mb-more"
-                  onClick={loadMore}
-                  disabled={loadingMore}
+                  className="mb-page-btn mb-page-step"
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page <= 1 || pageLoading}
                 >
-                  {loadingMore ? "Loading..." : "Load More"}
+                  Prev
                 </button>
-              </div>
+
+                {pageNumbers(page, pageCount).map((n) =>
+                  typeof n === "number" ? (
+                    <button
+                      key={n}
+                      type="button"
+                      className={"mb-page-btn" + (n === page ? " current" : "")}
+                      aria-label={`Page ${n}`}
+                      aria-current={n === page ? "page" : undefined}
+                      onClick={() => goToPage(n)}
+                      disabled={pageLoading || n === page}
+                    >
+                      {n}
+                    </button>
+                  ) : (
+                    <span key={n} className="mb-page-gap" aria-hidden="true">...</span>
+                  )
+                )}
+
+                <button
+                  type="button"
+                  className="mb-page-btn mb-page-step"
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page >= pageCount || pageLoading}
+                >
+                  Next
+                </button>
+
+                <p className="mb-page-count">
+                  {pageLoading ? "Loading..." : `Page ${page} of ${pageCount} - ${total} battles`}
+                </p>
+              </nav>
             )}
           </>
         )}
