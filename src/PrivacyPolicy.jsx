@@ -94,7 +94,7 @@ export default function PrivacyPolicy({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: July 24, 2026</p>
+          <p className="pp-updated">Last updated: August 20, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -196,7 +196,7 @@ export default function PrivacyPolicy({ onNavigate }) {
           <h2>Shared battle links</h2>
           <p>
             When you share a battle, we create a public link (like
-            versus-arena.vercel.app/?b=... ) that shows that battle's characters,
+            versusarena.app/?b=... ) that shows that battle's characters,
             settings, and verdict to anyone who opens it. There is no password on these
             links. Because of this, treat anything you type into a battle as potentially
             public, and don't enter private information.
@@ -239,9 +239,10 @@ export default function PrivacyPolicy({ onNavigate }) {
 
           <h2>Links to other services</h2>
           <p>
-            The site links out to places like TikTok and Discord, and offers an email
-            contact. Once you leave Versus Arena for one of those, you're covered by that
-            service's own privacy policy, not this one.
+            The site links out to places like TikTok, Discord, and Ko-fi, which handles
+            any donation you choose to make, and offers an email contact. Once you leave
+            Versus Arena for one of those, you're covered by that service's own privacy
+            policy, not this one.
           </p>
 
           <h2>Children's privacy</h2>
@@ -276,8 +277,8 @@ export default function PrivacyPolicy({ onNavigate }) {
           <h2>Changes to this policy</h2>
           <p>
             We may update this policy as the site grows. Optional accounts, which this
-            policy previously listed as a future feature, are now being introduced and
-            are described above. When we make changes, we'll update the "last updated"
+            policy previously listed as a future feature, are now available and are
+            described above. When we make changes, we'll update the "last updated"
             date at the top of this page.
           </p>
 
