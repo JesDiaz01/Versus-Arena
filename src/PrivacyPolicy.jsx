@@ -94,7 +94,7 @@ export default function PrivacyPolicy({ onNavigate }) {
 
         <div className="pp-inner">
           <h1 className="pp-title">Privacy Policy</h1>
-          <p className="pp-updated">Last updated: August 20, 2026</p>
+          <p className="pp-updated">Last updated: September 21, 2026</p>
 
           <div className="pp-tldr">
             <strong>The short version</strong>
@@ -146,23 +146,30 @@ export default function PrivacyPolicy({ onNavigate }) {
               outcome?" option after a battle, we save the two characters, the verdict
               you disagreed with, the reason you picked, and your optional written note,
               so we can improve the judging. That note is free text and is stored in our
-              database, so please don't include personal information in it.
+              database, so please don't include personal information in it. Feedback is
+              not linked to your account, and we keep it only for as long as it is
+              useful for improving the judging.
             </li>
             <li>
               <strong>Crash reports.</strong> If the site hits an unexpected error in
               your browser, it automatically sends us a diagnostic report containing the
               error message and technical stack trace, the page address you were on
               (which may include a battle share link), and your browser's user-agent
-              string. We use these only to find and fix bugs.
+              string. We use these only to find and fix bugs. They are not linked to
+              your account, and we keep them only for as long as they are useful for
+              diagnosing the problem.
             </li>
             <li>
               <strong>Technical information.</strong> Like almost every website, our
               hosting provider (Vercel) records standard request information, including
-              your IP address, in operational logs. We also store your IP briefly in our
-              rate-limiting system (Upstash) to count requests and block abuse; those
-              records expire automatically after a short time. We use this only to keep
-              the site running and secure, and we don't use it to build a profile of you
-              or attach it to your saved battles.
+              your IP address, in operational logs. We also store your IP address in our
+              rate-limiting system (Upstash) to count requests and block abuse. These
+              records expire automatically: request counters within an hour, a temporary
+              block after at most 24 hours, and the record that an address has been
+              blocked before after 7 days. If you connect over IPv6 we store only your
+              network prefix, not your full address. We use this only to keep the site
+              running and secure, and we don't use it to build a profile of you or
+              attach it to your saved battles.
             </li>
             <li>
               <strong>Accounts.</strong> Accounts are optional - you can use the whole
@@ -272,6 +279,47 @@ export default function PrivacyPolicy({ onNavigate }) {
             something like an email you've sent us, just reach out. Depending on where
             you live, you may have rights under laws like the GDPR or CCPA, and we'll
             honor reasonable requests.
+          </p>
+
+          <h2>Why we're allowed to use this information</h2>
+          <p>
+            If you're in the UK or the EEA, data protection law asks us to name a
+            lawful basis for each thing we do. Ours are straightforward. We process
+            your battle inputs and, if you have one, your account details because you
+            asked us to provide the service, which is a contract with you. We process
+            IP addresses, rate-limiting records, crash reports, and verdict feedback on
+            the basis of our legitimate interests in keeping the site online, keeping
+            our costs from running away, preventing abuse, fixing bugs, and improving
+            the judging. Where we ever rely on your consent, you can withdraw it at any
+            time by contacting us.
+          </p>
+
+          <h2>Where your data is stored</h2>
+          <p>
+            We're a small site built on third-party infrastructure, and our providers
+            (Anthropic, Supabase, Upstash, Vercel, and Cloudflare) operate globally.
+            That means your information may be stored or processed in the United States
+            and in other countries, which may have different data protection laws than
+            where you live. If you're in the UK or the EEA, this includes transfers
+            outside your home region, made under the safeguards those providers put in
+            place in their own terms.
+          </p>
+
+          <h2>Security</h2>
+          <p>
+            We take reasonable technical measures to protect the site: traffic is served
+            over HTTPS, passwords are hashed by our authentication provider and never
+            visible to us, our database credentials stay on the server and are never
+            sent to your browser, and we apply rate limiting and abuse protection to our
+            API. No site can promise perfect security, but if we ever discover a breach
+            affecting your personal information, we'll notify affected users and the
+            relevant authorities where the law requires it.
+          </p>
+          <p>
+            If you're a security researcher and you think you've found a vulnerability,
+            please report it privately to{" "}
+            <a href="mailto:versusarenahq@gmail.com">versusarenahq@gmail.com</a>{" "}
+            rather than disclosing it publicly, and we'll work with you on a fix.
           </p>
 
           <h2>Changes to this policy</h2>

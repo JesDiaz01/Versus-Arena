@@ -45,3 +45,28 @@ begin
    where id = p_battle_id;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- LOCK THE FUNCTION DOWN. This is not optional.
+--
+-- Postgres grants EXECUTE on every new function to PUBLIC by default, and Supabase
+-- exposes public-schema functions over PostgREST at /rest/v1/rpc/<name> to the `anon`
+-- role. The anon key ships in the browser bundle by design. Combined with SECURITY
+-- DEFINER (which bypasses RLS), the default grant means ANYONE who reads the anon key
+-- out of the JS could call:
+--
+--   POST /rest/v1/rpc/delete_battle_cascade  {"p_battle_id": "<any id>"}
+--
+-- and permanently erase any battle on the site -- no token, no account, no ownership.
+-- Battle ids are not secret; every public share link contains one. That completely
+-- bypasses the ownership gate and the authored-verdict guard in api/delete-battle.js,
+-- which are the only things that were ever enforcing this.
+--
+-- RLS on the tables does NOT save you here: SECURITY DEFINER runs as the definer and
+-- bypasses it. The grant is the control.
+--
+-- Only the service role (used exclusively by the /api functions, never in the browser)
+-- has any business calling this. The explicit re-grant matters: revoking from PUBLIC
+-- can also strip service_role, which would break the API.
+revoke all on function public.delete_battle_cascade(text) from public, anon, authenticated;
+grant execute on function public.delete_battle_cascade(text) to service_role;

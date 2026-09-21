@@ -109,9 +109,51 @@ export default function FAQ({ onNavigate }) {
             </p>
           </FaqItem>
 
-          <FaqItem q="How do I get in touch or report something?" isOpen={!!openItems[5]} onToggle={() => toggle(5)}>
+          <FaqItem q="Do I need an account?" isOpen={!!openItems[5]} onToggle={() => toggle(5)}>
             <p className="faq-a">
-              Join the Discord or email us. We read suggestions and bug reports.
+              No. The whole Arena works without one. An account just saves your battles
+              to a <strong>My Battles</strong> page so you can find them again later.
+              You need to be at least 13 to create one.
+            </p>
+          </FaqItem>
+
+          <FaqItem q="How do I delete a battle or my account?" isOpen={!!openItems[6]} onToggle={() => toggle(6)}>
+            <p className="faq-a">
+              On the <strong>My Battles</strong> page each battle has two options.
+              <strong> Remove</strong> takes it out of your history but leaves the
+              battle itself saved, so its share link keeps working.
+              <strong> Delete</strong> permanently erases the battle, which means its
+              share link stops working for everyone. To close your account entirely,
+              use the delete option on your account page. That removes your sign-in
+              details and your history, but not the battles themselves, so delete any
+              battle containing something private <em>before</em> closing the account.
+            </p>
+          </FaqItem>
+
+          <FaqItem q={'Why did I get "you\'re running battles too fast"?'} isOpen={!!openItems[7]} onToggle={() => toggle(7)}>
+            <p className="faq-a">
+              Every battle costs us real money to generate, so there's a limit on how
+              many one person can run in a minute and in an hour. Waiting a little
+              clears it, and nothing is wrong with your account. If you keep hitting it
+              in bursts you may be paused for longer, but that always expires on its
+              own; there are no permanent bans.
+            </p>
+          </FaqItem>
+
+          <FaqItem q={'What does "the arena\'s hit its limit for today" mean?'} isOpen={!!openItems[8]} onToggle={() => toggle(8)}>
+            <p className="faq-a">
+              The site runs on a fixed daily budget so it can stay free. Once the day's
+              battles are used up, new ones pause until the counter resets at midnight
+              UTC. Battles that have already been fought still load instantly, and
+              <strong> Can It Beat Goku</strong> stays open the whole time.
+            </p>
+          </FaqItem>
+
+          <FaqItem q="How do I get in touch or report something?" isOpen={!!openItems[9]} onToggle={() => toggle(9)}>
+            <p className="faq-a">
+              Join the Discord or email us. We read suggestions and bug reports. If
+              you've found a security issue, please email it to us privately rather
+              than posting it publicly.
             </p>
             <div className="faq-contact">
               <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="faq-link">

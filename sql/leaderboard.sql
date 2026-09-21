@@ -114,3 +114,37 @@ as $$
   order by sum(c.hits) desc, m.updated_at desc
   limit greatest(p_limit, 0);
 $$;
+
+-- ---------------------------------------------------------------------------
+-- LOCK BOTH FUNCTIONS DOWN. This is not optional.
+--
+-- Enabling RLS on the two tables above (done at lines 31 and 47) denies the anon key
+-- DIRECT table access, but it does NOT cover these functions. Postgres grants EXECUTE
+-- to PUBLIC by default on every new function, Supabase exposes public-schema functions
+-- over PostgREST at /rest/v1/rpc/<name> to `anon`, and SECURITY DEFINER makes them run
+-- as the definer -- bypassing the very RLS that was supposed to be the protection.
+--
+-- Left at the default grant, anyone who reads the anon key out of the browser bundle
+-- can call record_matchup directly to forge the leaderboard into any ranking they like,
+-- or loop it to write unbounded rows into matchup_counts / matchup_meta. Neither table
+-- is rate limited at the database level; only the API in front of them is.
+--
+-- Only the service role (used exclusively by the /api functions, never in the browser)
+-- should be able to call these. The explicit re-grant matters: revoking from PUBLIC can
+-- also strip service_role, which would break api/battle.js and api/leaderboard.js.
+revoke all on function public.record_matchup(text, text, text, text, text) from public, anon, authenticated;
+revoke all on function public.leaderboard_weekly(integer) from public, anon, authenticated;
+
+grant execute on function public.record_matchup(text, text, text, text, text) to service_role;
+grant execute on function public.leaderboard_weekly(integer) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Verify, after running this file. Every row should show an acl that names
+-- service_role and does NOT contain a bare "=X/" entry (which means PUBLIC) or any
+-- anon= / authenticated= entry.
+-- ---------------------------------------------------------------------------
+-- select p.proname, p.prosecdef,
+--        coalesce(array_to_string(p.proacl, ', '), '(DEFAULT -> PUBLIC: still exposed!)') as acl
+-- from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+-- where n.nspname = 'public'
+--   and p.proname in ('delete_battle_cascade', 'record_matchup', 'leaderboard_weekly');

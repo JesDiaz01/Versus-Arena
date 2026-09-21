@@ -75,6 +75,28 @@ function todayKey() {
   return `global:battle:${yyyy}-${mm}-${dd}`;
 }
 
+// Give back a counted slot when the request never produced a verdict.
+//
+// The cap is incremented BEFORE the Anthropic calls (it has to be -- it is what
+// decides whether to make them at all), but nothing ever gave the slot back when
+// those calls then failed. A sustained Anthropic outage would therefore burn the
+// entire day's budget on requests that returned nothing, and the site would start
+// refusing battles with "hit its limit for today" while zero verdicts had actually
+// been produced. Refunding on the failure paths keeps the counter measuring what it
+// is meant to measure: verdicts served, not requests attempted.
+//
+// Fire-and-forget and fully swallowed -- a refund is a best-effort correction and
+// must never delay or break the error response the user is already getting. The key
+// is TTL'd and date-stamped, so a lost refund self-heals at midnight UTC.
+function releaseCapSlot(key) {
+  if (!key) return;
+  try {
+    getCapRedis().decr(key).catch(function () {});
+  } catch (e) {
+    // never break the response
+  }
+}
+
 // ---- Input sanitizing ----
 function cleanStr(v, maxLen) {
   if (typeof v !== "string") {
@@ -424,6 +446,10 @@ export default async function handler(req, res) {
     });
   }
 
+  // Set once the global daily cap has actually counted this request, so the failure
+  // paths below can refund the slot. Declared out here so the outer catch can see it.
+  let countedCapKey = null;
+
   try {
     // --- Reject oversized payloads ---
     const raw = JSON.stringify(req.body || {});
@@ -568,11 +594,19 @@ export default async function handler(req, res) {
       const count = await Promise.race([incrPromise, timeoutPromise]);
       // count === null means Redis timed out: fail open and proceed.
       if (count !== null) {
+        // The increment landed, so this request now owns a slot and the failure
+        // paths below are responsible for giving it back.
+        countedCapKey = key;
         if (count === 1) {
           // First battle of the day: set a cleanup TTL, fire-and-forget.
           getCapRedis().expire(key, CAP_KEY_TTL_SECONDS).catch(function() {});
         }
         if (count > DAILY_BATTLE_CAP) {
+          // Refused before spending anything, so give the slot straight back --
+          // otherwise a burst of over-cap requests inflates the counter well past
+          // the cap and the refusal outlives the traffic that caused it.
+          releaseCapSlot(countedCapKey);
+          countedCapKey = null;
           return res.status(503).json({
             error: "capacity",
             message: "The arena's hit its limit for today. The free Can It Beat Goku mode is still open.",
@@ -713,7 +747,10 @@ export default async function handler(req, res) {
       console.error("Original call failed, using swap-order result as fallback.");
       verdict = verdictB;
     } else {
-      // Both calls failed.
+      // Both calls failed: no verdict was produced, so the counted slot is refunded
+      // rather than charged against today's budget (see releaseCapSlot).
+      releaseCapSlot(countedCapKey);
+      countedCapKey = null;
       return res.status(502).json({ error: "The analyst is unavailable right now. Try again in a moment." });
     }
 
@@ -801,6 +838,9 @@ export default async function handler(req, res) {
     return res.status(200).json(shareId ? { ...verdict, id: shareId } : verdict);
   } catch (err) {
     console.error("Battle handler error:", err);
+    // An exception after the cap was counted also served no verdict. No-op when the
+    // throw happened before the increment (countedCapKey is still null).
+    releaseCapSlot(countedCapKey);
     return res.status(500).json({ error: "Something went wrong. Try again in a moment." });
   }
 }

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# The API is not content. Crawling it burns serverless invocations and, for
+# /api/character-image, fires outbound wiki lookups -- all to return JSON a crawler
+# has no use for.
+Disallow: /api/
+
+# Optional, left off deliberately -- it is an SEO decision, not a security one:
+# uncommenting the line below keeps public share links out of search results, so
+# whatever a user typed into a fighter name or custom feat cannot surface in a
+# search engine. The cost is losing any organic traffic those pages would attract.
+# Disallow: /*?b=

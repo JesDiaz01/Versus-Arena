@@ -245,7 +245,24 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
 
   function handleUrlSubmit() {
     if (!urlInput.trim()) return;
-    onSet(cleanImageUrl(urlInput));
+    const cleaned = cleanImageUrl(urlInput);
+    // Only ever accept an https image URL here. The value goes straight into an
+    // <img src>, so a stray javascript:/data:/file: string is never something the
+    // user meant and never something worth rendering. Requiring https (not http)
+    // also avoids a mixed-content load that the browser would block silently,
+    // which previously just looked like "my image didn't work".
+    let ok;
+    try {
+      ok = new URL(cleaned).protocol === "https:";
+    } catch {
+      ok = false; // not a parseable absolute URL
+    }
+    if (!ok) {
+      setMsg("That doesn't look like an image link - paste a full https:// URL, or upload a file instead.");
+      return;
+    }
+    setMsg("");
+    onSet(cleaned);
     setUrlInput("");
     setOpen(false);
     setMode(null);
@@ -332,8 +349,11 @@ function ImageOverride({ onSet, hasOverride, onClear }) {
           />
           <div className="override-url-actions">
             <button className="override-option small" onClick={handleUrlSubmit}>Use</button>
-            <button className="override-cancel small" onClick={() => { setMode(null); setUrlInput(""); }}>Back</button>
+            <button className="override-cancel small" onClick={() => { setMsg(""); setMode(null); setUrlInput(""); }}>Back</button>
           </div>
+          {/* Rejected-URL feedback. Without this the validation in handleUrlSubmit
+              would fail silently -- the panel would just sit there doing nothing. */}
+          {msg && <div className="override-msg">{msg}</div>}
         </>
       )}
     </div>

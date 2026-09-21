@@ -1,0 +1,12 @@
+# Versus Arena -- security contact (RFC 9116)
+#
+# If you have found a vulnerability, please report it to the address below rather
+# than disclosing it publicly. We will acknowledge your report and keep you updated
+# while we work on a fix.
+#
+# NOTE: Expires must be a future date. Update it when it gets close, or the file
+# stops being valid per RFC 9116.
+
+Contact: mailto:versusarenahq@gmail.com
+Expires: 2027-09-21T00:00:00.000Z
+Preferred-Languages: en
