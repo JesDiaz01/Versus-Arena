@@ -3,10 +3,9 @@
 // Your Anthropic API key lives here as a secret environment variable (ANTHROPIC_API_KEY)
 // and is never exposed to users.
 //
-// To switch models later, just change MODEL below:
-//   Cheap/fast:   "claude-haiku-4-5-20251001"
-//   Smarter:      "claude-sonnet-4-6"
-//   Top-tier:     "claude-opus-4-7"
+// To switch models, just change MODEL below. Models differ in which request parameters
+// they accept, so each one's settings live in MODEL_SETTINGS; Opus 5.5 and Sonnet 4.6
+// are already set up there.
 
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes, createHash } from "crypto";
@@ -15,7 +14,26 @@ import { getClientIp, checkBattleLimit, checkAbuseBlock, recordOffense } from ".
 import { containsBlockedContent, containsBlockedOutput } from "./_contentFilter.js";
 import { buildMatchupIdentity } from "./_matchup.js";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-opus-5-5";
+
+// Per-model request settings, so switching MODEL above stays a one-line change.
+//   Opus 5.5: always thinks, and thinking counts toward max_tokens (hence the larger cap);
+//     `effort` controls how much it thinks. Rejects `temperature` with a 400. `fallbacks`
+//     re-runs a request on another model server-side if a safety classifier declines it
+//     (e.g. a poison or virus feat tripping the biology classifier) instead of failing.
+//   Sonnet 4.6: does not think unless asked, so 1200 tokens covers the JSON verdict.
+// A model with no entry gets the fallback below (no temperature, room for thinking).
+const MODEL_SETTINGS = {
+  "claude-opus-5-5": {
+    headers: { "anthropic-beta": "server-side-fallback-2026-07-01" },
+    body: { max_tokens: 16000, output_config: { effort: "medium" }, fallbacks: "default" },
+  },
+  "claude-sonnet-4-6": {
+    headers: {},
+    body: { max_tokens: 1200, temperature: 0.4 },
+  },
+};
+const REQUEST_SETTINGS = MODEL_SETTINGS[MODEL] || { headers: {}, body: { max_tokens: 16000 } };
 
 // Read-through cache: identical battle inputs return the stored verdict instead of
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
@@ -250,11 +268,11 @@ async function callAndParse(apiKey, prompt) {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        ...REQUEST_SETTINGS.headers,
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1200,
-        temperature: 0.4,
+        ...REQUEST_SETTINGS.body,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -266,7 +284,17 @@ async function callAndParse(apiKey, prompt) {
     }
 
     const data = await response.json();
-    const text = (data.content || []).map(i => i.text || "").join("");
+
+    // A safety-classifier decline (after any fallback model also declined) is a normal 200
+    // carrying no verdict. Log it as such rather than letting it surface as a parse error.
+    if (data.stop_reason === "refusal") {
+      console.error("Anthropic refusal:", data.stop_details && data.stop_details.category);
+      return { error: "refusal" };
+    }
+
+    // Read only text blocks: thinking models also return thinking (and, after a fallback,
+    // fallback) blocks, which carry no verdict JSON.
+    const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 
     // Make parsing forgiving: strip any markdown code fences, then pull out just
     // the JSON object, in case the model adds a stray sentence before or after it.
