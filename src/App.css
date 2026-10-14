@@ -4184,3 +4184,63 @@ padding: 2.75rem 0 0;
     margin-bottom: -8px;
   }
 }
+/* === WHAT'S NEW (dismissible update card in the home hero; see WhatsNew.jsx) === */
+.whats-new {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto 1.75rem;
+  padding: 1rem 3rem 1.1rem 1.25rem;  /* right padding keeps text clear of the close button */
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 10px 30px rgba(0,0,0,0.04);
+}
+.whats-new-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.whats-new-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.whats-new-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.whats-new-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.whats-new-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.whats-new-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.whats-new-close:hover { color: var(--ink); background: var(--bg-soft); }
+.whats-new-close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }

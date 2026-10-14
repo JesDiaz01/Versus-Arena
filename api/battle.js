@@ -37,7 +37,7 @@ const REQUEST_SETTINGS = MODEL_SETTINGS[MODEL] || { headers: {}, body: { max_tok
 
 // Read-through cache: identical battle inputs return the stored verdict instead of
 // re-running the two Anthropic calls. Bump this string to invalidate all cached verdicts.
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 
 // Authored-verdict lookup: a hand-written verdict served for a marquee matchup at matching
 // dropdowns with EMPTY granted-abilities, regardless of fighter order. Bump to invalidate.

@@ -13,6 +13,7 @@ import ComingSoon from "./ComingSoon";
 import AuthPanel from "./AuthPanel";
 import MyBattles from "./MyBattles";
 import NavBar from "./NavBar";
+import WhatsNew from "./WhatsNew";
 import { useAuth } from "./AuthContext";
 import "./App.css";
 import CanItBeatGoku from "./CanItBeatGoku";
@@ -447,6 +448,8 @@ export default function App() {
           Pick any two fictional characters from any universe.
           Every verdict is weighed against feats, powerscaling, and lore.
         </p>
+
+        <WhatsNew />
 
         {/* Matchup spotlight: a wide cinematic band below the hero title. < > change the
             matchup; tapping the band shows its STORED verdict via the loadPreset BattleArena
