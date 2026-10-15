@@ -523,6 +523,26 @@ function UniverseHint() {
   );
 }
 
+// Which fighter a verdict's winner text refers to: 1, 2, or null for a draw or when it
+// can't be matched to either side. Both names are trimmed and lowercased; an exact match
+// on either side is tried first, then a partial match in either direction (so a winner of
+// "Yuji" still matches a fighter typed as "Yuji Itadori"). A partial match that fits BOTH
+// sides is ambiguous and returns null. Callers show a neutral silhouette for null rather
+// than guessing a side.
+function winnerSide(winner, name1, name2) {
+  const w = (winner || "").trim().toLowerCase();
+  if (!w || w === "draw") return null;
+  const n1 = (name1 || "").trim().toLowerCase();
+  const n2 = (name2 || "").trim().toLowerCase();
+  if (n1 && w === n1) return 1;
+  if (n2 && w === n2) return 2;
+  const partial1 = !!n1 && (w.includes(n1) || n1.includes(w));
+  const partial2 = !!n2 && (w.includes(n2) || n2.includes(w));
+  if (partial1 && !partial2) return 1;
+  if (partial2 && !partial1) return 2;
+  return null;
+}
+
 export default function BattleArena({
   initialBattle = null,
   f1, setF1, f2, setF2, u1, setU1, u2, setU2,
@@ -651,7 +671,11 @@ export default function BattleArena({
   }
 
   async function simulate() {
-    if (!f1.trim() || !f2.trim()) { setError("Please enter both fighter names."); return; }
+    // Trimmed once and used for BOTH the request and the winner match, so the names the
+    // verdict is compared against are exactly the names the server judged.
+    const name1 = f1.trim();
+    const name2 = f2.trim();
+    if (!name1 || !name2) { setError("Please enter both fighter names."); return; }
     // Early-catch an obvious slur so it never round-trips. The server filter in
     // api/battle.js stays as the authoritative backstop.
     if (checkClientBlocked(f1) || checkClientBlocked(f2) || checkClientBlocked(u1) || checkClientBlocked(u2)) {
@@ -675,7 +699,7 @@ export default function BattleArena({
         method: "POST",
         headers,
         body: JSON.stringify({
-          f1: f1.trim(), f2: f2.trim(), u1, u2,
+          f1: name1, f2: name2, u1, u2,
           battleType, location, power, depth, claims1, claims2,
         }),
       });
@@ -693,17 +717,18 @@ export default function BattleArena({
       // Snapshot the winning side's portrait + framing from the CURRENT live state, which
       // still reflects the matchup just fought. Computed once from the fresh verdict's
       // winner so the verdict avatar stays frozen even if the user later edits an input.
-      const won1 = verdict.winner && verdict.winner.toLowerCase().includes(f1.toLowerCase());
+      const wonSide = winnerSide(verdict.winner, name1, name2);
       // Never freeze a still-resolving portrait: if the winner's slot image is mid-fetch
       // (loading) or has no URL yet, store null so the verdict avatar renders the silhouette
-      // instead of the PREVIOUS fighter's stale image. won1 matching is unchanged.
-      const winnerImg = won1 ? img1 : img2;
-      const frozenWinnerUrl = (winnerImg.loading || !winnerImg.imageUrl) ? null : winnerImg.imageUrl;
+      // instead of the PREVIOUS fighter's stale image. An unmatched winner (wonSide null)
+      // also gets the silhouette, never fighter two's image by default.
+      const winnerImg = wonSide === 1 ? img1 : wonSide === 2 ? img2 : null;
+      const frozenWinnerUrl = (!winnerImg || winnerImg.loading || !winnerImg.imageUrl) ? null : winnerImg.imageUrl;
       setBattleSnapshot({
-        f1, f2,
+        f1: name1, f2: name2,
         winnerImageUrl: frozenWinnerUrl,
-        winnerImageError: frozenWinnerUrl === null ? true : (won1 ? imgError1 : imgError2),
-        winnerAdjust: won1 ? imgAdjust1 : imgAdjust2,
+        winnerImageError: frozenWinnerUrl === null ? true : (wonSide === 1 ? imgError1 : imgError2),
+        winnerAdjust: wonSide === 2 ? imgAdjust2 : wonSide === 1 ? imgAdjust1 : DEFAULT_ADJUST,
       });
       setResult(verdict);
     } catch (e) {
@@ -798,17 +823,22 @@ export default function BattleArena({
     }
   }
 
-  const isWinner1 = result && result.winner.toLowerCase().includes(f1.toLowerCase());
+  // Which side won (1, 2, or null), from the same comparison simulate() used. After a
+  // battle it reads the snapshot's names (the trimmed names that were judged) so the card
+  // styling always agrees with the avatar and can't flip if an input is edited afterward.
+  const winSide = result
+    ? winnerSide(result.winner, battleSnapshot ? battleSnapshot.f1 : f1, battleSnapshot ? battleSnapshot.f2 : f2)
+    : null;
   const isDraw = result && result.winner === "Draw";
   const diffLabel = result ? verdictDiffLabel(result) : null;
 
   // Winner portrait for the verdict header: read the battle-time SNAPSHOT (set when the
   // verdict arrived) so it reflects the fought winner's image/framing and never flips when
   // the user edits an input afterward. Before any battle (snapshot null) fall back to live
-  // state. isWinner1 stays as-is for its other uses; only these three switch to the snapshot.
-  const winnerImageUrl = battleSnapshot ? battleSnapshot.winnerImageUrl : (isWinner1 ? img1.imageUrl : img2.imageUrl);
-  const winnerImageError = battleSnapshot ? battleSnapshot.winnerImageError : (isWinner1 ? imgError1 : imgError2);
-  const winnerAdjust = battleSnapshot ? battleSnapshot.winnerAdjust : (isWinner1 ? imgAdjust1 : imgAdjust2);
+  // state, where an unmatched winner (winSide null) also falls back to the silhouette.
+  const winnerImageUrl = battleSnapshot ? battleSnapshot.winnerImageUrl : (winSide === 1 ? img1.imageUrl : winSide === 2 ? img2.imageUrl : null);
+  const winnerImageError = battleSnapshot ? battleSnapshot.winnerImageError : (winSide === 1 ? imgError1 : winSide === 2 ? imgError2 : true);
+  const winnerAdjust = battleSnapshot ? battleSnapshot.winnerAdjust : (winSide === 2 ? imgAdjust2 : winSide === 1 ? imgAdjust1 : DEFAULT_ADJUST);
 
   // Up to 5 disagreement choices from THIS verdict's own data, in priority order:
   // the outcome itself, then each advantage label, then a granted-ability catch-all.
@@ -835,7 +865,7 @@ export default function BattleArena({
     const setAdjusted = side === 1 ? setImgAdjusted1 : setImgAdjusted2;
     const fighter = side === 1 ? f1 : f2;
     const stateClass = result
-      ? (isDraw ? "active" : ((side === 1 ? isWinner1 : !isWinner1) ? "winner" : "loser"))
+      ? (isDraw || !winSide ? "active" : (winSide === side ? "winner" : "loser"))
       : (fighter ? "active" : "");
     const isDefaultAdjust = adjust.x === 50 && adjust.y === 50 && adjust.zoom === 1;
 
